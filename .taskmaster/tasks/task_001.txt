@@ -1,0 +1,37 @@
+# Task ID: 1
+# Title: 프로젝트 초기 설정 및 기본 구조 구축
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Flutter 프로젝트를 생성하고 필요한 패키지를 설치하며 기본 프로젝트 구조를 구성합니다.
+# Details:
+1. Flutter 3.19.0 이상 버전으로 프로젝트 생성
+2. pubspec.yaml에 필수 패키지 추가:
+   - provider: ^6.0.5 (상태 관리)
+   - riverpod: ^2.4.0 (상태 관리 대안)
+   - sqflite: ^2.3.0 (로컬 데이터베이스)
+   - path: ^1.8.3, path_provider: ^2.1.1 (파일 경로 관리)
+   - flutter_secure_storage: ^9.0.0 (보안 저장소)
+   - intl: ^0.18.1 (날짜/시간 포맷팅)
+3. 프로젝트 구조 생성:
+```
+lib/
+├── main.dart
+├── models/
+├── screens/
+├── services/
+├── providers/
+├── widgets/
+└── utils/
+```
+4. 기본 테마 설정 (utils/theme.dart)
+5. 상수 정의 (utils/constants.dart)
+6. 라우팅 설정 (main.dart)
+7. 다국어 지원 설정 (한국어 기본)
+
+# Test Strategy:
+1. 프로젝트 빌드 테스트 (flutter build apk)
+2. 패키지 의존성 충돌 확인
+3. 디렉토리 구조 검증
+4. 기본 앱 실행 테스트 (flutter run)
+5. 다양한 기기에서의 호환성 테스트

@@ -1,0 +1,238 @@
+# Task ID: 2
+# Title: 기본 UI/UX 디자인 및 테마 구현
+# Status: done
+# Dependencies: 1
+# Priority: high
+# Description: 심리적으로 안정되고 편안한 UI/UX를 위한 테마와 기본 디자인 요소를 구현합니다.
+# Details:
+1. Material Design 3 기반 테마 구현
+2. 컬러 팔레트 정의:
+   - 부드러운 블루: #E3F2FD, #BBDEFB
+   - 따뜻한 베이지: #FFF8E1, #FFECB3
+   - 차분한 회백색: #F5F5F5, #EEEEEE
+3. Noto Sans KR 폰트 통합 (weights: 300, 400, 500, 700)
+4. 다크 모드 지원 설정
+5. 공통 위젯 구현:
+   - CustomButton
+   - CustomTextField
+   - CustomCard
+   - CustomAppBar
+6. 애니메이션 효과 (부드러운 전환)
+7. 접근성 고려 (텍스트 크기 조절, 대비 등)
+8. 반응형 레이아웃 구현 (LayoutBuilder, MediaQuery 활용)
+
+# Test Strategy:
+1. 다양한 화면 크기에서 UI 테스트
+2. 다크 모드/라이트 모드 전환 테스트
+3. 접근성 테스트 (TalkBack, 고대비 모드)
+4. 폰트 렌더링 테스트
+5. 애니메이션 성능 테스트
+6. 디자인 가이드라인 준수 여부 검증
+
+# Subtasks:
+## 1. 테마 및 컬러 시스템 구현 [done]
+### Dependencies: None
+### Description: Material Design 3 기반 테마와 정의된 컬러 팔레트를 구현합니다. [Updated: 2025. 9. 5.]
+### Details:
+1. ThemeData 클래스를 사용하여 Material Design 3 기반 테마 구현
+2. 정의된 컬러 팔레트 구현 (부드러운 블루, 따뜻한 베이지, 차분한 회백색)
+3. ColorScheme 설정 (primary, secondary, surface 등)
+4. 다크 모드 테마 구현 및 전환 로직 개발
+5. 테마 확장 클래스 구현 (AppTheme, ThemeExtension)
+<info added on 2025-09-05T05:46:22.893Z>
+6. pubspec.yaml에 Noto Sans KR 폰트 설정 추가 완료
+7. 폰트 디렉토리 구조 확인 및 검증 완료
+8. AppTheme 클래스 업데이트를 통한 테마 시스템 개선 진행 중
+</info added on 2025-09-05T05:46:22.893Z>
+<info added on 2025-09-05T05:49:48.522Z>
+Task 17.1 완료 보고 및 성과 요약:
+- Material Design 3 ColorScheme 구현 완료 (라이트/다크 모드 지원)
+- 정의된 컬러 팔레트 적용 완료 (부드러운 블루, 따뜻한 베이지, 차분한 회백색)
+- 완전한 테마 시스템 구현 완료 (앱바, 카드, 버튼, 입력 필드, 텍스트, 스크롤바, 다이얼로그, 스낵바)
+- AppThemeExtension 테마 확장 클래스 구현 완료
+- 접근성 설정 적용 완료 (VisualDensity.adaptivePlatformDensity)
+- 모든 린터 오류 해결 완료
+- Task 17.2 (폰트 시스템 및 타이포그래피 구현) 진행 준비 완료
+</info added on 2025-09-05T05:49:48.522Z>
+
+## 2. 폰트 시스템 및 타이포그래피 구현 [done]
+### Dependencies: 2.1
+### Description: Noto Sans KR 폰트를 통합하고 일관된 타이포그래피 시스템을 구현합니다.
+### Details:
+1. Noto Sans KR 폰트 파일 프로젝트에 통합 (weights: 300, 400, 500, 700)
+2. pubspec.yaml에 폰트 설정 추가
+3. TextTheme 구성 (headline, title, body, caption 등)
+4. 글꼴 크기 계층 구조 정의
+5. 반응형 폰트 크기 설정 (MediaQuery 활용)
+6. 접근성을 위한 폰트 크기 조절 기능 구현
+<info added on 2025-09-05T05:51:29.396Z>
+진행 상황 업데이트 (2024년 진행):
+
+완료된 작업:
+- Google Fonts 패키지 추가 및 pubspec.yaml 설정
+- 로컬 폰트 설정을 Google Fonts로 전환 완료
+- AppTheme에서 GoogleFonts.notoSans() 적용
+- 텍스트 테마에 GoogleFonts.notoSansTextTheme() 구현
+- Material Design 3 타이포그래피 시스템 구현
+
+현재 진행 중인 작업:
+- Google Fonts 전환 작업 마무리 단계
+- 반응형 폰트 크기 설정 (MediaQuery 기반)
+- 접근성을 위한 폰트 크기 조절 기능 개발
+
+다음 단계: 나머지 폰트 설정 완료 및 반응형 폰트 시스템 구현 예정
+</info added on 2025-09-05T05:51:29.396Z>
+<info added on 2025-09-05T05:53:00.929Z>
+최종 완료 보고 (2025년 1월 5일):
+
+✅ 전체 폰트 시스템 및 타이포그래피 구현 완료
+
+완료된 핵심 구현 사항:
+- TypographyUtils 클래스: 화면 크기별 반응형 폰트 크기 계산 로직
+- ResponsiveText 위젯: 자동 반응형 텍스트 렌더링
+- 화면 크기별 브레이크포인트 정의 (모바일: <600px, 태블릿: 600-1200px, 데스크톱: >1200px)
+- Material Design 3 텍스트 스타일 생성 함수 (displayLarge, headlineMedium, bodyLarge 등)
+- 접근성 지원: 시스템 폰트 크기 설정 반영
+- 다국어 지원을 위한 Noto Sans KR 폰트 최적화
+
+기술적 성과:
+- Google Fonts 패키지 활용으로 번들 크기 최적화
+- MediaQuery 기반 실시간 반응형 조정
+- 접근성 가이드라인 준수 (WCAG 2.1)
+- 일관된 타이포그래피 시스템 구축
+
+Task 17.2 완료 - 다음 단계인 Task 17.3 (공통 위젯 구현) 진행 가능
+</info added on 2025-09-05T05:53:00.929Z>
+
+## 3. 공통 위젯 구현 [done]
+### Dependencies: 2.1, 2.2
+### Description: 재사용 가능한 공통 UI 위젯을 구현합니다.
+### Details:
+1. CustomButton 구현 (filled, outlined, text 변형)
+2. CustomTextField 구현 (validation, error handling)
+3. CustomCard 구현 (elevation, border radius 설정)
+4. CustomAppBar 구현 (scrollable, collapsible 옵션)
+5. 각 위젯에 테마 적용
+6. 위젯 상태 관리 (enabled, disabled, loading, error 등)
+7. 위젯 스타일 가이드 문서화
+<info added on 2025-09-05T06:06:29.358Z>
+작업 완료 상태 업데이트:
+
+8. CustomButton 고급 기능 구현 완료
+   - 다양한 크기 옵션 (small, medium, large)
+   - 로딩 및 비활성화 상태 처리
+   - 아이콘 지원 (시작/끝 위치)
+   - 툴팁 기능
+   - 편의 생성자 제공 (small, large, icon)
+
+9. CustomTextField 고급 기능 구현 완료
+   - 다양한 입력 타입 지원
+   - 비밀번호 표시/숨기기 기능
+   - 접두사/접미사 아이콘 및 텍스트 지원
+   - 편의 생성자 제공 (email, password, search, multiline)
+
+10. CustomCard 고급 기능 구현 완료
+    - 탭 및 롱 프레스 이벤트 처리
+    - 편의 생성자 제공 (small, large, flat, elevated, listItem)
+
+11. CustomAppBar 고급 기능 구현 완료
+    - 일반 앱바 및 슬리버 앱바 지원
+    - 스크롤 가능한 앱바 구현
+    - 접을 수 있는 앱바 구현
+    - 편의 생성자 제공 (simple, search, withTabs, expandable, transparent)
+
+12. 모든 린터 오류 해결 완료
+13. 다음 단계 (Task 17.4) 진행 준비 완료
+</info added on 2025-09-05T06:06:29.358Z>
+
+## 4. 애니메이션 및 전환 효과 구현 [done]
+### Dependencies: 2.3
+### Description: 부드러운 애니메이션과 전환 효과를 구현하여 사용자 경험을 향상시킵니다.
+### Details:
+1. 페이지 전환 애니메이션 구현 (Hero, PageRouteBuilder)
+2. 위젯 상태 변화 애니메이션 (AnimatedContainer, AnimatedOpacity)
+3. 로딩 애니메이션 구현 (Lottie 활용)
+4. 스크롤 애니메이션 효과 (ScrollController 활용)
+5. 사용자 인터랙션 피드백 애니메이션
+6. 애니메이션 성능 최적화 (RepaintBoundary 활용)
+<info added on 2025-09-05T06:25:25.884Z>
+완료 상태로 업데이트:
+
+✅ 구현 완료된 애니메이션 시스템:
+- AnimationUtils 클래스: 페이드, 슬라이드, 스케일, 회전, 복합 애니메이션 유틸리티
+- LoadingAnimations 시스템: 원형, 선형, 점프하는 점들, 펄스, 스피너, 웨이브, Lottie 애니메이션 지원
+- PageTransitions 시스템: 슬라이드, 페이드, 스케일, 회전, 복합 전환, SharedAxis 전환 효과
+- ScrollAnimations 시스템: 스크롤 시 나타나는 애니메이션, 순차적 애니메이션, 그리드 애니메이션
+- InteractionAnimations 시스템: 탭, 호버, 리플, 펄스, 바운스, 샤이크, 글로우, 슬라이드 피드백
+- PerformanceOptimization: RepaintBoundary 활용, 성능 모니터링, 메모리 최적화, 프레임 드롭 감지
+
+✅ 기존 위젯 통합:
+- CustomButton에 탭 피드백 애니메이션 적용
+- CustomCard에 탭 피드백 애니메이션 적용
+- CustomLoading을 새로운 애니메이션 시스템과 통합
+- animations.dart 메인 진입점을 통한 통합 관리
+
+✅ 추가된 패키지:
+- lottie: ^3.1.2 (Lottie 애니메이션 지원)
+- animations: ^2.0.11 (Material Design 애니메이션)
+
+✅ 성능 최적화 적용:
+- RepaintBoundary를 활용한 리페인트 최적화
+- 애니메이션 성능 모니터링 및 프레임 드롭 감지 시스템
+- 메모리 사용량 최적화 구현
+
+모든 애니메이션 및 전환 효과가 성공적으로 구현되고 기존 UI 컴포넌트들과 완전히 통합되었습니다.
+</info added on 2025-09-05T06:25:25.884Z>
+
+## 5. 반응형 레이아웃 및 접근성 구현 [done]
+### Dependencies: 2.1, 2.2, 2.3
+### Description: 다양한 화면 크기에 대응하는 반응형 레이아웃과 접근성 기능을 구현합니다.
+### Details:
+1. LayoutBuilder와 MediaQuery를 활용한 반응형 레이아웃 구현
+2. 화면 크기별 브레이크포인트 정의 (모바일, 태블릿, 데스크톱)
+3. 접근성 기능 구현 (Semantics, ExcludeSemantics 활용)
+4. 고대비 모드 지원
+5. 텍스트 크기 조절 기능 구현
+6. 방향 전환 (가로/세로) 대응 레이아웃
+7. SafeArea 및 시스템 UI 고려
+<info added on 2025-09-05T06:43:54.045Z>
+✅ 구현 완료 사항:
+1. 반응형 레이아웃 시스템 구현
+   - ResponsiveBreakpoints: 화면 크기별 브레이크포인트 정의 (모바일, 태블릿, 데스크톱, 대형 데스크톱)
+   - ResponsiveWidgets: 반응형 위젯 유틸리티 (responsive, responsiveValue, responsiveGrid, responsiveList, responsiveContainer)
+   - ResponsiveWrapper: 반응형 컨테이너 래퍼
+   - ResponsiveText: 반응형 텍스트 위젯
+
+2. 접근성 시스템 구현
+   - AccessibilityUtils: 시맨틱 라벨, 버튼, 이미지, 텍스트 필드, 헤딩, 리스트, 스크롤 영역 시맨틱
+   - AccessibilityWrapper: 접근성 위젯 래퍼
+   - AccessibilitySettings: 최소 터치 타겟 크기, 고대비 모드, 텍스트 크기 스케일 확인
+
+3. 고대비 모드 테마 구현
+   - HighContrastTheme: 라이트/다크 고대비 테마
+   - 고대비 색상 팔레트 (검정, 흰색, 노랑, 파랑, 빨강, 초록)
+   - 모든 UI 컴포넌트에 고대비 스타일 적용
+
+4. 텍스트 크기 조절 기능 구현
+   - TextScaling: 텍스트 크기 스케일 팩터 계산 및 스케일된 폰트 크기 계산
+   - ScaledText: 스케일된 텍스트 위젯
+   - ScaledTextStyleBuilder: 스케일된 텍스트 스타일 빌더
+   - TextSizeSettings: 텍스트 크기 설정 위젯
+
+5. 기존 위젯에 반응형 레이아웃과 접근성 적용
+   - CustomButton: 접근성 시맨틱 버튼 적용
+   - CustomTextField: 접근성 시맨틱 텍스트 필드 적용
+   - CustomCard: 접근성 시맨틱 라벨 적용
+   - CustomAppBar: 접근성 시맨틱 헤딩 적용
+
+6. 일기 목록 화면에 반응형 레이아웃 적용
+   - ResponsiveWrapper로 전체 컨테이너 감싸기
+   - 모바일: ListView, 태블릿: 2열 그리드, 데스크톱: 3열 그리드
+   - 화면 크기별 최적화된 레이아웃 제공
+
+✅ 기술적 특징:
+- 화면 크기별 브레이크포인트 정의 (600px, 900px, 1200px, 1600px)
+- 모든 린터 오류 해결 완료
+- 완전한 반응형 레이아웃 및 접근성 시스템 구축 완료
+</info added on 2025-09-05T06:43:54.045Z>
+

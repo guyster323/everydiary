@@ -1,0 +1,32 @@
+# Task ID: 7
+# Title: 음성 인식 기능 구현
+# Status: pending
+# Dependencies: 4
+# Priority: medium
+# Description: 사용자가 음성으로 일기를 작성할 수 있는 음성 인식 기능을 구현합니다.
+# Details:
+1. speech_to_text 패키지 활용 (^6.3.0)
+2. Google Speech-to-Text API 연동 (한국어 지원)
+3. 음성 녹음 UI 구현:
+   - 마이크 버튼
+   - 음성 인식 상태 표시
+   - 실시간 텍스트 변환 표시
+4. 음성 인식 서비스 구현 (services/speech_recognition_service.dart):
+   - 음성 녹음 시작/중지
+   - 텍스트 변환 처리
+   - 오류 처리
+5. 터치&드래그를 통한 오타 수정 기능
+6. 음성 인식 정확도 향상을 위한 알고리즘:
+   - 문맥 기반 교정
+   - 자주 사용하는 단어 학습
+7. 오프라인 음성 인식 지원 (제한적 기능)
+8. 마이크 권한 관리 (permission_handler 패키지 활용)
+
+# Test Strategy:
+1. 다양한 발음 및 억양에 대한 인식 테스트
+2. 배경 소음 환경에서의 인식 테스트
+3. 오타 수정 기능 테스트
+4. 장시간 녹음 성능 테스트
+5. 권한 요청 및 처리 테스트
+6. 오프라인 모드 테스트
+7. 메모리 사용량 모니터링

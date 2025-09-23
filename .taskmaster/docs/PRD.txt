@@ -1,0 +1,132 @@
+# Everydiary (편한일기장) - Product Requirements Document
+
+## 프로젝트 개요
+Everydiary는 심리적으로 안정되고 편안한 UI/UX를 제공하는 일기 작성 앱입니다. 기본 텍스트 일기 작성부터 음성 인식, OCR 기능까지 포함한 프리미엄 기능을 제공하며, AI 기반 배경 이미지 생성과 과거 기록 추천 시스템을 통해 사용자 경험을 향상시킵니다.
+
+## 핵심 기능 요구사항
+
+### 1. 기본 기능 (Phase 1)
+- 텍스트 일기 작성 및 편집
+- 심리적으로 안정되고 편안한 UI/UX 디자인
+- 안전한 데이터 저장 (로컬 + 서버)
+- 기본 캘린더 뷰 및 일기 목록
+- 사용자 설정 및 프로필 관리
+
+### 2. 프리미엄 기능 (Phase 2)
+#### 음성 인식 기능
+- 실시간 음성 녹음 및 음성 인식
+- 터치&드래그를 통한 오타 수정
+- 음성 인식 정확도 향상
+
+#### OCR 기능
+- 카메라를 통한 실시간 텍스트 인식
+- 앨범에서 이미지 선택하여 필기 내용 Import
+- 인식된 텍스트 편집 및 수정
+
+### 3. 고급 기능 (Phase 3)
+#### 과거 기록 추천 시스템
+- 하루 전 작성된 일기 추천
+- 같은 시간대 과거 기록 추천
+- 같은 날짜(작년, 재작년) 기록 추천
+
+#### AI 기반 배경 이미지
+- 일기 내용 분위기 분석
+- 실시간 Blur 배경 이미지 자동 적용
+- 텍스트 가독성 최적화
+
+#### 썸네일 시스템
+- 일기 내용을 한 단어로 요약
+- 요약 단어와 연관된 이미지 썸네일 생성
+- 썸네일 기반 캘린더 뷰
+
+### 4. 결제 시스템 (Phase 4)
+- Google Play 인앱 결제 구현
+- 월간/연간 구독 모델
+- 프리미엄 기능 권한 관리
+- 구독 상태 모니터링
+
+## 기술 스택
+
+### Flutter 핵심 패키지
+- UI/UX: cupertino_icons, material_design_icons_flutter
+- 상태 관리: provider, riverpod
+- 데이터베이스: sqflite, path, path_provider
+- 음성 인식: speech_to_text
+- OCR: google_mlkit_text_recognition, image_picker, camera
+- 인앱 결제: in_app_purchase
+- 네트워킹: http, dio
+- 보안: flutter_secure_storage, crypto
+- AI: openai_client
+- 권한 관리: permission_handler
+- 날짜/시간: intl
+- 캘린더: table_calendar
+- 이미지 처리: image, cached_network_image
+
+### 외부 서비스
+- 음성 인식: Google Speech-to-Text API
+- 이미지 생성: OpenAI DALL-E API
+- 백엔드: Firebase (Auth, Firestore, Storage)
+- 결제: Google Play Billing
+
+## 프로젝트 구조
+```
+lib/
+├── main.dart
+├── models/ (일기, 사용자, 구독 모델)
+├── screens/ (홈, 작성, 캘린더, 설정 화면)
+├── services/ (데이터베이스, 음성, OCR, AI, 구독, 저장소)
+├── providers/ (상태 관리)
+├── widgets/ (재사용 가능한 UI 컴포넌트)
+└── utils/ (상수, 테마, 헬퍼 함수)
+```
+
+## 디자인 가이드라인
+- 컬러: 부드러운 블루, 따뜻한 베이지, 차분한 회백색
+- 폰트: Noto Sans KR (한글 가독성)
+- Material Design 3 준수
+- 심리적 안정감을 주는 UI/UX
+- 접근성 고려
+
+## 개발 단계별 계획
+
+### Phase 1: 기본 기능 (2-3주)
+- 프로젝트 초기 설정 및 기본 구조
+- 기본 UI/UX 디자인 및 테마
+- 텍스트 일기 작성 및 편집 기능
+- 로컬 데이터베이스 구현 (SQLite)
+- 기본 캘린더 뷰 및 일기 목록
+- 사용자 설정 및 프로필 관리
+
+### Phase 2: 고급 기능 (3-4주)
+- 음성 인식 기능 구현
+- OCR 기능 구현
+- 과거 기록 추천 시스템
+- AI 배경 이미지 생성
+- 썸네일 시스템
+
+### Phase 3: 결제 시스템 (2주)
+- Google Play 인앱 결제 구현
+- 구독 관리 시스템
+- 사용자 권한 관리
+- 프리미엄 기능 제한/해제
+
+### Phase 4: 출시 준비 (2주)
+- 앱 아이콘 및 스플래시 스크린
+- Google Play Console 설정
+- 테스트 및 버그 수정
+- 개인정보 처리방침 작성
+- 성능 최적화 및 모니터링
+
+## 성능 및 보안 요구사항
+- 오프라인 기능 지원
+- 배터리 최적화
+- 개인정보 보호 및 암호화
+- 다양한 화면 크기 호환성
+- 접근성 표준 준수
+
+## 출시 후 운영
+- A/B 테스팅
+- 사용자 피드백 수집
+- 정기 업데이트
+- 성능 모니터링
+- 크래시 리포트 분석

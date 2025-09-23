@@ -1,0 +1,32 @@
+# Task ID: 6
+# Title: 사용자 설정 및 프로필 관리 구현
+# Status: pending
+# Dependencies: 1, 2, 3
+# Priority: medium
+# Description: 사용자가 앱 설정을 관리하고 프로필을 설정할 수 있는 기능을 구현합니다.
+# Details:
+1. 설정 화면 구현 (screens/settings.dart):
+   - 테마 설정 (라이트/다크 모드)
+   - 폰트 크기 조절
+   - 알림 설정
+   - 데이터 백업/복원
+   - 개인정보 처리방침
+2. 프로필 관리 화면 (screens/profile.dart):
+   - 사용자 이름 설정
+   - 프로필 이미지 설정
+   - 사용 통계 (작성한 일기 수, 연속 작성일 등)
+3. shared_preferences 패키지 활용 (^2.2.1)
+4. 설정 상태 관리 (providers/settings_provider.dart)
+5. 다국어 지원 설정
+6. 접근성 설정
+7. 데이터 사용량 표시
+8. 앱 버전 정보 표시
+
+# Test Strategy:
+1. 설정 저장 및 불러오기 테스트
+2. 테마 변경 테스트
+3. 프로필 정보 업데이트 테스트
+4. 설정 초기화 테스트
+5. 다국어 전환 테스트
+6. 접근성 설정 테스트
+7. 데이터 백업/복원 테스트

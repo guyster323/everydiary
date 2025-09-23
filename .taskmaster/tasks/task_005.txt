@@ -1,0 +1,30 @@
+# Task ID: 5
+# Title: 기본 캘린더 뷰 및 일기 목록 구현
+# Status: pending
+# Dependencies: 3, 4
+# Priority: high
+# Description: 사용자가 작성한 일기를 캘린더 형식과 목록 형식으로 볼 수 있는 기능을 구현합니다.
+# Details:
+1. table_calendar 패키지 활용 (^3.0.9)
+2. 캘린더 화면 구현 (screens/calendar_view.dart):
+   - 월간/주간 뷰 전환
+   - 일기 작성 날짜 표시 (마커)
+   - 날짜 선택 시 해당 일기 미리보기
+3. 일기 목록 화면 구현 (screens/diary_list.dart):
+   - 최신순 정렬
+   - 검색 기능
+   - 필터링 옵션 (날짜, 키워드)
+4. 일기 상세 보기 화면 (screens/diary_detail.dart)
+5. 애니메이션 전환 효과
+6. 무한 스크롤 구현 (LazyLoading)
+7. 캘린더-목록 뷰 전환 기능
+8. 날짜별 일기 통계 표시
+
+# Test Strategy:
+1. 캘린더 렌더링 테스트
+2. 날짜 선택 및 이벤트 표시 테스트
+3. 목록 스크롤 성능 테스트
+4. 검색 및 필터링 기능 테스트
+5. 다양한 화면 크기에서의 레이아웃 테스트
+6. 대용량 데이터 처리 테스트
+7. 화면 전환 애니메이션 테스트
