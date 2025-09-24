@@ -129,7 +129,7 @@ class _TextEditorScreenState extends ConsumerState<TextEditorScreen> {
     if (mounted) {
       try {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
+          MaterialPageRoute<void>(
             builder: (context) => DiaryWriteScreen(
               initialContent: _textController.text,
               initialTitle: 'OCR로 작성한 일기',

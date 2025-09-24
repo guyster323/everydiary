@@ -117,6 +117,10 @@ class _DualEmotionWatercolorBackgroundState
   // 이전 감정 결과 저장
   DualEmotionAnalysisResult? _previousEmotionResult;
 
+  // 감정 변화 감지를 위한 상태
+  String _lastEmotionKey = '';
+  bool _isTransitioning = false;
+
   @override
   void initState() {
     super.initState();
@@ -142,6 +146,9 @@ class _DualEmotionWatercolorBackgroundState
       ),
     );
 
+    // 초기 감정 키 설정
+    _lastEmotionKey = _getEmotionKey(widget.emotionResult);
+
     _animationController.forward();
     _colorTransitionController.forward();
   }
@@ -149,13 +156,36 @@ class _DualEmotionWatercolorBackgroundState
   @override
   void didUpdateWidget(DualEmotionWatercolorBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.emotionResult != widget.emotionResult) {
+
+    // 감정 변화 감지 - 핵심 개선 부분
+    final newEmotionKey = _getEmotionKey(widget.emotionResult);
+
+    if (_lastEmotionKey != newEmotionKey && !_isTransitioning) {
+      debugPrint('🎨 감정 변화 감지: $_lastEmotionKey → $newEmotionKey');
+
       // 이전 감정 결과 저장
       _previousEmotionResult = oldWidget.emotionResult;
-      // 감정이 변경되면 8초에 걸쳐 부드럽게 전환
+      _lastEmotionKey = newEmotionKey;
+      _isTransitioning = true;
+
+      // 색상 전환 애니메이션만 재시작 (8초간 부드럽게)
       _colorTransitionController.reset();
-      _colorTransitionController.forward();
+      _colorTransitionController.forward().then((_) {
+        if (mounted) {
+          _isTransitioning = false;
+        }
+      });
+
+      debugPrint('🎨 8초간 부드러운 색상 전환 시작');
+    } else if (_lastEmotionKey == newEmotionKey) {
+      // 같은 감정이면 애니메이션 재시작하지 않음
+      debugPrint('🎨 동일한 감정 - 애니메이션 유지: $newEmotionKey');
     }
+  }
+
+  /// 감정 결과를 고유 키로 변환 (감정 변화 감지용)
+  String _getEmotionKey(DualEmotionAnalysisResult emotionResult) {
+    return '${emotionResult.firstHalf.primaryEmotion}_${emotionResult.secondHalf.primaryEmotion}';
   }
 
   @override
@@ -184,7 +214,6 @@ class _DualEmotionWatercolorBackgroundState
         widget.emotionResult.firstHalf.primaryEmotion,
       ),
     );
-
     final currentSecondHalfColors = EmotionColorMapper.getColorsForEmotion(
       DualEmotionAnalysisService.mapToWatercolorEmotionType(
         widget.emotionResult.secondHalf.primaryEmotion,
@@ -195,7 +224,7 @@ class _DualEmotionWatercolorBackgroundState
     List<Color>? previousFirstHalfColors;
     List<Color>? previousSecondHalfColors;
 
-    if (_previousEmotionResult != null) {
+    if (_previousEmotionResult != null && _isTransitioning) {
       previousFirstHalfColors = EmotionColorMapper.getColorsForEmotion(
         DualEmotionAnalysisService.mapToWatercolorEmotionType(
           _previousEmotionResult!.firstHalf.primaryEmotion,
@@ -208,8 +237,11 @@ class _DualEmotionWatercolorBackgroundState
       );
     }
 
-    // 애니메이션 값에 따른 부드러운 전환 (A10 -> A5 B5 -> B10)
+    // 애니메이션 값에 따른 부드러운 전환
     final animationValue = _colorTransitionAnimation.value;
+
+    // 스므르듯한 전환을 위한 easing 함수 적용
+    final easedValue = _easeInOutCubic(animationValue);
 
     // 위아래 그라데이션 생성
     final colors = <Color>[];
@@ -217,14 +249,15 @@ class _DualEmotionWatercolorBackgroundState
 
     if (_previousEmotionResult != null &&
         previousFirstHalfColors != null &&
-        previousSecondHalfColors != null) {
-      // 이전 감정이 있는 경우: A10 -> A5 B5 -> B10 방식
+        previousSecondHalfColors != null &&
+        _isTransitioning) {
+      // 감정 전환 중: 이전 감정에서 현재 감정으로 부드럽게 전환
 
-      // 위쪽 색상: 이전 감정에서 현재 감정으로 전환
+      // 위쪽 색상: 이전 → 현재 (A10 → A5 방식)
       final topColor1 = Color.lerp(
         previousFirstHalfColors.first.withValues(alpha: 0.7), // A10
         currentFirstHalfColors.first.withValues(alpha: 0.35), // A5
-        animationValue,
+        easedValue,
       )!;
 
       final topColor2 = Color.lerp(
@@ -234,10 +267,10 @@ class _DualEmotionWatercolorBackgroundState
         currentFirstHalfColors.length > 1
             ? currentFirstHalfColors[1].withValues(alpha: 0.25)
             : currentFirstHalfColors.first.withValues(alpha: 0.25),
-        animationValue,
+        easedValue,
       )!;
 
-      // 아래쪽 색상: 이전 감정에서 현재 감정으로 전환
+      // 아래쪽 색상: 이전 → 현재 (B5 → B10 방식)
       final bottomColor1 = Color.lerp(
         previousSecondHalfColors.length > 1
             ? previousSecondHalfColors[1].withValues(alpha: 0.25)
@@ -245,18 +278,20 @@ class _DualEmotionWatercolorBackgroundState
         currentSecondHalfColors.length > 1
             ? currentSecondHalfColors[1].withValues(alpha: 0.5)
             : currentSecondHalfColors.first.withValues(alpha: 0.5),
-        animationValue,
+        easedValue,
       )!;
 
       final bottomColor2 = Color.lerp(
         previousSecondHalfColors.first.withValues(alpha: 0.35), // B5
         currentSecondHalfColors.first.withValues(alpha: 0.7), // B10
-        animationValue,
+        easedValue,
       )!;
 
       colors.addAll([topColor1, topColor2, bottomColor1, bottomColor2]);
+
+      debugPrint('🎨 전환 진행률: ${(easedValue * 100).toStringAsFixed(1)}%');
     } else {
-      // 이전 감정이 없는 경우: 기본 그라데이션
+      // 전환이 없거나 완료된 경우: 현재 감정 색상 사용
       final topColor1 = currentFirstHalfColors.first.withValues(alpha: 0.7);
       final topColor2 = currentFirstHalfColors.length > 1
           ? currentFirstHalfColors[1].withValues(alpha: 0.5)
@@ -277,6 +312,15 @@ class _DualEmotionWatercolorBackgroundState
       colors: colors,
       stops: stops,
     );
+  }
+
+  /// 부드러운 easing 함수 (스며드는 느낌을 위해)
+  double _easeInOutCubic(double t) {
+    if (t < 0.5) {
+      return 4 * t * t * t;
+    } else {
+      return 1 - pow(-2 * t + 2, 3) / 2;
+    }
   }
 
   @override

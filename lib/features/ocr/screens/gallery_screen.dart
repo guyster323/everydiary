@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -207,7 +205,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     });
   }
 
-  /// OCR 테스트용 이미지 생성
+  /// OCR 테스트용 이미지 생성 (비활성화됨)
   Future<void> _createTestImage() async {
     setState(() {
       _isProcessing = true;
@@ -215,32 +213,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     });
 
     try {
-      // 테스트용 텍스트
-      const testText = '안녕하세요! 이것은 OCR 테스트입니다.\n한글과 영문이 함께 있는 텍스트입니다.';
-
-      // OCR 서비스로 테스트 이미지 생성
-      final testImageBytes = await _ocrService.createTestImage(testText);
-
-      // ImagePickerResult 형태로 변환 (임시 파일 생성)
-      final tempFile = File(
-        '${Directory.systemTemp.path}/test_ocr_${DateTime.now().millisecondsSinceEpoch}.png',
-      );
-      await tempFile.writeAsBytes(testImageBytes);
-
-      final testResult = ImagePickerResult.success(
-        file: tempFile,
-        bytes: testImageBytes,
-        path: tempFile.path,
-        name: 'test_ocr.png',
-        size: testImageBytes.length,
-      );
-
-      setState(() {
-        _selectedImages = [testResult];
-        _processingStatus = '테스트 이미지가 생성되었습니다.';
-      });
-
-      debugPrint('🔍 테스트 이미지 생성 완료: ${testImageBytes.length} bytes');
+      // 테스트 이미지 생성 기능이 현재 비활성화되어 있음
+      throw Exception('테스트 이미지 생성 기능이 현재 비활성화되어 있습니다.');
     } catch (e) {
       debugPrint('🔍 테스트 이미지 생성 실패: $e');
       _showErrorDialog('테스트 이미지 생성에 실패했습니다: $e');

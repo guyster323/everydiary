@@ -126,11 +126,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     }
   }
 
-  /// 기존 일기 데이터 로드
+  /// 기존 일기 데이터 로드 - 개선된 버전
   Future<void> _loadExistingDiary() async {
     if (widget.diaryId == null) return;
-
     debugPrint('📝 편집 모드: 일기 ID ${widget.diaryId} 로드 시작');
+
     try {
       setState(() {
         _isLoading = true;
@@ -167,22 +167,8 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
           _isDirty = false;
         });
 
-        // 에디터에 내용 로드
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _editorKey.currentState != null) {
-            debugPrint('📝 에디터에 내용 로드: ${contentToUse.length}자');
-            _editorKey.currentState?.loadContent(contentToUse);
-          } else {
-            debugPrint('📝 에디터가 아직 준비되지 않음 - 나중에 다시 시도');
-            // 에디터가 준비되지 않았으면 잠시 후 다시 시도
-            Future.delayed(const Duration(milliseconds: 100), () {
-              if (mounted && _editorKey.currentState != null) {
-                debugPrint('📝 에디터에 내용 로드 (지연): ${contentToUse.length}자');
-                _editorKey.currentState?.loadContent(contentToUse);
-              }
-            });
-          }
-        });
+        // 에디터에 내용 로드 - 개선된 재시도 로직
+        await _loadContentToEditor(contentToUse);
 
         // 기존 일기 내용으로 감정 분석 수행
         if (contentToUse != '[{"insert":"\\n"}]') {
@@ -224,13 +210,83 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     }
   }
 
-  /// OCR에서 전달된 내용 처리
-  void _handleOCRContent() {
-    // OCR에서 전달된 내용은 이미 initState에서 처리됨
-    // 이 메서드는 필요시 추가 처리를 위해 유지
+  /// 에디터에 내용 로드 - 개선된 재시도 로직
+  Future<void> _loadContentToEditor(String contentToUse) async {
+    const int maxRetries = 5; // 재시도 횟수 증가
+    int retryCount = 0;
+    bool loadSuccess = false;
+
+    while (retryCount < maxRetries && !loadSuccess && mounted) {
+      // 에디터 준비 확인
+      if (_editorKey.currentState != null) {
+        try {
+          debugPrint(
+            '📝 에디터에 내용 로드 시도 ${retryCount + 1}회: ${contentToUse.length}자',
+          );
+          _editorKey.currentState?.loadContent(contentToUse);
+
+          // 로드 성공 여부 확인을 위한 짧은 대기
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // 에디터 상태 확인 (가능한 경우)
+          loadSuccess = true;
+          debugPrint('📝 에디터 내용 로드 성공');
+          break;
+        } catch (e) {
+          debugPrint('📝 에디터 내용 로드 실패 (시도 ${retryCount + 1}): $e');
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await Future<void>.delayed(
+              Duration(milliseconds: 100 * retryCount),
+            ); // 점치적으로 대기 시간 증가
+          }
+        }
+      } else {
+        debugPrint('📝 에디터가 아직 준비되지 않음 - 시도 ${retryCount + 1}');
+        retryCount++;
+        if (retryCount < maxRetries) {
+          await Future<void>.delayed(
+            Duration(milliseconds: 150 * retryCount),
+          ); // 점진적으로 대기 시간 증가
+        }
+      }
+    }
+
+    if (!loadSuccess && mounted) {
+      debugPrint('📝 에디터 내용 로드 최종 실패 - 대체 방안 실행');
+
+      // 마지막 수단: 내용을 다시 설정하고 강제 리빌드
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            // 강제로 UI 업데이트를 위해 상태 변경
+            _contentDelta = contentToUse;
+          });
+
+          // 한 번 더 시도
+          Future<void>.delayed(const Duration(milliseconds: 300), () {
+            if (mounted && _editorKey.currentState != null) {
+              try {
+                debugPrint('📝 최종 에디터 내용 로드 시도');
+                _editorKey.currentState?.loadContent(contentToUse);
+              } catch (e) {
+                debugPrint('📝 최종 에디터 내용 로드도 실패: $e');
+                // 사용자에게 알림
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('일기 내용을 불러오는 데 문제가 있습니다. 새로고침해주세요.'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            }
+          });
+        }
+      });
+    }
   }
 
-  /// OCR 텍스트를 일기 내용에 추가
+  /// OCR 텍스트를 일기 내용에 추가 - 개선된 버전
   void _addOCRTextToContent(String text) {
     if (text.isEmpty) {
       debugPrint('🔍 OCR 텍스트가 비어있음 - 추가하지 않음');
@@ -241,37 +297,57 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     debugPrint('🔍 OCR 텍스트 내용: "$text"');
     debugPrint('🔍 현재 _contentDelta: $_contentDelta');
 
-    // 현재 내용이 비어있으면 새로 추가, 있으면 줄바꿈 후 추가
-    String newContent;
-    if (_contentDelta == '[]' || _contentDelta == '[{"insert":"\\n"}]') {
-      newContent = SafeDeltaConverter.textToDelta(text);
-      debugPrint('🔍 새 내용으로 추가: $newContent');
-    } else {
-      // 기존 내용에 새 텍스트 추가
-      final existingText = SafeDeltaConverter.extractTextFromDelta(
-        _contentDelta,
-      );
-      final combinedText = existingText.isEmpty
-          ? text
-          : '$existingText\n\n$text';
-      newContent = SafeDeltaConverter.textToDelta(combinedText);
-      debugPrint('🔍 기존 내용에 추가: $newContent');
-    }
-
-    setState(() {
-      _contentDelta = newContent;
-      _isDirty = true;
-    });
-
-    // 에디터에 내용 업데이트
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _editorKey.currentState != null) {
-        _editorKey.currentState?.loadContent(newContent);
+    try {
+      // 현재 내용이 비어있으면 새로 추가, 있으면 줄바꿈 후 추가
+      String newContent;
+      if (_contentDelta == '[]' || _contentDelta == '[{"insert":"\\n"}]') {
+        newContent = SafeDeltaConverter.textToDelta(text);
+        debugPrint('🔍 새 내용으로 추가: $newContent');
+      } else {
+        // 기존 내용에 새 텍스트 추가
+        final existingText = SafeDeltaConverter.extractTextFromDelta(
+          _contentDelta,
+        );
+        final combinedText = existingText.isEmpty
+            ? text
+            : '$existingText\n\n[OCR 인식 텍스트]\n$text';
+        newContent = SafeDeltaConverter.textToDelta(combinedText);
+        debugPrint('🔍 기존 내용에 추가: $newContent');
       }
-    });
 
-    // 감정 분석 수행
-    _analyzeEmotionDebounced();
+      setState(() {
+        _contentDelta = newContent;
+        _isDirty = true;
+      });
+
+      // 에디터에 내용 업데이트 - 비동기적으로 처리
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _editorKey.currentState != null) {
+          try {
+            _editorKey.currentState?.loadContent(newContent);
+            debugPrint('🔍 에디터에 OCR 텍스트 로드 성공');
+          } catch (e) {
+            debugPrint('🔍 에디터에 OCR 텍스트 로드 실패: $e');
+            // 실패해도 델타는 이미 업데이트되었으므로 계속 진행
+          }
+        }
+      });
+
+      // 감정 분석 수행 (debounced)
+      _analyzeEmotionDebounced();
+
+      debugPrint('🔍 OCR 텍스트 추가 완료');
+    } catch (e) {
+      debugPrint('🔍 OCR 텍스트 추가 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('텍스트 추가 중 오류가 발생했습니다'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   /// 기본 감정을 기분 좋음으로 설정
@@ -601,30 +677,76 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     return '${dualEmotion.firstHalf.primaryEmotion} → ${dualEmotion.secondHalf.primaryEmotion} (${contextParts.join(', ')})';
   }
 
-  /// OCR 기능 열기
+  /// OCR 기능 열기 - 개선된 버전
   Future<void> _openOCR() async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      debugPrint('🔍 OCR 화면 열기 시작');
+
       final result = await Navigator.of(context).push<String>(
-        MaterialPageRoute<String>(
-          builder: (context) => const SimpleCameraScreen(),
-        ),
+        MaterialPageRoute(builder: (context) => const SimpleCameraScreen()),
       );
 
-      if (result != null && result.isNotEmpty) {
-        // 촬영된 이미지 경로를 받았을 때의 처리
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('이미지가 촬영되었습니다: $result')));
-          // TODO: 이미지를 일기에 첨부하는 기능 구현
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (result != null && result.isNotEmpty) {
+          debugPrint('🔍 OCR 결과 수신: ${result.length}자');
+          debugPrint(
+            '🔍 OCR 결과 내용: "${result.substring(0, result.length > 50 ? 50 : result.length)}..."',
+          );
+
+          // OCR 결과를 일기 내용에 추가
+          _addOCRTextToContent(result);
+
+          // 성공 메시지 표시
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('텍스트 인식 완료: ${result.length}자'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          debugPrint('🔍 OCR 결과가 비어있거나 취소됨');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('텍스트 인식이 취소되었습니다'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
-      debugPrint('OCR 오류: $e');
+      debugPrint('🔍 OCR 화면 오류: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('OCR 오류: $e')));
+        setState(() {
+          _isLoading = false;
+        });
+
+        String errorMessage = 'OCR 기능을 사용할 수 없습니다';
+        if (e.toString().contains('camera')) {
+          errorMessage = '카메라에 접근할 수 없습니다. 권한을 확인해주세요.';
+        } else if (e.toString().contains('permission')) {
+          errorMessage = '카메라 권한이 필요합니다.';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(label: '다시 시도', onPressed: _openOCR),
+          ),
+        );
       }
     }
   }
