@@ -52,7 +52,8 @@ class DiarySaveService extends ChangeNotifier {
   Future<DiarySaveResult> saveDiary({
     required int userId,
     required String title,
-    required String content,
+    required String contentDelta,
+    required String contentPlainText,
     required DateTime date,
     String? mood,
     String? weather,
@@ -74,7 +75,8 @@ class DiarySaveService extends ChangeNotifier {
       final diaryEntry = await _createDiaryEntry(
         userId: userId,
         title: title,
-        content: content,
+        contentDelta: contentDelta,
+        contentPlainText: contentPlainText,
         date: date,
         mood: mood,
         weather: weather,
@@ -134,7 +136,8 @@ class DiarySaveService extends ChangeNotifier {
   Future<DiaryEntry?> _createDiaryEntry({
     required int userId,
     required String title,
-    required String content,
+    required String contentDelta,
+    required String contentPlainText,
     required DateTime date,
     String? mood,
     String? weather,
@@ -147,7 +150,7 @@ class DiarySaveService extends ChangeNotifier {
     try {
       Logger.info('Logger.info 호출 전', tag: 'DiarySaveService');
       Logger.info(
-        '일기 엔트리 생성 시작 - userId: $userId, title: $title, content 길이: ${content.length}',
+        '일기 엔트리 생성 시작 - userId: $userId, title: $title, content 길이: ${contentPlainText.length}',
         tag: 'DiarySaveService',
       );
       Logger.info('Logger.info 호출 완료', tag: 'DiarySaveService');
@@ -159,7 +162,7 @@ class DiarySaveService extends ChangeNotifier {
       final dto = CreateDiaryEntryDto(
         userId: userId,
         title: title,
-        content: content,
+        content: contentDelta,
         date: date.toIso8601String(),
         mood: mood,
         weather: weather,
@@ -199,7 +202,11 @@ class DiarySaveService extends ChangeNotifier {
         // final updateDto = UpdateDiaryEntryDto();
       }
 
-      return diaryEntry;
+      final enrichedEntry = diaryEntry.copyWith(
+        wordCount: _calculateWordCount(contentPlainText),
+        readingTime: _estimateReadingTime(contentPlainText),
+      );
+      return enrichedEntry;
     } catch (e) {
       Logger.error('일기 엔트리 생성 실패', tag: 'DiarySaveService', error: e);
       return null;
@@ -406,5 +413,21 @@ class DiarySaveService extends ChangeNotifier {
   void dispose() {
     reset();
     super.dispose();
+  }
+
+  int _calculateWordCount(String content) {
+    if (content.trim().isEmpty) return 0;
+    return content
+        .replaceAll(RegExp(r'[^ -가-힣0-9\s]'), ' ')
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .length;
+  }
+
+  int _estimateReadingTime(String content) {
+    const wordsPerMinute = 200;
+    final words = _calculateWordCount(content);
+    final minutes = (words / wordsPerMinute).ceil();
+    return minutes.clamp(1, 60);
   }
 }

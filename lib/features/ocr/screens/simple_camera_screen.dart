@@ -146,7 +146,11 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
       final image = await _cameraController!.takePicture();
 
       final bytes = await image.readAsBytes();
-      await _processImageBytesWithOCR(bytes, sourcePath: image.path);
+      await _processImageBytesWithOCR(
+        bytes,
+        sourcePath: image.path,
+        sourceDescription: 'camera:${image.name}',
+      );
     } catch (e) {
       debugPrint('사진 촬영 오류: $e');
       if (mounted) {
@@ -172,7 +176,11 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
 
       if (image != null && mounted) {
         final bytes = await image.readAsBytes();
-        await _processImageBytesWithOCR(bytes, sourcePath: image.path);
+        await _processImageBytesWithOCR(
+          bytes,
+          sourcePath: image.path,
+          sourceDescription: 'gallery:${image.name}',
+        );
       } else {
         setState(() {
           _isLoading = false;
@@ -195,10 +203,11 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
   Future<void> _processImageBytesWithOCR(
     Uint8List originalBytes, {
     String? sourcePath,
+    required String sourceDescription,
   }) async {
     if (!mounted) return;
 
-    debugPrint('📷 OCR 처리 시작: ${sourcePath ?? 'memory bytes'}');
+    debugPrint('📷 OCR 처리 시작: ${sourcePath ?? sourceDescription}');
 
     try {
       setState(() {
@@ -215,8 +224,11 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
       final fileSizeMb = originalBytes.length / 1024 / 1024;
       debugPrint('📷 파일 크기: ${fileSizeMb.toStringAsFixed(2)}MB');
 
-      if (originalBytes.length > 10 * 1024 * 1024) {
-        throw const ocr_service.OCRException('이미지 파일이 너무 큽니다. (최대 10MB)');
+      const maxBytes = 6 * 1024 * 1024;
+      if (originalBytes.length > maxBytes) {
+        throw ocr_service.OCRException(
+          '이미지 파일이 너무 큽니다. (최대 ${(maxBytes / (1024 * 1024)).toStringAsFixed(1)}MB)',
+        );
       }
 
       debugPrint('📷 OCR 서비스 초기화 중...');
@@ -244,10 +256,8 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         }
 
         debugPrint('📷 OCR 결과 길이: ${resultText.length}자');
-        if (resultText.isNotEmpty) {
-          debugPrint(
-            '📷 OCR 결과 미리보기: ${resultText.substring(0, resultText.length > 100 ? 100 : resultText.length)}...',
-          );
+        if (resultText.isNotEmpty && resultText.length < 200) {
+          debugPrint('📷 OCR 결과: $resultText');
         }
       } on ocr_service.OCRException catch (ocrError) {
         debugPrint('📷 OCR 처리 중 사용자 정의 오류: ${ocrError.message}');
@@ -293,7 +303,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         } else if (e.toString().contains('너무 큽니다') ||
             e.toString().contains('too large')) {
           errorMessage =
-              '📏 이미지 파일이 너무 큽니다.\n\n• 최대 10MB 이하의 이미지를 선택해주세요\n• 이미지 크기를 줄여서 다시 시도해보세요';
+              '📏 이미지 파일이 너무 큽니다.\n\n• 최대 6MB 이하의 이미지를 선택해주세요\n• 이미지 크기를 줄여서 다시 시도해보세요';
         } else if (e.toString().contains('네트워크') ||
             e.toString().contains('network')) {
           errorMessage =
@@ -308,11 +318,8 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         _showErrorDialog(errorMessage);
       }
     } finally {
-      // 메모리 정리를 위한 가비지 컬렉션 힌트
       if (mounted) {
-        // 잠시 대기 후 가비지 컬렉션 유도
         Future.delayed(const Duration(milliseconds: 100), () {
-          // 가비지 컬렉션 힌트
           if (mounted) {
             setState(() {});
           }

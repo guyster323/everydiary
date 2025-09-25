@@ -149,7 +149,6 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         debugPrint('📝 내용 길이: ${diary.content.length}');
         debugPrint('📝 내용 원본: "${diary.content}"');
 
-        // 저장된 내용 형식 자동 감지
         final bool isDeltaJson = _isDeltaJson(diary.content);
         debugPrint(
           '📝 감지된 내용 형식: ${isDeltaJson ? 'Delta JSON' : 'Plain Text'}',
@@ -157,11 +156,14 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
 
         final String contentToUse = isDeltaJson
             ? SafeDeltaConverter.validateAndCleanDelta(diary.content)
-            : OptimizedDeltaConverter.textToDelta(diary.content);
+            : SafeDeltaConverter.textToDelta(diary.content);
 
         debugPrint('📝 변환된 Delta JSON: $contentToUse');
 
-        // UI 업데이트를 먼저 수행 (로딩 속도 향상)
+        final String plainText = isDeltaJson
+            ? SafeDeltaConverter.extractTextFromDelta(contentToUse)
+            : diary.content;
+
         setState(() {
           _titleController.text = diary.title ?? '';
           _selectedDate = DateTime.parse(diary.date);
@@ -170,14 +172,13 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
           ).format(_selectedDate);
           _contentDelta = contentToUse;
           _selectedWeather = diary.weather;
+          _selectedMood = diary.mood;
           _isDirty = false;
         });
 
-        // 에디터에 내용 로드 - 강화된 재시도 로직
-        _loadContentToEditorWithRetry(contentToUse, diary.content, 0);
+        _loadContentToEditorWithRetry(contentToUse, plainText, 0);
 
-        // 기존 일기 내용으로 감정 분석 수행
-        if (contentToUse != '[{"insert":"\\n"}]') {
+        if (plainText.trim().isNotEmpty) {
           debugPrint('📝 기존 내용으로 감정 분석 시작');
           _analyzeEmotionDebounced();
         } else {
@@ -419,61 +420,26 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   }
 
   /// 일기 업데이트 (편집 모드)
-  Future<DiarySaveResult> _updateDiary() async {
+  Future<DiarySaveResult> _updateDiary({
+    required String deltaContent,
+    required String plainTextContent,
+  }) async {
     if (widget.diaryId == null) {
       return DiarySaveResult.validationError;
     }
 
     try {
-      // 텍스트 내용 추출
-      final content = _extractTextFromDelta(_contentDelta);
-
-      debugPrint('📝 업데이트할 내용: "$content"');
-      debugPrint('📝 내용 길이: ${content.length}');
-
-      // 데이터베이스에서 일기 업데이트
-      final databaseService = DatabaseService();
-      final diaryRepository = DiaryRepository(databaseService);
-
-      // 빈 내용인 경우 기존 내용 유지 (제목은 업데이트)
-      if (content.trim().isEmpty) {
-        debugPrint('📝 내용이 비어있음 - 제목만 업데이트하고 내용은 유지');
-
-        // 제목만 업데이트
-        final updateDto = UpdateDiaryEntryDto(
-          title: _titleController.text.trim(),
-          content: null, // 내용은 업데이트하지 않음
-          date: _selectedDate.toIso8601String(),
-          mood: _currentDualEmotion?.primaryEmotion,
-          weather: _selectedWeather,
-        );
-
-        final updatedDiary = await diaryRepository.updateDiaryEntry(
-          widget.diaryId!,
-          updateDto,
-        );
-
-        if (updatedDiary != null) {
-          debugPrint('📝 일기 제목 업데이트 성공: ID ${updatedDiary.id}');
-          return DiarySaveResult.success;
-        } else {
-          debugPrint('📝 일기 제목 업데이트 실패: 일기를 찾을 수 없음');
-          return DiarySaveResult.databaseError;
-        }
-      }
-
       final updateDto = UpdateDiaryEntryDto(
         title: _titleController.text.trim(),
-        content: content,
+        content: deltaContent,
         date: _selectedDate.toIso8601String(),
         mood: _currentDualEmotion?.primaryEmotion,
         weather: _selectedWeather,
       );
 
-      final updatedDiary = await diaryRepository.updateDiaryEntry(
-        widget.diaryId!,
-        updateDto,
-      );
+      final updatedDiary = await DiaryRepository(
+        DatabaseService(),
+      ).updateDiaryEntry(widget.diaryId!, updateDto);
 
       if (updatedDiary != null) {
         debugPrint('📝 일기 업데이트 성공: ID ${updatedDiary.id}');
@@ -497,22 +463,24 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     });
 
     try {
-      // 텍스트 내용 추출
       final content = _extractTextFromDelta(_contentDelta);
+      final deltaContent = _contentDelta;
 
       DiarySaveResult result;
 
       if (widget.diaryId != null) {
-        // 편집 모드: 기존 일기 업데이트
         debugPrint('📝 편집 모드: 일기 ID ${widget.diaryId} 업데이트');
-        result = await _updateDiary();
+        result = await _updateDiary(
+          deltaContent: deltaContent,
+          plainTextContent: content,
+        );
       } else {
-        // 새로 작성 모드: 새 일기 생성
         debugPrint('📝 새로 작성 모드: 새 일기 생성');
         result = await _diarySaveService.saveDiary(
-          userId: 1, // 임시 사용자 ID
+          userId: 1,
           title: _titleController.text.trim(),
-          content: content,
+          contentDelta: deltaContent,
+          contentPlainText: content,
           date: _selectedDate,
           mood: _currentDualEmotion?.primaryEmotion,
           weather: _selectedWeather,

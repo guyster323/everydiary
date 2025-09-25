@@ -13,7 +13,8 @@ class OCRService {
   bool _isInitialized = false;
   bool _isDisposed = false;
   int _processingCount = 0;
-  static const int _maxConcurrentProcessing = 1; // 동시 처리 수를 1로 제한
+  static const int _maxConcurrentProcessing = 1;
+  static const int _maxImageBytes = 6 * 1024 * 1024; // 6MB 허용
   TextRecognizer? _textRecognizer;
 
   /// 서비스 초기화 - 더 안전한 방식
@@ -92,7 +93,11 @@ class OCRService {
 
       final originalBytes = await file.readAsBytes();
       final processedBytes = await preprocessImage(originalBytes);
-      return await _processBytes(processedBytes);
+      return await _processBytes(
+        processedBytes,
+        rawBytes: originalBytes,
+        sourceDescription: imagePath,
+      );
     });
   }
 
@@ -106,7 +111,11 @@ class OCRService {
       _validateSize(imageBytes.length);
 
       final processedBytes = await preprocessImage(imageBytes);
-      return await _processBytes(processedBytes);
+      return await _processBytes(
+        processedBytes,
+        rawBytes: imageBytes,
+        sourceDescription: 'memory-bytes',
+      );
     });
   }
 
@@ -120,7 +129,7 @@ class OCRService {
       }
 
       // 이미지 크기 조정 (OCR 최적화) - 더 보수적인 크기
-      const maxDimension = 1024; // 1280에서 1024로 줄임
+      const maxDimension = 1280; // 1280에서 1024로 줄임
       int newWidth = image.width;
       int newHeight = image.height;
 
@@ -138,14 +147,14 @@ class OCRService {
         image,
         width: newWidth,
         height: newHeight,
-        interpolation: img.Interpolation.linear,
+        interpolation: img.Interpolation.cubic,
       );
 
       // 이미지 품질 개선
       final enhancedImage = _enhanceImage(resizedImage);
 
       // JPEG로 인코딩 (품질 80으로 조정)
-      final processedBytes = img.encodeJpg(enhancedImage, quality: 80);
+      final processedBytes = img.encodeJpg(enhancedImage, quality: 90);
       return Uint8List.fromList(processedBytes);
     } catch (e) {
       debugPrint('🔍 이미지 전처리 실패: $e');
@@ -163,11 +172,18 @@ class OCRService {
       // 대비 개선 (더 보수적인 값)
       final contrasted = img.adjustColor(
         grayscale,
-        contrast: 1.1, // 1.2에서 1.1로 줄임
-        brightness: 1.05, // 1.1에서 1.05로 줄임
+        contrast: 1.15, // 1.2에서 1.1로 줄임
+        brightness: 1.08, // 1.1에서 1.05로 줄임
       );
 
-      return contrasted;
+      // 선명도 개선 (컨볼루션 필터 적용)
+      final sharpened = img.convolution(
+        contrasted,
+        [0, -1, 0, -1, 5, -1, 0, -1, 0],
+        div: 1,
+      );
+
+      return sharpened;
     } catch (e) {
       debugPrint('🔍 이미지 개선 실패: $e');
       return image;
@@ -247,72 +263,127 @@ class OCRService {
     if (bytesLength == 0) {
       throw const OCRException('이미지 데이터가 비어있습니다.');
     }
-    if (bytesLength > 5 * 1024 * 1024) {
-      throw const OCRException('이미지 데이터가 너무 큽니다. (최대 5MB)');
+    if (bytesLength > _maxImageBytes) {
+      throw OCRException('이미지 데이터가 너무 큽니다. (최대 ${( _maxImageBytes / (1024 * 1024)).toStringAsFixed(1)}MB)');
     }
   }
 
-  Future<OCRResult> _processBytes(Uint8List imageBytes) async {
-    try {
-      final tempFile = File(
-        '${Directory.systemTemp.path}/ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      );
+  Future<OCRResult> _processBytes(
+    Uint8List imageBytes, {
+    required Uint8List rawBytes,
+    required String sourceDescription,
+  }) async {
+    final tempFile = File(
+      '${Directory.systemTemp.path}/ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
+    );
 
-      try {
-        await tempFile.writeAsBytes(imageBytes, flush: true);
-        final inputImage = InputImage.fromFilePath(tempFile.path);
-        return await _processInputImage(inputImage);
-      } finally {
-        try {
-          if (await tempFile.exists()) {
-            await tempFile.delete();
-          }
-        } catch (e) {
-          debugPrint('🔍 임시 파일 삭제 실패: $e');
-        }
-      }
+    try {
+      await tempFile.writeAsBytes(imageBytes, flush: true);
+      final inputImage = InputImage.fromFilePath(tempFile.path);
+      final result = await _processInputImage(
+        inputImage,
+        rawBytes: rawBytes,
+        sourceDescription: sourceDescription,
+      );
+      return result;
     } on OCRException {
       rethrow;
     } catch (e) {
-      debugPrint('🔍 파일 기반 OCR 처리 실패: $e');
+      debugPrint('🔍 파일 기반 OCR 처리 실패 ($sourceDescription): $e');
       throw OCRException('파일 OCR 처리 실패: $e');
+    } finally {
+      try {
+        if (await tempFile.exists()) {
+          await tempFile.delete();
+        }
+      } catch (e) {
+        debugPrint('🔍 임시 파일 삭제 실패: $e');
+      }
     }
   }
 
-  Future<OCRResult> _processInputImage(InputImage inputImage) async {
+  Future<OCRResult> _processInputImage(
+    InputImage inputImage, {
+    required Uint8List rawBytes,
+    required String sourceDescription,
+  }) async {
     final recognizer = _textRecognizer;
     if (recognizer == null) {
       throw const OCRException('Text Recognizer가 초기화되지 않았습니다.');
     }
 
     try {
-      debugPrint('🔍 ML Kit OCR 처리 시작...');
+      debugPrint('🔍 ML Kit OCR 처리 시작... (source: $sourceDescription)');
       final recognizedText = await recognizer
           .processImage(inputImage)
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 12));
 
-      final trimmedText = recognizedText.text.trim();
-      if (trimmedText.isEmpty) {
-        debugPrint('🔍 OCR 결과가 비어있음');
+      final originalRaw = String.fromCharCodes(rawBytes)
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+      debugPrint('🔍 Raw OCR 텍스트 길이: ${recognizedText.text.length}');
+      if (recognizedText.text.length < 200) {
+        debugPrint('🔍 Raw OCR 텍스트: "${recognizedText.text}"');
+      }
+
+      final normalizedText = _normalizeText(recognizedText.text);
+
+      if (normalizedText.isEmpty) {
+        final textFromBlocks = _extractFromBlocks(recognizedText.blocks);
+        if (textFromBlocks.isNotEmpty) {
+          debugPrint('🔍 블록 기반 텍스트 사용: ${textFromBlocks.length}자');
+          return OCRResult(
+            fullText: textFromBlocks,
+            textBlocks: recognizedText.blocks.map((b) => b.text).toList(),
+            confidence: _calculateAverageConfidence(recognizedText.blocks),
+          );
+        }
+
+        debugPrint('🔍 OCR 결과가 비어있음 (source: $sourceDescription)');
         throw const OCRException('이미지에서 텍스트를 인식할 수 없습니다.');
       }
 
-      final textBlocks = recognizedText.blocks
+      final blockTexts = recognizedText.blocks
           .map((block) => block.text)
           .where((text) => text.trim().isNotEmpty)
           .toList();
 
       return OCRResult(
-        fullText: recognizedText.text,
-        textBlocks: textBlocks,
+        fullText: normalizedText,
+        textBlocks: blockTexts,
         confidence: _calculateAverageConfidence(recognizedText.blocks),
       );
     } on OCRException {
       rethrow;
     } catch (e) {
-      debugPrint('🔍 실제 OCR 처리 실패: $e');
+      debugPrint('🔍 실제 OCR 처리 실패 ($sourceDescription): $e');
       throw OCRException('OCR 처리 중 오류가 발생했습니다: $e');
     }
+  }
+
+  String _normalizeText(String text) {
+    final normalized = text
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (normalized.isNotEmpty) {
+      debugPrint('🔍 정규화된 텍스트 길이: ${normalized.length}자');
+    }
+    return normalized;
+  }
+
+  String _extractFromBlocks(List<TextBlock> blocks) {
+    if (blocks.isEmpty) return '';
+    final buffer = StringBuffer();
+    for (final block in blocks) {
+      final text = block.text.trim();
+      if (text.isNotEmpty) {
+        buffer.writeln(text);
+      }
+    }
+    return buffer.toString().trim();
   }
 
   /// ML Kit 블록들의 평균 신뢰도 계산
