@@ -168,8 +168,8 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
           _isDirty = false;
         });
 
-        // 에디터에 내용 로드 - 개선된 재시도 로직
-        _loadContentToEditor(contentToUse, 0);
+        // 에디터에 내용 로드 - 강화된 재시도 로직
+        _loadContentToEditorWithRetry(contentToUse, diary.content, 0);
 
         // 기존 일기 내용으로 감정 분석 수행
         if (contentToUse != '[{"insert":"\\n"}]') {
@@ -220,19 +220,44 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     }
   }
 
-  /// 에디터에 내용 로드 - 개선된 재시도 로직
-  void _loadContentToEditor(String contentToUse, int retryCount) {
+  /// 에디터에 내용 로드 - 강화된 재시도 로직
+  void _loadContentToEditorWithRetry(
+    String contentDelta,
+    String plainText,
+    int retryCount,
+  ) {
     if (!mounted || retryCount > 5) return;
 
     if (_editorKey.currentState != null) {
       try {
-        _editorKey.currentState!.loadContent(contentToUse);
+        _editorKey.currentState!.loadContent(contentDelta);
+        debugPrint('📝 에디터에 내용 로드 성공 (재시도 $retryCount)');
       } catch (e) {
+        debugPrint('📝 에디터 로드 실패 (재시도 $retryCount): $e');
+        // Delta 실패 시 평문 텍스트로 대안
+        if (retryCount > 2) {
+          try {
+            final fallbackDelta = SafeDeltaConverter.textToDelta(plainText);
+            _editorKey.currentState!.loadContent(fallbackDelta);
+            debugPrint('📝 대안 Delta로 에디터 로드 성공');
+          } catch (fallbackError) {
+            debugPrint('📝 대안 Delta 로드도 실패: $fallbackError');
+          }
+        }
         // 실패 시 100ms 후 재시도
         Future.delayed(const Duration(milliseconds: 100), () {
-          _loadContentToEditor(contentToUse, retryCount + 1);
+          _loadContentToEditorWithRetry(
+            contentDelta,
+            plainText,
+            retryCount + 1,
+          );
         });
       }
+    } else {
+      // 에디터가 아직 준비되지 않았으면 100ms 후 재시도
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _loadContentToEditorWithRetry(contentDelta, plainText, retryCount + 1);
+      });
     }
   }
 
@@ -240,6 +265,22 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   void _addOCRTextToContent(String text) {
     if (text.isEmpty) {
       debugPrint('🔍 OCR 텍스트가 비어있음 - 추가하지 않음');
+      return;
+    }
+
+    // 테스트 메시지 필터링
+    final testMessages = [
+      '감정 분석과 일기 작성 기능이 잘 통합되어 작동하고 있습니다',
+      '이미지에서 텍스트를 추출하는 기능이 정상적으로 작동 중입니다',
+      'OCR 기능이 정상적으로 작동하고 있습니다',
+      '텍스트 인식이 완료되었습니다',
+      '이미지 처리 중입니다',
+      '텍스트 추출 중입니다',
+    ];
+
+    final bool isTestMessage = testMessages.any((msg) => text.contains(msg));
+    if (isTestMessage) {
+      debugPrint('🔍 테스트 메시지 감지 - 추가하지 않음: "$text"');
       return;
     }
 
@@ -263,7 +304,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       });
 
       // 재시도 로직으로 안정적으로 로드
-      _loadContentToEditor(newContentDelta, 0);
+      _loadContentToEditorWithRetry(newContentDelta, newContent, 0);
 
       // 감정 분석 수행 (debounced)
       _analyzeEmotionDebounced();

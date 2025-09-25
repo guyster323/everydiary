@@ -12,14 +12,33 @@ class MemoryService {
   factory MemoryService() => _instance;
   MemoryService._internal();
 
-  final SupabaseClient _supabase = Supabase.instance.client;
+  /// 안전한 Supabase 접근
+  SupabaseClient? get _supabase {
+    try {
+      if (Supabase.instance.isInitialized) {
+        return Supabase.instance.client;
+      } else {
+        debugPrint('⚠️ Supabase가 초기화되지 않았습니다.');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('⚠️ Supabase 접근 오류: $e');
+      return null;
+    }
+  }
 
   /// Supabase 연결 상태 확인
   Future<bool> _checkSupabaseAvailability() async {
     try {
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return false;
+      }
+
       // 연결 상태 확인 로직
-      return _supabase.auth.currentUser != null ||
-          await _supabase
+      return client.auth.currentUser != null ||
+          await client
               .from('diaries')
               .select('id')
               .limit(1)
@@ -156,7 +175,13 @@ class MemoryService {
       );
       final endOfYesterday = startOfYesterday.add(const Duration(days: 1));
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -205,7 +230,13 @@ class MemoryService {
       );
       final endOfWeek = startOfWeek.add(const Duration(days: 1));
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -254,7 +285,13 @@ class MemoryService {
       );
       final endOfMonth = startOfMonth.add(const Duration(days: 1));
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -303,7 +340,13 @@ class MemoryService {
       );
       final endOfYear = startOfYear.add(const Duration(days: 1));
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -362,7 +405,13 @@ class MemoryService {
       );
       final lastYearEnd = lastYearStart.add(const Duration(days: 1));
 
-      final lastYearResponse = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final lastYearResponse = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -404,7 +453,7 @@ class MemoryService {
       );
       final twoYearsAgoEnd = twoYearsAgoStart.add(const Duration(days: 1));
 
-      final twoYearsAgoResponse = await _supabase
+      final twoYearsAgoResponse = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -460,7 +509,13 @@ class MemoryService {
         Duration(days: settings.maxDaysToLookBack),
       );
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -526,7 +581,13 @@ class MemoryService {
   }) async {
     try {
       // 최근 일기들의 태그를 분석하여 인기 태그 찾기
-      final recentDiaries = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final recentDiaries = await client
           .from('diaries')
           .select('tags')
           .eq('user_id', userId)
@@ -553,7 +614,7 @@ class MemoryService {
       final topTags = popularTags.take(3).map((e) => e.key).toList();
 
       // 해당 태그들을 포함한 과거 일기들 찾기
-      final response = await _supabase
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)
@@ -623,7 +684,13 @@ class MemoryService {
         );
         final endDate = startDate.add(const Duration(days: 1));
 
-        final response = await _supabase
+        final client = _supabase;
+        if (client == null) {
+          debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+          return [];
+        }
+
+        final response = await client
             .from('diaries')
             .select('*')
             .eq('user_id', userId)
@@ -697,7 +764,13 @@ class MemoryService {
       );
       final lastYearSeasonEnd = _getSeasonEndDate(now.year - 1, currentSeason);
 
-      final response = await _supabase
+      final client = _supabase;
+      if (client == null) {
+        debugPrint('⚠️ Supabase 클라이언트가 null입니다.');
+        return [];
+      }
+
+      final response = await client
           .from('diaries')
           .select('*')
           .eq('user_id', userId)

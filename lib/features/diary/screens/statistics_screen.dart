@@ -102,7 +102,11 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            context.go('/home'); // 메인 페이지로 직접 이동
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/home');
+            }
           },
         ),
         actions: [

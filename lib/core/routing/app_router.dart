@@ -22,6 +22,13 @@ class AppRouter {
         builder: (context, state) => const EveryDiaryHomePage(),
       ),
 
+      // /home 라우트 추가 (Back 키 문제 해결)
+      GoRoute(
+        path: '/home',
+        name: 'home-alt',
+        builder: (context, state) => const DiaryListScreen(),
+      ),
+
       // 일기 관련 라우트
       GoRoute(
         path: '/diary',
@@ -98,7 +105,32 @@ class AppRouter {
         ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
+    errorBuilder: (context, state) => const ErrorPage(),
+  );
+
+  static GoRouter get router => _router;
+}
+
+/// 404 오류 처리 및 안전한 Home 이동
+class ErrorPage extends StatelessWidget {
+  const ErrorPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('오류'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
+      ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -120,16 +152,14 @@ class AppRouter {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.go('/'),
+              onPressed: () => context.go('/home'),
               child: const Text('홈으로 돌아가기'),
             ),
           ],
         ),
       ),
-    ),
-  );
-
-  static GoRouter get router => _router;
+    );
+  }
 }
 
 /// 홈 페이지 (임시)

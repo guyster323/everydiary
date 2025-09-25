@@ -14,7 +14,7 @@ class OCRService {
   bool _isInitialized = false;
   bool _isDisposed = false;
   int _processingCount = 0;
-  static const int _maxConcurrentProcessing = 2; // 3에서 2로 줄임
+  static const int _maxConcurrentProcessing = 1; // 동시 처리 수를 1로 제한
   TextRecognizer? _textRecognizer;
 
   /// 서비스 초기화 - 더 안전한 방식
@@ -37,10 +37,8 @@ class OCRService {
         _textRecognizer = null;
       }
 
-      // ML Kit Text Recognizer 초기화 - 한국어 텍스트 인식 최적화
-      _textRecognizer = TextRecognizer(
-        script: TextRecognitionScript.korean, // 한국어 텍스트 인식 스크립트 사용
-      );
+      // ML Kit Text Recognizer 초기화 - 안정성을 위해 기본 생성자 사용
+      _textRecognizer = TextRecognizer(); // 기본 생성자 사용으로 크래시 방지
 
       // 초기화 테스트
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -112,9 +110,9 @@ class OCRService {
       }
 
       final fileSize = await file.length();
-      if (fileSize > 8 * 1024 * 1024) {
-        // 10MB에서 8MB로 줄임
-        throw const OCRException('이미지 파일이 너무 큽니다. (최대 8MB)');
+      if (fileSize > 5 * 1024 * 1024) {
+        // 파일 크기 제한을 5MB로 축소
+        throw const OCRException('이미지 파일이 너무 큽니다. (최대 5MB)');
       }
 
       debugPrint('🔍 파일 크기: ${(fileSize / 1024 / 1024).toStringAsFixed(2)}MB');
@@ -138,7 +136,7 @@ class OCRService {
   Future<Uint8List> _readFileSafely(File file) async {
     try {
       return await file.readAsBytes().timeout(
-        const Duration(seconds: 8), // 10초에서 8초로 줄임
+        const Duration(seconds: 10), // 타임아웃을 10초로 단축
         onTimeout: () {
           throw const OCRException('파일 읽기 시간 초과');
         },
@@ -178,8 +176,8 @@ class OCRService {
       if (imageBytes.isEmpty) {
         throw const OCRException('이미지 데이터가 비어있습니다.');
       }
-      if (imageBytes.length > 8 * 1024 * 1024) {
-        throw const OCRException('이미지 데이터가 너무 큽니다. (최대 8MB)');
+      if (imageBytes.length > 5 * 1024 * 1024) {
+        throw const OCRException('이미지 데이터가 너무 큽니다. (최대 5MB)');
       }
 
       // 실제 ML Kit OCR 처리
@@ -209,10 +207,10 @@ class OCRService {
 
         debugPrint('🔍 ML Kit OCR 처리 시작...');
 
-        // 타임아웃을 15초로 줄임
+        // 타임아웃을 10초로 단축
         final recognizedText = await _textRecognizer!
             .processImage(inputImage)
-            .timeout(const Duration(seconds: 15));
+            .timeout(const Duration(seconds: 10));
 
         if (recognizedText.text.isNotEmpty) {
           final textBlocks = recognizedText.blocks

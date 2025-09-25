@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
@@ -22,15 +23,18 @@ void main() async {
       loadSecretsFromEnvironment: false, // Android에서 문제 발생 시 비활성화
     );
 
-    // Supabase 초기화 (임시 더미 값) - Android에서 안정성을 위해 비활성화
-    // try {
-    //   await Supabase.initialize(
-    //     url: 'https://dummy.supabase.co',
-    //     anonKey: 'dummy-key',
-    //   );
-    // } catch (e) {
-    //   Logger.warning('Supabase 초기화 실패, 회상 기능 비활성화: $e');
-    // }
+    // Supabase 초기화 - 안전한 에러 처리
+    try {
+      await Supabase.initialize(
+        url: 'https://dummy.supabase.co', // 실제 URL로 교체 필요
+        anonKey: 'dummy-key', // 실제 키로 교체 필요
+        debug: false,
+      );
+      Logger.info('✅ Supabase 초기화 성공');
+    } catch (e) {
+      Logger.warning('⚠️ Supabase 초기화 실패, 오프라인 모드로 실행: $e');
+      // 실패해도 앱 실행 지속
+    }
 
     // 로그 출력
     Logger.info('🚀 EveryDiary app starting...');
