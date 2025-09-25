@@ -128,8 +128,8 @@ class OCRService {
         throw const OCRException('이미지 디코딩 실패');
       }
 
-      // 이미지 크기 조정 (OCR 최적화) - 더 보수적인 크기
-      const maxDimension = 1280; // 1280에서 1024로 줄임
+      // 이미지 크기 조정 (OCR 최적화) - 더 작은 크기로 조정
+      const maxDimension = 800; // 1280에서 800으로 감소
       int newWidth = image.width;
       int newHeight = image.height;
 
@@ -141,13 +141,14 @@ class OCRService {
           newHeight = maxDimension;
           newWidth = (image.width * maxDimension ~/ image.height);
         }
+        debugPrint('🔍 리사이즈된 이미지 크기: ${newWidth}x$newHeight');
       }
 
       final resizedImage = img.copyResize(
         image,
         width: newWidth,
         height: newHeight,
-        interpolation: img.Interpolation.cubic,
+        interpolation: img.Interpolation.linear, // cubic에서 linear로 변경
       );
 
       // 이미지 품질 개선
@@ -163,26 +164,29 @@ class OCRService {
     }
   }
 
-  /// 이미지 품질 개선 (개선된 버전)
+  /// 이미지 품질 개선 (보수적인 접근)
   img.Image _enhanceImage(img.Image image) {
     try {
+      debugPrint('🔍 원본 이미지 크기: ${image.width}x${image.height}');
+
       // 그레이스케일 변환
       final grayscale = img.grayscale(image);
 
-      // 대비 개선 (더 보수적인 값)
+      // 대비 개선 (보수적인 값으로 변경)
       final contrasted = img.adjustColor(
         grayscale,
-        contrast: 1.15, // 1.2에서 1.1로 줄임
-        brightness: 1.08, // 1.1에서 1.05로 줄임
+        contrast: 1.2, // 1.4에서 1.2로 감소
+        brightness: 1.05, // 1.15에서 1.05로 감소
       );
 
-      // 선명도 개선 (간단한 샤프닝 효과)
+      // 선명도 개선 (보수적인 샤프닝 효과)
       final sharpened = img.adjustColor(
         contrasted,
-        contrast: 1.05,
-        saturation: 1.1,
+        contrast: 1.1, // 1.2에서 1.1로 감소
+        saturation: 1.0, // 그레이스케일이므로 1.0 유지
       );
 
+      debugPrint('🔍 이미지 개선 완료');
       return sharpened;
     } catch (e) {
       debugPrint('🔍 이미지 개선 실패: $e');
@@ -320,18 +324,25 @@ class OCRService {
           .processImage(inputImage)
           .timeout(const Duration(seconds: 12));
 
-      final originalRaw = String.fromCharCodes(
-        rawBytes,
-      ).trim().replaceAll(RegExp(r'\s+'), ' ');
-
       debugPrint('🔍 Raw OCR 텍스트 길이: ${recognizedText.text.length}');
+      debugPrint('🔍 인식된 블록 수: ${recognizedText.blocks.length}');
+
       if (recognizedText.text.length < 200) {
         debugPrint('🔍 Raw OCR 텍스트: "${recognizedText.text}"');
+      }
+
+      // 블록별 상세 로깅
+      for (int i = 0; i < recognizedText.blocks.length; i++) {
+        final block = recognizedText.blocks[i];
+        debugPrint(
+          '🔍 블록 $i: "${block.text}" (언어: ${block.recognizedLanguages.join(', ')})',
+        );
       }
 
       final normalizedText = _normalizeText(recognizedText.text);
 
       if (normalizedText.isEmpty) {
+        debugPrint('🔍 정규화된 텍스트가 비어있음, 블록 기반 추출 시도');
         final textFromBlocks = _extractFromBlocks(recognizedText.blocks);
         if (textFromBlocks.isNotEmpty) {
           debugPrint('🔍 블록 기반 텍스트 사용: ${textFromBlocks.length}자');
@@ -343,6 +354,8 @@ class OCRService {
         }
 
         debugPrint('🔍 OCR 결과가 비어있음 (source: $sourceDescription)');
+        debugPrint('🔍 블록 수: ${recognizedText.blocks.length}');
+        debugPrint('🔍 원본 텍스트: "${recognizedText.text}"');
         throw const OCRException('이미지에서 텍스트를 인식할 수 없습니다.');
       }
 

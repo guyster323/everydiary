@@ -102,11 +102,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              context.go('/');
-            }
+            // 통계 화면에서는 항상 루트로 이동
+            context.go('/');
           },
         ),
         actions: [
