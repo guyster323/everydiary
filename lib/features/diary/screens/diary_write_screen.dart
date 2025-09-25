@@ -61,7 +61,6 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   final _editorKey = GlobalKey<DiaryRichTextEditorState>();
   DateTime _selectedDate = DateTime.now();
   String? _selectedWeather;
-  String? _selectedMood;
   String _contentDelta = '[]';
 
   // 감정 분석 관련
@@ -173,7 +172,6 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
           ).format(_selectedDate);
           _contentDelta = contentToUse;
           _selectedWeather = diary.weather;
-          _selectedMood = diary.mood;
           _isDirty = false;
         });
 
@@ -299,19 +297,38 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       // 현재 에디터 내용 가져오기
       final String currentContent = _extractTextFromDelta(_contentDelta);
 
-      // 새로운 내용 생성 및 에디터에 로드
+      // 새로운 내용 생성
       final String newContent = currentContent.isEmpty
           ? text
           : '$currentContent\n\n$text';
+
+      // 안전한 Delta JSON 생성
       final newContentDelta = SafeDeltaConverter.textToDelta(newContent);
 
-      setState(() {
-        _contentDelta = newContentDelta;
-        _isDirty = true;
-      });
-
-      // 재시도 로직으로 안정적으로 로드
-      _loadContentToEditorWithRetry(newContentDelta, newContent, 0);
+      // Delta JSON 유효성 검사 및 설정
+      try {
+        // Delta JSON이 유효한지 확인하기 위해 텍스트 추출 시도
+        final extractedText = SafeDeltaConverter.extractTextFromDelta(
+          newContentDelta,
+        );
+        if (extractedText.isNotEmpty) {
+          setState(() {
+            _contentDelta = newContentDelta;
+            _isDirty = true;
+          });
+          _loadContentToEditorWithRetry(newContentDelta, newContent, 0);
+        } else {
+          throw Exception('Delta JSON에서 텍스트 추출 실패');
+        }
+      } catch (e) {
+        debugPrint('🔍 Delta JSON 유효성 검사 실패, 기본 형식으로 재시도: $e');
+        final fallbackDelta = SafeDeltaConverter.textToDelta(newContent);
+        setState(() {
+          _contentDelta = fallbackDelta;
+          _isDirty = true;
+        });
+        _loadContentToEditorWithRetry(fallbackDelta, newContent, 0);
+      }
 
       // 감정 분석 수행 (debounced)
       _analyzeEmotionDebounced();

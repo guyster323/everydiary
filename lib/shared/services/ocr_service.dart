@@ -37,8 +37,8 @@ class OCRService {
         _textRecognizer = null;
       }
 
-      // ML Kit Text Recognizer 초기화 - 안정성을 위해 기본 생성자 사용
-      _textRecognizer = TextRecognizer(); // 기본 생성자 사용으로 크래시 방지
+      // ML Kit Text Recognizer 초기화 - 기본 생성자 사용 (한국어 스크립트는 지원되지 않음)
+      _textRecognizer = TextRecognizer();
 
       // 초기화 테스트
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -93,10 +93,31 @@ class OCRService {
 
       final originalBytes = await file.readAsBytes();
       final processedBytes = await preprocessImage(originalBytes);
-      return await _processBytes(
+      final processedResult = await _processBytes(
         processedBytes,
-        rawBytes: originalBytes,
-        sourceDescription: imagePath,
+        sourceDescription: '$imagePath (processed)',
+      );
+
+      if (_hasRecognizedText(processedResult)) {
+        return processedResult;
+      }
+
+      debugPrint('🔍 전처리 결과가 비어있어 원본 이미지로 재시도');
+
+      // 먼저 원본 파일 경로를 직접 시도
+      final directPathResult = await _processFromFilePath(
+        imagePath,
+        description: '$imagePath (direct)',
+      );
+      if (directPathResult != null && _hasRecognizedText(directPathResult)) {
+        return directPathResult;
+      }
+
+      // 경로 기반 시도가 실패하면 원본 바이트를 그대로 사용
+      return await _processBytes(
+        originalBytes,
+        sourceDescription: '$imagePath (raw)',
+        isFallback: true,
       );
     });
   }
@@ -111,11 +132,58 @@ class OCRService {
       _validateSize(imageBytes.length);
 
       final processedBytes = await preprocessImage(imageBytes);
-      return await _processBytes(
+      final processedResult = await _processBytes(
         processedBytes,
-        rawBytes: imageBytes,
-        sourceDescription: 'memory-bytes',
+        sourceDescription: 'memory-bytes (processed)',
       );
+
+      if (_hasRecognizedText(processedResult)) {
+        return processedResult;
+      }
+
+      debugPrint('🔍 메모리 이미지 전처리 결과가 비어있어 원본으로 재시도');
+
+      // 이미지가 파일 기반인 경우 직접 경로 재시도
+      final tempPath = await _createTempImageFile(imageBytes);
+      if (tempPath != null) {
+        try {
+          final directResult = await _processFromFilePath(
+            tempPath,
+            description: 'memory-bytes (direct)',
+          );
+          if (directResult != null && _hasRecognizedText(directResult)) {
+            return directResult;
+          }
+        } finally {
+          await _deleteTempFile(tempPath);
+        }
+      }
+
+      // 보수적인 전처리로 재시도
+      final conservativeBytes = await _preprocessImageConservative(imageBytes);
+      final conservativeResult = await _processBytes(
+        conservativeBytes,
+        sourceDescription: 'memory-bytes (conservative)',
+        isFallback: true,
+      );
+      if (_hasRecognizedText(conservativeResult)) {
+        return conservativeResult;
+      }
+
+      // 원본 이미지 그대로 시도 (전처리 없음)
+      debugPrint('🔍 원본 이미지로 직접 시도');
+      final rawResult = await _processBytes(
+        imageBytes,
+        sourceDescription: 'memory-bytes (raw)',
+        isFallback: true,
+      );
+      if (_hasRecognizedText(rawResult)) {
+        return rawResult;
+      }
+
+      // 최종 폴백: 빈 결과 반환
+      debugPrint('🔍 모든 OCR 시도 실패');
+      return const OCRResult(fullText: '', textBlocks: [], confidence: 0.0);
     });
   }
 
@@ -128,35 +196,50 @@ class OCRService {
         throw const OCRException('이미지 디코딩 실패');
       }
 
-      // 이미지 크기 조정 (OCR 최적화) - 더 작은 크기로 조정
-      const maxDimension = 800; // 1280에서 800으로 감소
-      int newWidth = image.width;
-      int newHeight = image.height;
-
+      // 이미지 크기 조정 (OCR 최적화)
+      const maxDimension = 1200; // 조금 더 유연한 크기 제한
+      img.Image resizedImage = image;
       if (image.width > maxDimension || image.height > maxDimension) {
         if (image.width > image.height) {
-          newWidth = maxDimension;
-          newHeight = (image.height * maxDimension ~/ image.width);
+          resizedImage = img.copyResize(
+            image,
+            width: maxDimension,
+            interpolation: img.Interpolation.linear,
+          );
         } else {
-          newHeight = maxDimension;
-          newWidth = (image.width * maxDimension ~/ image.height);
+          resizedImage = img.copyResize(
+            image,
+            height: maxDimension,
+            interpolation: img.Interpolation.linear,
+          );
         }
-        debugPrint('🔍 리사이즈된 이미지 크기: ${newWidth}x$newHeight');
+        debugPrint(
+          '🔍 리사이즈된 이미지 크기: ${resizedImage.width}x${resizedImage.height}',
+        );
       }
 
-      final resizedImage = img.copyResize(
-        image,
-        width: newWidth,
-        height: newHeight,
-        interpolation: img.Interpolation.linear, // cubic에서 linear로 변경
+      // 한국어 텍스트 인식을 위한 강화된 전처리
+      // 1. 그레이스케일 변환 (텍스트 인식 향상)
+      final grayscale = img.grayscale(resizedImage);
+
+      // 2. 대비 강화 (한국어 문자 선명도 향상)
+      final contrasted = img.adjustColor(
+        grayscale,
+        contrast: 1.8, // 대비 대폭 증가
+        brightness: 1.15, // 밝기 증가
       );
 
-      // 이미지 품질 개선
-      final enhancedImage = _enhanceImage(resizedImage);
+      // 3. 최종 품질 개선
+      final enhanced = img.adjustColor(
+        contrasted,
+        contrast: 1.2,
+        brightness: 1.05,
+      );
 
-      // JPEG로 인코딩 (품질 80으로 조정)
-      final processedBytes = img.encodeJpg(enhancedImage, quality: 90);
-      return Uint8List.fromList(processedBytes);
+      debugPrint('🔍 한국어 텍스트 최적화 완료');
+
+      // PNG로 저장 (JPEG 압축 손실 방지)
+      return Uint8List.fromList(img.encodePng(enhanced));
     } catch (e) {
       debugPrint('🔍 이미지 전처리 실패: $e');
       // 전처리 실패 시 원본 반환
@@ -164,33 +247,34 @@ class OCRService {
     }
   }
 
-  /// 이미지 품질 개선 (보수적인 접근)
-  img.Image _enhanceImage(img.Image image) {
+  /// 텍스트 인식 결과가 있는지 확인
+  bool _hasRecognizedText(OCRResult result) =>
+      result.fullText.trim().isNotEmpty ||
+      result.textBlocks.any((block) => block.trim().isNotEmpty);
+
+  /// 보수적인 이미지 전처리 (원본에 가까운 처리)
+  Future<Uint8List> _preprocessImageConservative(Uint8List imageBytes) async {
     try {
-      debugPrint('🔍 원본 이미지 크기: ${image.width}x${image.height}');
+      final img.Image? originalImage = img.decodeImage(imageBytes);
+      if (originalImage == null) {
+        debugPrint('⚠️ 보수적 전처리: 이미지 디코딩 실패');
+        return imageBytes;
+      }
 
-      // 그레이스케일 변환
-      final grayscale = img.grayscale(image);
-
-      // 대비 개선 (보수적인 값으로 변경)
-      final contrasted = img.adjustColor(
-        grayscale,
-        contrast: 1.2, // 1.4에서 1.2로 감소
-        brightness: 1.05, // 1.15에서 1.05로 감소
+      // 원본 크기 유지하되, 품질만 개선
+      final enhanced = img.adjustColor(
+        originalImage,
+        contrast: 1.3, // 대비 약간 증가
+        brightness: 1.1, // 밝기 약간 증가
       );
 
-      // 선명도 개선 (보수적인 샤프닝 효과)
-      final sharpened = img.adjustColor(
-        contrasted,
-        contrast: 1.1, // 1.2에서 1.1로 감소
-        saturation: 1.0, // 그레이스케일이므로 1.0 유지
-      );
+      debugPrint('🔍 보수적 전처리 완료 (원본 크기 유지)');
 
-      debugPrint('🔍 이미지 개선 완료');
-      return sharpened;
+      // PNG로 저장 (압축 손실 방지)
+      return Uint8List.fromList(img.encodePng(enhanced));
     } catch (e) {
-      debugPrint('🔍 이미지 개선 실패: $e');
-      return image;
+      debugPrint('⚠️ 보수적 전처리 실패: $e');
+      return imageBytes;
     }
   }
 
@@ -276,8 +360,8 @@ class OCRService {
 
   Future<OCRResult> _processBytes(
     Uint8List imageBytes, {
-    required Uint8List rawBytes,
     required String sourceDescription,
+    bool isFallback = false,
   }) async {
     final tempFile = File(
       '${Directory.systemTemp.path}/ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
@@ -288,8 +372,8 @@ class OCRService {
       final inputImage = InputImage.fromFilePath(tempFile.path);
       final result = await _processInputImage(
         inputImage,
-        rawBytes: rawBytes,
         sourceDescription: sourceDescription,
+        isFallback: isFallback,
       );
       return result;
     } on OCRException {
@@ -308,10 +392,32 @@ class OCRService {
     }
   }
 
+  Future<OCRResult?> _processFromFilePath(
+    String path, {
+    required String description,
+  }) async {
+    if (path.isEmpty) {
+      return null;
+    }
+
+    try {
+      final inputImage = InputImage.fromFilePath(path);
+      final fallbackResult = await _processInputImage(
+        inputImage,
+        sourceDescription: description,
+        isFallback: true,
+      );
+      return fallbackResult;
+    } catch (e) {
+      debugPrint('🔍 경로 기반 재시도 실패 ($description): $e');
+      return null;
+    }
+  }
+
   Future<OCRResult> _processInputImage(
     InputImage inputImage, {
-    required Uint8List rawBytes,
     required String sourceDescription,
+    bool isFallback = false,
   }) async {
     final recognizer = _textRecognizer;
     if (recognizer == null) {
@@ -319,7 +425,10 @@ class OCRService {
     }
 
     try {
-      debugPrint('🔍 ML Kit OCR 처리 시작... (source: $sourceDescription)');
+      debugPrint(
+        '🔍 ML Kit OCR 처리 시작... (source: $sourceDescription, '
+        'fallback: $isFallback)',
+      );
       final recognizedText = await recognizer
           .processImage(inputImage)
           .timeout(const Duration(seconds: 12));
@@ -425,6 +534,30 @@ class OCRService {
     }
 
     return totalChars > 0 ? (totalScore / totalChars).clamp(0.0, 1.0) : 0.0;
+  }
+
+  Future<String?> _createTempImageFile(Uint8List bytes) async {
+    try {
+      final tempFile = File(
+        '${Directory.systemTemp.path}/ocr_detect_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+      await tempFile.writeAsBytes(bytes, flush: true);
+      return tempFile.path;
+    } catch (e) {
+      debugPrint('🔍 임시 파일 생성 실패 (경로 감지): $e');
+      return null;
+    }
+  }
+
+  Future<void> _deleteTempFile(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (e) {
+      debugPrint('🔍 임시 파일 삭제 실패 (경로 감지): $e');
+    }
   }
 }
 

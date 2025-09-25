@@ -278,10 +278,15 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         _isProcessingOCR = false;
       });
 
-      if (resultText.isNotEmpty) {
+      // OCR 결과 검증 - 의미있는 텍스트인지 확인
+      if (resultText.isNotEmpty &&
+          resultText.trim() != '.' &&
+          resultText.trim().length >= 2 &&
+          !_isMeaninglessText(resultText)) {
         Navigator.of(context).pop(resultText);
       } else {
-        _showErrorDialog('이미지에서 텍스트를 인식할 수 없습니다. 다른 이미지를 시도해보세요.');
+        debugPrint('🔍 OCR 결과가 의미없음: "$resultText" (길이: ${resultText.length})');
+        _showErrorDialog('텍스트를 인식할 수 없습니다. 더 선명한 이미지를 선택해주세요.');
       }
     } catch (e) {
       debugPrint('OCR 처리 오류: $e');
@@ -453,5 +458,23 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
               ),
             ),
     );
+  }
+
+  /// 의미없는 텍스트인지 확인
+  bool _isMeaninglessText(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return true;
+
+    // 특수문자나 숫자만 있는 경우
+    if (trimmed.length <= 3 && RegExp(r'^[^\w가-힣]+$').hasMatch(trimmed)) {
+      return true;
+    }
+
+    // 반복되는 문자만 있는 경우
+    if (trimmed.length <= 5 && RegExp(r'^(.)\1+$').hasMatch(trimmed)) {
+      return true;
+    }
+
+    return false;
   }
 }
