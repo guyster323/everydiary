@@ -105,7 +105,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             if (Navigator.of(context).canPop()) {
               Navigator.of(context).pop();
             } else {
-              context.go('/home');
+              context.go('/');
             }
           },
         ),

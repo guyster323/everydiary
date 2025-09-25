@@ -149,10 +149,15 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         debugPrint('📝 내용 길이: ${diary.content.length}');
         debugPrint('📝 내용 원본: "${diary.content}"');
 
-        // 안전한 Delta 변환 - 캐시된 변환 사용
-        final String contentToUse = OptimizedDeltaConverter.textToDelta(
-          diary.content,
+        // 저장된 내용 형식 자동 감지
+        final bool isDeltaJson = _isDeltaJson(diary.content);
+        debugPrint(
+          '📝 감지된 내용 형식: ${isDeltaJson ? 'Delta JSON' : 'Plain Text'}',
         );
+
+        final String contentToUse = isDeltaJson
+            ? SafeDeltaConverter.validateAndCleanDelta(diary.content)
+            : OptimizedDeltaConverter.textToDelta(diary.content);
 
         debugPrint('📝 변환된 Delta JSON: $contentToUse');
 
@@ -793,6 +798,15 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('음성 텍스트 추가에 실패했습니다.')));
+    }
+  }
+
+  bool _isDeltaJson(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is List;
+    } catch (_) {
+      return false;
     }
   }
 

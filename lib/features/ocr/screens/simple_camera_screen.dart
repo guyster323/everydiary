@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -145,8 +145,8 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
 
       final image = await _cameraController!.takePicture();
 
-      // OCR 처리
-      await _processImageWithOCR(image.path);
+      final bytes = await image.readAsBytes();
+      await _processImageBytesWithOCR(bytes, sourcePath: image.path);
     } catch (e) {
       debugPrint('사진 촬영 오류: $e');
       if (mounted) {
@@ -171,8 +171,8 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
       final image = await picker.pickImage(source: ImageSource.gallery);
 
       if (image != null && mounted) {
-        // OCR 처리
-        await _processImageWithOCR(image.path);
+        final bytes = await image.readAsBytes();
+        await _processImageBytesWithOCR(bytes, sourcePath: image.path);
       } else {
         setState(() {
           _isLoading = false;
@@ -192,10 +192,13 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
   }
 
   /// 이미지 OCR 처리 (안정성 개선)
-  Future<void> _processImageWithOCR(String imagePath) async {
+  Future<void> _processImageBytesWithOCR(
+    Uint8List originalBytes, {
+    String? sourcePath,
+  }) async {
     if (!mounted) return;
 
-    debugPrint('📷 OCR 처리 시작: $imagePath');
+    debugPrint('📷 OCR 처리 시작: ${sourcePath ?? 'memory bytes'}');
 
     try {
       setState(() {
@@ -205,113 +208,55 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
 
       debugPrint('📷 OCR 상태: 로딩 시작');
 
-      // 파일 존재 확인
-      final file = File(imagePath);
-      if (!await file.exists()) {
-        debugPrint('📷 파일이 존재하지 않음: $imagePath');
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _isProcessingOCR = false;
-          });
-          _showErrorDialog('이미지 파일을 찾을 수 없습니다.');
-        }
-        return;
+      if (originalBytes.isEmpty) {
+        throw const ocr_service.OCRException('이미지 데이터가 비어있습니다.');
       }
 
-      // 파일 크기 확인 (안정성을 위해 제한 줄임)
-      final fileSize = await file.length();
-      if (fileSize == 0) {
-        debugPrint('📷 파일이 비어있음');
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _isProcessingOCR = false;
-          });
-          _showErrorDialog('이미지 파일이 비어있습니다.');
-        }
-        return;
-      }
-      if (fileSize > 10 * 1024 * 1024) {
-        debugPrint(
-          '📷 파일 크기 초과: ${(fileSize / 1024 / 1024).toStringAsFixed(2)}MB',
-        );
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _isProcessingOCR = false;
-          });
-          _showErrorDialog('이미지 파일이 너무 큽니다. (최대 10MB)');
-        }
-        return;
+      final fileSizeMb = originalBytes.length / 1024 / 1024;
+      debugPrint('📷 파일 크기: ${fileSizeMb.toStringAsFixed(2)}MB');
+
+      if (originalBytes.length > 10 * 1024 * 1024) {
+        throw const ocr_service.OCRException('이미지 파일이 너무 큽니다. (최대 10MB)');
       }
 
-      debugPrint('📷 파일 크기: ${(fileSize / 1024 / 1024).toStringAsFixed(2)}MB');
-
-      // OCR 서비스 초기화 확인
       debugPrint('📷 OCR 서비스 초기화 중...');
-      try {
-        await _ocrService.initialize().timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            throw Exception('OCR 서비스 초기화 타임아웃');
-          },
-        );
-      } catch (e) {
-        debugPrint('📷 OCR 서비스 초기화 실패: $e');
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-            _isProcessingOCR = false;
-          });
-          _showErrorDialog('OCR 서비스를 사용할 수 없습니다.');
-        }
-        return;
-      }
+      await _ocrService.initialize().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          throw const ocr_service.OCRException('OCR 서비스 초기화 시간이 초과되었습니다.');
+        },
+      );
 
-      // OCR 처리 (try-catch로 한번 더 감싸기)
-      String? resultText;
+      String resultText = '';
       try {
-        debugPrint('📷 OCR 텍스트 추출 시작...');
-        final result = await _ocrService
-            .extractTextFromFile(imagePath)
-            .timeout(
-              const Duration(seconds: 20), // 타임아웃 단축
-              onTimeout: () {
-                throw Exception('OCR 처리 시간이 초과되었습니다. 다시 시도해주세요.');
-              },
-            );
-        resultText = result.fullText.trim();
+        final processedBytes = await _ocrService.preprocessImage(originalBytes);
+        final processedResult = await _ocrService.extractTextFromBytes(
+          processedBytes,
+        );
+        resultText = processedResult.safeText.trim();
+
+        if (resultText.isEmpty && sourcePath != null) {
+          debugPrint('📷 OCR 결과가 비어있음 - 원본 파일로 재시도: $sourcePath');
+          final fallbackResult = await _ocrService.extractTextFromFile(
+            sourcePath,
+          );
+          resultText = fallbackResult.safeText.trim();
+        }
+
         debugPrint('📷 OCR 결과 길이: ${resultText.length}자');
         if (resultText.isNotEmpty) {
           debugPrint(
             '📷 OCR 결과 미리보기: ${resultText.substring(0, resultText.length > 100 ? 100 : resultText.length)}...',
           );
         }
-      } catch (ocrError) {
-        debugPrint('📷 OCR 처리 중 오류: $ocrError');
-
-        // 간단한 오류 메시지로 변경
-        String errorMessage = '텍스트 인식에 실패했습니다.';
-        if (ocrError.toString().contains('timeout') ||
-            ocrError.toString().contains('시간')) {
-          errorMessage = '⏰ 처리 시간이 초과되었습니다.\n\n더 작은 이미지를 시도해보세요.';
-        } else if (ocrError.toString().contains('memory') ||
-            ocrError.toString().contains('메모리')) {
-          errorMessage = '💾 메모리 부족으로 처리할 수 없습니다.\n\n앱을 재시작한 후 다시 시도해보세요.';
-        } else if (ocrError.toString().contains('network') ||
-            ocrError.toString().contains('네트워크')) {
-          errorMessage = '🌐 네트워크 연결에 문제가 있습니다.\n\n인터넷 연결을 확인해주세요.';
-        } else {
-          errorMessage = '❌ 텍스트 인식에 실패했습니다.\n\n다른 이미지를 시도해보세요.';
-        }
-
+      } on ocr_service.OCRException catch (ocrError) {
+        debugPrint('📷 OCR 처리 중 사용자 정의 오류: ${ocrError.message}');
         if (mounted) {
           setState(() {
             _isLoading = false;
             _isProcessingOCR = false;
           });
-          _showErrorDialog(errorMessage);
+          _showErrorDialog('❌ ${ocrError.message}');
         }
         return;
       }
@@ -324,10 +269,9 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
       });
 
       if (resultText.isNotEmpty) {
-        // OCR 결과를 일기 작성 화면으로 전달
         Navigator.of(context).pop(resultText);
       } else {
-        _showErrorDialog('이미지에서 텍스트를 인식할 수 없습니다.\n다른 이미지를 시도해보세요.');
+        _showErrorDialog('이미지에서 텍스트를 인식할 수 없습니다. 다른 이미지를 시도해보세요.');
       }
     } catch (e) {
       debugPrint('OCR 처리 오류: $e');
@@ -354,6 +298,8 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
             e.toString().contains('network')) {
           errorMessage =
               '🌐 네트워크 연결에 문제가 있습니다.\n\n• 인터넷 연결을 확인해주세요\n• 잠시 후 다시 시도해보세요';
+        } else if (e is ocr_service.OCRException) {
+          errorMessage = '❌ ${e.message}';
         } else {
           errorMessage =
               '❌ 텍스트 인식에 실패했습니다.\n\n• 다른 이미지를 시도해보세요\n• 이미지가 선명한지 확인해보세요\n• 잠시 후 다시 시도해보세요';

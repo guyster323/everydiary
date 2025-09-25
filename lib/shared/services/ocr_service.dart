@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 
@@ -82,194 +81,33 @@ class OCRService {
 
   /// 파일에서 텍스트 추출 - 개선된 버전
   Future<OCRResult> extractTextFromFile(String imagePath) async {
-    if (_isDisposed) {
-      debugPrint('🔍 OCR 서비스가 해제됨');
-      throw const OCRException('OCR 서비스가 해제되었습니다.');
-    }
-
-    if (_processingCount >= _maxConcurrentProcessing) {
-      throw const OCRException('OCR 처리 중입니다. 잠시 후 다시 시도해주세요.');
-    }
-
-    // 서비스 초기화 확인 및 재시도
-    if (!_isInitialized || _textRecognizer == null) {
-      final initialized = await initialize();
-      if (!initialized) {
-        debugPrint('🔍 OCR 서비스 초기화 실패');
-        throw const OCRException('OCR 서비스를 초기화할 수 없습니다.');
-      }
-    }
-
-    _processingCount++;
-    try {
-      debugPrint('🔍 파일에서 OCR 처리 시작: $imagePath');
-
+    return _withGuardedProcessing(() async {
       final file = File(imagePath);
       if (!await file.exists()) {
         throw const OCRException('이미지 파일이 존재하지 않습니다.');
       }
 
       final fileSize = await file.length();
-      if (fileSize > 5 * 1024 * 1024) {
-        // 파일 크기 제한을 5MB로 축소
-        throw const OCRException('이미지 파일이 너무 큽니다. (최대 5MB)');
-      }
+      _validateSize(fileSize);
 
-      debugPrint('🔍 파일 크기: ${(fileSize / 1024 / 1024).toStringAsFixed(2)}MB');
-
-      // 파일을 바이트로 읽기
-      final imageBytes = await _readFileSafely(file);
-
-      // 바이트에서 텍스트 추출
-      return await extractTextFromBytes(imageBytes);
-    } catch (e) {
-      debugPrint('🔍 파일 OCR 처리 실패: $e');
-      if (e is OCRException) rethrow;
-      // 실패 시 예외 발생
-      throw OCRException('파일 OCR 처리 실패: $e');
-    } finally {
-      _processingCount--;
-    }
-  }
-
-  /// 안전한 파일 읽기
-  Future<Uint8List> _readFileSafely(File file) async {
-    try {
-      return await file.readAsBytes().timeout(
-        const Duration(seconds: 10), // 타임아웃을 10초로 단축
-        onTimeout: () {
-          throw const OCRException('파일 읽기 시간 초과');
-        },
-      );
-    } catch (e) {
-      debugPrint('🔍 파일 읽기 실패: $e');
-      if (e is OCRException) rethrow;
-      throw OCRException('파일 읽기 실패: $e');
-    }
+      final originalBytes = await file.readAsBytes();
+      final processedBytes = await preprocessImage(originalBytes);
+      return await _processBytes(processedBytes);
+    });
   }
 
   /// 바이트에서 텍스트 추출 - 개선된 버전
   Future<OCRResult> extractTextFromBytes(Uint8List imageBytes) async {
-    if (_isDisposed) {
-      debugPrint('🔍 OCR 서비스가 해제됨');
-      throw const OCRException('OCR 서비스가 해제되었습니다.');
-    }
-
-    if (_processingCount >= _maxConcurrentProcessing) {
-      throw const OCRException('OCR 처리 중입니다. 잠시 후 다시 시도해주세요.');
-    }
-
-    // 서비스 초기화 확인
-    if (!_isInitialized || _textRecognizer == null) {
-      final initialized = await initialize();
-      if (!initialized) {
-        debugPrint('🔍 OCR 서비스 초기화 실패');
-        throw const OCRException('OCR 서비스를 초기화할 수 없습니다.');
-      }
-    }
-
-    _processingCount++;
-    try {
-      debugPrint('🔍 바이트에서 OCR 처리 시작 (크기: ${imageBytes.length} bytes)');
-
-      // 입력 데이터 검증
+    return _withGuardedProcessing(() async {
       if (imageBytes.isEmpty) {
         throw const OCRException('이미지 데이터가 비어있습니다.');
       }
-      if (imageBytes.length > 5 * 1024 * 1024) {
-        throw const OCRException('이미지 데이터가 너무 큽니다. (최대 5MB)');
-      }
 
-      // 실제 ML Kit OCR 처리
-      try {
-        // TextRecognizer null 체크
-        if (_textRecognizer == null) {
-          debugPrint('🔍 Text Recognizer가 null입니다. 재초기화 시도');
-          final reinitialized = await initialize();
-          if (!reinitialized) {
-            throw const OCRException('Text Recognizer를 초기화할 수 없습니다.');
-          }
-        }
+      _validateSize(imageBytes.length);
 
-        // 이미지를 InputImage로 변환 (더 안전한 방식)
-        final inputImage = InputImage.fromBytes(
-          bytes: imageBytes,
-          metadata: InputImageMetadata(
-            size: Size(
-              imageBytes.length > 1024 * 1024 ? 1024.0 : 800.0,
-              imageBytes.length > 1024 * 1024 ? 768.0 : 600.0,
-            ),
-            rotation: InputImageRotation.rotation0deg,
-            format: InputImageFormat.nv21,
-            bytesPerRow: imageBytes.length > 1024 * 1024 ? 1024 : 800,
-          ),
-        );
-
-        debugPrint('🔍 ML Kit OCR 처리 시작...');
-
-        // 타임아웃을 10초로 단축
-        final recognizedText = await _textRecognizer!
-            .processImage(inputImage)
-            .timeout(const Duration(seconds: 10));
-
-        if (recognizedText.text.isNotEmpty) {
-          final textBlocks = recognizedText.blocks
-              .map((block) => block.text)
-              .where((text) => text.trim().isNotEmpty)
-              .toList();
-
-          final result = OCRResult(
-            fullText: recognizedText.text,
-            textBlocks: textBlocks,
-            confidence: _calculateAverageConfidence(recognizedText.blocks),
-          );
-
-          debugPrint('🔍 실제 OCR 처리 완료 - 결과: ${result.safeText.length}자');
-          debugPrint('🔍 신뢰도: ${result.confidence.toStringAsFixed(2)}');
-          return result;
-        } else {
-          debugPrint('🔍 OCR 결과가 비어있음');
-          throw const OCRException('이미지에서 텍스트를 인식할 수 없습니다.');
-        }
-      } catch (e) {
-        debugPrint('🔍 실제 OCR 처리 실패: $e');
-        if (e is OCRException) rethrow;
-        throw OCRException('OCR 처리 중 오류가 발생했습니다: $e');
-      }
-    } catch (e) {
-      debugPrint('🔍 바이트 OCR 처리 실패: $e');
-      if (e is OCRException) rethrow;
-      // 실패 시 예외 발생
-      throw OCRException('바이트 OCR 처리 실패: $e');
-    } finally {
-      _processingCount--;
-    }
-  }
-
-  /// ML Kit 블록들의 평균 신뢰도 계산
-  double _calculateAverageConfidence(List<TextBlock> blocks) {
-    if (blocks.isEmpty) return 0.0;
-
-    // ML Kit은 직접적인 신뢰도를 제공하지 않으므로
-    // 텍스트 블록 수와 길이를 기반으로 추정
-    double totalScore = 0.0;
-    int totalChars = 0;
-
-    for (final block in blocks) {
-      final text = block.text;
-      final charCount = text.length;
-      // 더 긴 텍스트와 알파벳/숫자/한글이 많을수록 높은 신뢰도
-      final alphanumericCount = text
-          .replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '')
-          .length;
-      final confidence =
-          (alphanumericCount / charCount.clamp(1, double.infinity)) * 0.9 + 0.1;
-
-      totalScore += confidence * charCount;
-      totalChars += charCount;
-    }
-
-    return totalChars > 0 ? (totalScore / totalChars).clamp(0.0, 1.0) : 0.0;
+      final processedBytes = await preprocessImage(imageBytes);
+      return await _processBytes(processedBytes);
+    });
   }
 
   /// 이미지 전처리 (개선된 버전)
@@ -375,6 +213,132 @@ class OCRService {
     debugPrint(' - 최대 동시 처리: $_maxConcurrentProcessing');
     debugPrint(' - Recognizer 존재: ${_textRecognizer != null}');
     debugPrint(' - 모드: 개선된 안정화');
+  }
+
+  Future<OCRResult> _withGuardedProcessing(
+    Future<OCRResult> Function() action,
+  ) async {
+    if (_isDisposed) {
+      debugPrint('🔍 OCR 서비스가 해제됨');
+      throw const OCRException('OCR 서비스가 해제되었습니다.');
+    }
+
+    if (_processingCount >= _maxConcurrentProcessing) {
+      throw const OCRException('OCR 처리 중입니다. 잠시 후 다시 시도해주세요.');
+    }
+
+    if (!_isInitialized || _textRecognizer == null) {
+      final initialized = await initialize();
+      if (!initialized) {
+        debugPrint('🔍 OCR 서비스 초기화 실패');
+        throw const OCRException('OCR 서비스를 초기화할 수 없습니다.');
+      }
+    }
+
+    _processingCount++;
+    try {
+      return await action();
+    } finally {
+      _processingCount--;
+    }
+  }
+
+  void _validateSize(int bytesLength) {
+    if (bytesLength == 0) {
+      throw const OCRException('이미지 데이터가 비어있습니다.');
+    }
+    if (bytesLength > 5 * 1024 * 1024) {
+      throw const OCRException('이미지 데이터가 너무 큽니다. (최대 5MB)');
+    }
+  }
+
+  Future<OCRResult> _processBytes(Uint8List imageBytes) async {
+    try {
+      final tempFile = File(
+        '${Directory.systemTemp.path}/ocr_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+
+      try {
+        await tempFile.writeAsBytes(imageBytes, flush: true);
+        final inputImage = InputImage.fromFilePath(tempFile.path);
+        return await _processInputImage(inputImage);
+      } finally {
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (e) {
+          debugPrint('🔍 임시 파일 삭제 실패: $e');
+        }
+      }
+    } on OCRException {
+      rethrow;
+    } catch (e) {
+      debugPrint('🔍 파일 기반 OCR 처리 실패: $e');
+      throw OCRException('파일 OCR 처리 실패: $e');
+    }
+  }
+
+  Future<OCRResult> _processInputImage(InputImage inputImage) async {
+    final recognizer = _textRecognizer;
+    if (recognizer == null) {
+      throw const OCRException('Text Recognizer가 초기화되지 않았습니다.');
+    }
+
+    try {
+      debugPrint('🔍 ML Kit OCR 처리 시작...');
+      final recognizedText = await recognizer
+          .processImage(inputImage)
+          .timeout(const Duration(seconds: 10));
+
+      final trimmedText = recognizedText.text.trim();
+      if (trimmedText.isEmpty) {
+        debugPrint('🔍 OCR 결과가 비어있음');
+        throw const OCRException('이미지에서 텍스트를 인식할 수 없습니다.');
+      }
+
+      final textBlocks = recognizedText.blocks
+          .map((block) => block.text)
+          .where((text) => text.trim().isNotEmpty)
+          .toList();
+
+      return OCRResult(
+        fullText: recognizedText.text,
+        textBlocks: textBlocks,
+        confidence: _calculateAverageConfidence(recognizedText.blocks),
+      );
+    } on OCRException {
+      rethrow;
+    } catch (e) {
+      debugPrint('🔍 실제 OCR 처리 실패: $e');
+      throw OCRException('OCR 처리 중 오류가 발생했습니다: $e');
+    }
+  }
+
+  /// ML Kit 블록들의 평균 신뢰도 계산
+  double _calculateAverageConfidence(List<TextBlock> blocks) {
+    if (blocks.isEmpty) return 0.0;
+
+    // ML Kit은 직접적인 신뢰도를 제공하지 않으므로
+    // 텍스트 블록 수와 길이를 기반으로 추정
+    double totalScore = 0.0;
+    int totalChars = 0;
+
+    for (final block in blocks) {
+      final text = block.text;
+      final charCount = text.length;
+      // 더 긴 텍스트와 알파벳/숫자/한글이 많을수록 높은 신뢰도
+      final alphanumericCount = text
+          .replaceAll(RegExp(r'[^a-zA-Z0-9가-힣]'), '')
+          .length;
+      final confidence =
+          (alphanumericCount / charCount.clamp(1, double.infinity)) * 0.9 + 0.1;
+
+      totalScore += confidence * charCount;
+      totalChars += charCount;
+    }
+
+    return totalChars > 0 ? (totalScore / totalChars).clamp(0.0, 1.0) : 0.0;
   }
 }
 
