@@ -61,6 +61,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   final _editorKey = GlobalKey<DiaryRichTextEditorState>();
   DateTime _selectedDate = DateTime.now();
   String? _selectedWeather;
+  String? _selectedMood;
   String _contentDelta = '[]';
 
   // 감정 분석 관련

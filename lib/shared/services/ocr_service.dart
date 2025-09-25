@@ -176,11 +176,11 @@ class OCRService {
         brightness: 1.08, // 1.1에서 1.05로 줄임
       );
 
-      // 선명도 개선 (컨볼루션 필터 적용)
-      final sharpened = img.convolution(
+      // 선명도 개선 (간단한 샤프닝 효과)
+      final sharpened = img.adjustColor(
         contrasted,
-        [0, -1, 0, -1, 5, -1, 0, -1, 0],
-        div: 1,
+        contrast: 1.05,
+        saturation: 1.1,
       );
 
       return sharpened;
@@ -264,7 +264,9 @@ class OCRService {
       throw const OCRException('이미지 데이터가 비어있습니다.');
     }
     if (bytesLength > _maxImageBytes) {
-      throw OCRException('이미지 데이터가 너무 큽니다. (최대 ${( _maxImageBytes / (1024 * 1024)).toStringAsFixed(1)}MB)');
+      throw OCRException(
+        '이미지 데이터가 너무 큽니다. (최대 ${(_maxImageBytes / (1024 * 1024)).toStringAsFixed(1)}MB)',
+      );
     }
   }
 
@@ -318,9 +320,9 @@ class OCRService {
           .processImage(inputImage)
           .timeout(const Duration(seconds: 12));
 
-      final originalRaw = String.fromCharCodes(rawBytes)
-          .trim()
-          .replaceAll(RegExp(r'\s+'), ' ');
+      final originalRaw = String.fromCharCodes(
+        rawBytes,
+      ).trim().replaceAll(RegExp(r'\s+'), ' ');
 
       debugPrint('🔍 Raw OCR 텍스트 길이: ${recognizedText.text.length}');
       if (recognizedText.text.length < 200) {
