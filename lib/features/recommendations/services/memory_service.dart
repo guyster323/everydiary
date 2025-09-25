@@ -14,6 +14,23 @@ class MemoryService {
 
   final SupabaseClient _supabase = Supabase.instance.client;
 
+  /// Supabase 연결 상태 확인
+  Future<bool> _checkSupabaseAvailability() async {
+    try {
+      // 연결 상태 확인 로직
+      return _supabase.auth.currentUser != null ||
+          await _supabase
+              .from('diaries')
+              .select('id')
+              .limit(1)
+              .then((_) => true)
+              .catchError((_) => false);
+    } catch (e) {
+      debugPrint('Supabase 연결 확인 실패: $e');
+      return false;
+    }
+  }
+
   /// 회상 결과를 생성합니다
   Future<MemoryResult> generateMemories({
     required String userId,
@@ -21,6 +38,11 @@ class MemoryService {
     MemorySettings? settings,
   }) async {
     try {
+      // Supabase 연결 상태 확인
+      if (!await _checkSupabaseAvailability()) {
+        throw Exception('Supabase 연결에 문제가 있습니다. 네트워크 연결을 확인해주세요.');
+      }
+
       final effectiveFilter = filter ?? const MemoryFilter();
       final effectiveSettings = settings ?? const MemorySettings();
 

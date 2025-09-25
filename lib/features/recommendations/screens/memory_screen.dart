@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/animations/fade_in_animation.dart';
 import '../../../core/animations/slide_in_animation.dart';
 import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/custom_error_widget.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../models/diary_memory.dart';
 import '../models/memory_filter.dart';
@@ -208,11 +207,7 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen>
     }
 
     if (_error != null) {
-      return CustomErrorWidget(
-        message: '회상을 불러오는데 실패했습니다',
-        error: _error!,
-        onRetry: _loadMemories,
-      );
+      return _buildErrorState();
     }
 
     if (_memoryResult == null || _memoryResult!.memories.isEmpty) {
@@ -238,6 +233,54 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+            const SizedBox(height: 16),
+            Text(
+              '회상을 불러오는데 실패했습니다',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? '알 수 없는 오류가 발생했습니다',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _loadMemories,
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 시도'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

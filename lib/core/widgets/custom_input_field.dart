@@ -307,7 +307,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
     return TextStyle(
       fontSize: _getFontSize(),
       fontFamily: 'NotoSansKR',
-      color: _isFocused ? colorScheme.primary : colorScheme.onSurface,
+      color: _isFocused
+          ? colorScheme.primary
+          : Colors.black87, // 라벨 텍스트를 검정색으로 변경
     );
   }
 
@@ -316,7 +318,7 @@ class _CustomInputFieldState extends State<CustomInputField> {
     return TextStyle(
       fontSize: _getFontSize(),
       fontFamily: 'NotoSansKR',
-      color: Colors.grey.shade500,
+      color: Colors.black54, // 힌트 텍스트를 검정색 계열로 변경
     );
   }
 
@@ -386,8 +388,9 @@ class _CustomInputFieldState extends State<CustomInputField> {
         fontSize: _getFontSize(),
         fontFamily: 'NotoSansKR',
         color: widget.enabled
-            ? colorScheme.onSurface
-            : colorScheme.onSurface.withValues(alpha: 0.6),
+            ? Colors
+                  .black // 입력 텍스트를 검정색으로 변경
+            : Colors.black54, // 비활성화된 텍스트도 검정색 계열로 변경
       ),
       decoration: decoration,
     );
@@ -548,7 +551,11 @@ class CustomFormField extends StatelessWidget {
       smartQuotesType: SmartQuotesType.enabled,
       enableIMEPersonalizedLearning: true,
       enableInteractiveSelection: true,
-      style: TextStyle(fontSize: _getFontSize(), fontFamily: 'NotoSansKR'),
+      style: TextStyle(
+        fontSize: _getFontSize(),
+        fontFamily: 'NotoSansKR',
+        color: Colors.black, // 입력 텍스트를 검정색으로 변경
+      ),
       decoration: _buildDecoration(context),
     );
   }
@@ -581,12 +588,12 @@ class CustomFormField extends StatelessWidget {
       labelStyle: TextStyle(
         fontSize: _getFontSize(),
         fontFamily: 'NotoSansKR',
-        color: colorScheme.onSurface,
+        color: Colors.black87, // 라벨 텍스트를 검정색으로 변경
       ),
       hintStyle: TextStyle(
         fontSize: _getFontSize(),
         fontFamily: 'NotoSansKR',
-        color: Colors.grey.shade500,
+        color: Colors.black54, // 힌트 텍스트를 검정색 계열로 변경
       ),
       helperStyle: TextStyle(
         fontSize: _getFontSize() - 2,

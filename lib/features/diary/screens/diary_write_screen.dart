@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/widgets/custom_app_bar.dart';
-import '../../../core/widgets/custom_card.dart';
 import '../../../core/widgets/custom_input_field.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/database_service.dart';
@@ -21,7 +20,7 @@ import '../services/emotion_analysis_service.dart';
 import '../services/image_attachment_service.dart';
 import '../services/tag_service.dart';
 import '../widgets/diary_rich_text_editor.dart';
-import '../widgets/dual_emotion_watercolor_background.dart';
+import '../widgets/improved_dual_emotion_watercolor_background.dart';
 import '../widgets/voice_recording_dialog.dart';
 
 /// 일기 작성 화면 (편집 모드 지원)
@@ -126,7 +125,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     }
   }
 
-  /// 기존 일기 데이터 로드 - 개선된 버전
+  /// 기존 일기 데이터 로드 - 최적화된 버전
   Future<void> _loadExistingDiary() async {
     if (widget.diaryId == null) return;
     debugPrint('📝 편집 모드: 일기 ID ${widget.diaryId} 로드 시작');
@@ -139,23 +138,25 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       // 데이터베이스에서 일기 데이터 로드
       final databaseService = DatabaseService();
       final diaryRepository = DiaryRepository(databaseService);
-      final diary = await diaryRepository.getDiaryEntryById(widget.diaryId!);
+
+      // 로딩 최적화: 타임아웃 설정
+      final diary = await diaryRepository
+          .getDiaryEntryById(widget.diaryId!)
+          .timeout(const Duration(seconds: 5));
 
       if (diary != null && mounted) {
         debugPrint('📝 일기 데이터 로드 성공: ${diary.title}');
         debugPrint('📝 내용 길이: ${diary.content.length}');
         debugPrint('📝 내용 원본: "${diary.content}"');
 
-        // 안전한 Delta 변환
-        final String contentToUse = SafeDeltaConverter.textToDelta(
+        // 안전한 Delta 변환 - 캐시된 변환 사용
+        final String contentToUse = OptimizedDeltaConverter.textToDelta(
           diary.content,
         );
 
         debugPrint('📝 변환된 Delta JSON: $contentToUse');
-        debugPrint(
-          '📝 Delta에서 추출한 텍스트: ${SafeDeltaConverter.extractTextFromDelta(contentToUse)}',
-        );
 
+        // UI 업데이트를 먼저 수행 (로딩 속도 향상)
         setState(() {
           _titleController.text = diary.title ?? '';
           _selectedDate = DateTime.parse(diary.date);
@@ -168,7 +169,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         });
 
         // 에디터에 내용 로드 - 개선된 재시도 로직
-        await _loadContentToEditor(contentToUse);
+        _loadContentToEditor(contentToUse, 0);
 
         // 기존 일기 내용으로 감정 분석 수행
         if (contentToUse != '[{"insert":"\\n"}]') {
@@ -193,10 +194,19 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     } catch (e) {
       debugPrint('📝 기존 일기 데이터 로드 실패: $e');
       if (mounted) {
+        String errorMessage = '일기를 불러오는 중 오류가 발생했습니다';
+        if (e.toString().contains('timeout')) {
+          errorMessage = '일기 로딩 시간이 초과되었습니다. 다시 시도해주세요.';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('일기를 불러오는 중 오류가 발생했습니다: $e'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: '다시 시도',
+              onPressed: _loadExistingDiary,
+            ),
           ),
         );
         Navigator.of(context).pop();
@@ -211,78 +221,18 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   }
 
   /// 에디터에 내용 로드 - 개선된 재시도 로직
-  Future<void> _loadContentToEditor(String contentToUse) async {
-    const int maxRetries = 5; // 재시도 횟수 증가
-    int retryCount = 0;
-    bool loadSuccess = false;
+  void _loadContentToEditor(String contentToUse, int retryCount) {
+    if (!mounted || retryCount > 5) return;
 
-    while (retryCount < maxRetries && !loadSuccess && mounted) {
-      // 에디터 준비 확인
-      if (_editorKey.currentState != null) {
-        try {
-          debugPrint(
-            '📝 에디터에 내용 로드 시도 ${retryCount + 1}회: ${contentToUse.length}자',
-          );
-          _editorKey.currentState?.loadContent(contentToUse);
-
-          // 로드 성공 여부 확인을 위한 짧은 대기
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          // 에디터 상태 확인 (가능한 경우)
-          loadSuccess = true;
-          debugPrint('📝 에디터 내용 로드 성공');
-          break;
-        } catch (e) {
-          debugPrint('📝 에디터 내용 로드 실패 (시도 ${retryCount + 1}): $e');
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await Future<void>.delayed(
-              Duration(milliseconds: 100 * retryCount),
-            ); // 점치적으로 대기 시간 증가
-          }
-        }
-      } else {
-        debugPrint('📝 에디터가 아직 준비되지 않음 - 시도 ${retryCount + 1}');
-        retryCount++;
-        if (retryCount < maxRetries) {
-          await Future<void>.delayed(
-            Duration(milliseconds: 150 * retryCount),
-          ); // 점진적으로 대기 시간 증가
-        }
+    if (_editorKey.currentState != null) {
+      try {
+        _editorKey.currentState!.loadContent(contentToUse);
+      } catch (e) {
+        // 실패 시 100ms 후 재시도
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _loadContentToEditor(contentToUse, retryCount + 1);
+        });
       }
-    }
-
-    if (!loadSuccess && mounted) {
-      debugPrint('📝 에디터 내용 로드 최종 실패 - 대체 방안 실행');
-
-      // 마지막 수단: 내용을 다시 설정하고 강제 리빌드
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            // 강제로 UI 업데이트를 위해 상태 변경
-            _contentDelta = contentToUse;
-          });
-
-          // 한 번 더 시도
-          Future<void>.delayed(const Duration(milliseconds: 300), () {
-            if (mounted && _editorKey.currentState != null) {
-              try {
-                debugPrint('📝 최종 에디터 내용 로드 시도');
-                _editorKey.currentState?.loadContent(contentToUse);
-              } catch (e) {
-                debugPrint('📝 최종 에디터 내용 로드도 실패: $e');
-                // 사용자에게 알림
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('일기 내용을 불러오는 데 문제가 있습니다. 새로고침해주세요.'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-              }
-            }
-          });
-        }
-      });
     }
   }
 
@@ -298,40 +248,22 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     debugPrint('🔍 현재 _contentDelta: $_contentDelta');
 
     try {
-      // 현재 내용이 비어있으면 새로 추가, 있으면 줄바꿈 후 추가
-      String newContent;
-      if (_contentDelta == '[]' || _contentDelta == '[{"insert":"\\n"}]') {
-        newContent = SafeDeltaConverter.textToDelta(text);
-        debugPrint('🔍 새 내용으로 추가: $newContent');
-      } else {
-        // 기존 내용에 새 텍스트 추가
-        final existingText = SafeDeltaConverter.extractTextFromDelta(
-          _contentDelta,
-        );
-        final combinedText = existingText.isEmpty
-            ? text
-            : '$existingText\n\n[OCR 인식 텍스트]\n$text';
-        newContent = SafeDeltaConverter.textToDelta(combinedText);
-        debugPrint('🔍 기존 내용에 추가: $newContent');
-      }
+      // 현재 에디터 내용 가져오기
+      final String currentContent = _extractTextFromDelta(_contentDelta);
+
+      // 새로운 내용 생성 및 에디터에 로드
+      final String newContent = currentContent.isEmpty
+          ? text
+          : '$currentContent\n\n$text';
+      final newContentDelta = SafeDeltaConverter.textToDelta(newContent);
 
       setState(() {
-        _contentDelta = newContent;
+        _contentDelta = newContentDelta;
         _isDirty = true;
       });
 
-      // 에디터에 내용 업데이트 - 비동기적으로 처리
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _editorKey.currentState != null) {
-          try {
-            _editorKey.currentState?.loadContent(newContent);
-            debugPrint('🔍 에디터에 OCR 텍스트 로드 성공');
-          } catch (e) {
-            debugPrint('🔍 에디터에 OCR 텍스트 로드 실패: $e');
-            // 실패해도 델타는 이미 업데이트되었으므로 계속 진행
-          }
-        }
-      });
+      // 재시도 로직으로 안정적으로 로드
+      _loadContentToEditor(newContentDelta, 0);
 
       // 감정 분석 수행 (debounced)
       _analyzeEmotionDebounced();
@@ -677,7 +609,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     return '${dualEmotion.firstHalf.primaryEmotion} → ${dualEmotion.secondHalf.primaryEmotion} (${contextParts.join(', ')})';
   }
 
-  /// OCR 기능 열기 - 개선된 버전
+  /// OCR 기능 열기 - 수정된 버전
   Future<void> _openOCR() async {
     try {
       setState(() {
@@ -701,7 +633,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
             '🔍 OCR 결과 내용: "${result.substring(0, result.length > 50 ? 50 : result.length)}..."',
           );
 
-          // OCR 결과를 일기 내용에 추가
+          // 실제 OCR 결과를 일기 내용에 추가
           _addOCRTextToContent(result);
 
           // 성공 메시지 표시
@@ -824,16 +756,6 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   }
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _dateController.dispose();
-    _debounceTimer?.cancel();
-    _emotionAnalysisTimer?.cancel();
-    _diarySaveService.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
@@ -847,7 +769,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         }
       },
       child: _currentDualEmotion != null
-          ? DualEmotionWatercolorBackground(
+          ? ImprovedDualEmotionWatercolorBackground(
               emotionResult: _currentDualEmotion!,
               child: Scaffold(
                 backgroundColor: Colors.transparent,
@@ -912,57 +834,96 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 제목 입력
-            CustomInputField(
-              controller: _titleController,
-              labelText: '제목',
-              hintText: '오늘의 일기 제목을 입력하세요',
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '제목을 입력해주세요';
-                }
-                return null;
-              },
+            // 제목 입력 - 시인성 개선
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: CustomInputField(
+                controller: _titleController,
+                labelText: '제목',
+                hintText: '오늘의 일기 제목을 입력하세요',
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '제목을 입력해주세요';
+                  }
+                  return null;
+                },
+              ),
             ),
             const SizedBox(height: 16),
 
-            // 날짜 및 감정 분석 결과
+            // 날짜 및 감정 분석 결과 - 시인성 개선
             Row(
               children: [
                 // 날짜 선택
                 Expanded(
-                  child: CustomInputField(
-                    controller: _dateController,
-                    labelText: '날짜',
-                    readOnly: true,
-                    onTap: _selectDate,
-                    suffixIcon: Icons.calendar_today,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: CustomInputField(
+                      controller: _dateController,
+                      labelText: '날짜',
+                      readOnly: true,
+                      onTap: _selectDate,
+                      suffixIcon: Icons.calendar_today,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
 
-                // 감정 분석 결과 표시
+                // 감정 분석 결과 표시 - 시인성 개선
                 Expanded(
-                  child: CustomCard(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             '감정 분석',
-                            style: Theme.of(context).textTheme.titleSmall,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87, // 감정 분석 라벨을 검정색으로 변경
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _getEmotionDisplayText(),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: _currentDualEmotion
-                                      ?.firstHalf
-                                      .emotionColor,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black, // 감정 분석 텍스트를 검정색으로 변경
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
                       ),
@@ -973,27 +934,62 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 날씨 선택
-            DropdownButtonFormField<String>(
-              initialValue: _selectedWeather,
-              items: _weatherOptions.map((weather) {
-                return DropdownMenuItem(value: weather, child: Text(weather));
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedWeather = value;
-                  _isDirty = true;
-                });
-              },
-              decoration: const InputDecoration(
-                labelText: '날씨',
-                hintText: '날씨를 선택하세요',
-                border: OutlineInputBorder(),
+            // 날씨 선택 - 시인성 개선
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: DropdownButtonFormField<String>(
+                initialValue: _selectedWeather,
+                items: _weatherOptions.map((weather) {
+                  return DropdownMenuItem(
+                    value: weather,
+                    child: Text(
+                      weather,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedWeather = value;
+                    _isDirty = true;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: '날씨',
+                  hintText: '날씨를 선택하세요',
+                  labelStyle: TextStyle(
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                  hintStyle: TextStyle(color: Colors.grey[500]),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  contentPadding: const EdgeInsets.all(16),
+                ),
+                dropdownColor: Colors.white,
               ),
             ),
             const SizedBox(height: 16),
 
-            // OCR 및 음성녹음 버튼
+            // OCR 및 음성녹음 버튼 - 시인성 개선
             Row(
               children: [
                 Expanded(
@@ -1002,8 +998,18 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('OCR'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
+                      backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                      shadowColor: Colors.blue.withValues(alpha: 0.3),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -1014,8 +1020,18 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                     icon: const Icon(Icons.mic),
                     label: const Text('음성녹음'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.green.shade600,
                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 4,
+                      shadowColor: Colors.green.withValues(alpha: 0.3),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -1023,29 +1039,116 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 일기 내용 입력
-            DiaryRichTextEditor(
-              initialContent: _contentDelta,
-              onContentChanged: _onContentChanged,
-              height: 300,
+            // 일기 내용 입력 - 시인성 개선
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: DiaryRichTextEditor(
+                  key: _editorKey,
+                  initialContent: _contentDelta,
+                  onContentChanged: _onContentChanged,
+                  height: 300,
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // 저장 버튼
+            // 저장 버튼 - 시인성 개선
             ElevatedButton(
               onPressed: _isLoading ? null : _saveDiary,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 6,
+                shadowColor: Colors.indigo.withValues(alpha: 0.3),
+                textStyle: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               child: _isLoading
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
                     )
-                  : const Text('저장'),
+                  : const Text('일기 저장'),
             ),
             const SizedBox(height: 16),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _dateController.dispose();
+    _debounceTimer?.cancel();
+    _emotionAnalysisTimer?.cancel();
+    _diarySaveService.dispose();
+    super.dispose();
+  }
+}
+
+/// 성능 최적화된 Delta 변환
+class OptimizedDeltaConverter {
+  static final Map<String, String> _textToDeltaCache = {};
+  static final Map<String, String> _deltaToTextCache = {};
+
+  static String textToDelta(String text) {
+    if (_textToDeltaCache.containsKey(text)) {
+      return _textToDeltaCache[text]!;
+    }
+
+    final result = SafeDeltaConverter.textToDelta(text);
+
+    // 캐시 크기 제한 (메모리 관리)
+    if (_textToDeltaCache.length > 50) {
+      _textToDeltaCache.clear();
+    }
+
+    _textToDeltaCache[text] = result;
+    return result;
+  }
+
+  static String extractTextFromDelta(String deltaJson) {
+    if (_deltaToTextCache.containsKey(deltaJson)) {
+      return _deltaToTextCache[deltaJson]!;
+    }
+
+    final result = SafeDeltaConverter.extractTextFromDelta(deltaJson);
+
+    // 캐시 크기 제한
+    if (_deltaToTextCache.length > 50) {
+      _deltaToTextCache.clear();
+    }
+
+    _deltaToTextCache[deltaJson] = result;
+    return result;
+  }
+
+  static void clearCache() {
+    _textToDeltaCache.clear();
+    _deltaToTextCache.clear();
   }
 }

@@ -37,9 +37,9 @@ class OCRService {
         _textRecognizer = null;
       }
 
-      // ML Kit Text Recognizer 초기화 (타임아웃 추가)
+      // ML Kit Text Recognizer 초기화 - 한국어 텍스트 인식 최적화
       _textRecognizer = TextRecognizer(
-        script: TextRecognitionScript.latin, // 기본 라틴 스크립트 사용
+        script: TextRecognitionScript.korean, // 한국어 텍스트 인식 스크립트 사용
       );
 
       // 초기화 테스트
@@ -85,8 +85,8 @@ class OCRService {
   /// 파일에서 텍스트 추출 - 개선된 버전
   Future<OCRResult> extractTextFromFile(String imagePath) async {
     if (_isDisposed) {
-      debugPrint('🔍 OCR 서비스가 해제됨 - 시뮬레이션 모드로 전환');
-      return _generateSimulatedResult();
+      debugPrint('🔍 OCR 서비스가 해제됨');
+      throw const OCRException('OCR 서비스가 해제되었습니다.');
     }
 
     if (_processingCount >= _maxConcurrentProcessing) {
@@ -97,8 +97,8 @@ class OCRService {
     if (!_isInitialized || _textRecognizer == null) {
       final initialized = await initialize();
       if (!initialized) {
-        debugPrint('🔍 OCR 서비스 초기화 실패 - 시뮬레이션 모드로 전환');
-        return _generateSimulatedResult();
+        debugPrint('🔍 OCR 서비스 초기화 실패');
+        throw const OCRException('OCR 서비스를 초기화할 수 없습니다.');
       }
     }
 
@@ -127,8 +127,8 @@ class OCRService {
     } catch (e) {
       debugPrint('🔍 파일 OCR 처리 실패: $e');
       if (e is OCRException) rethrow;
-      // 실패 시 시뮬레이션 결과 반환 (앱 크래시 방지)
-      return _generateSimulatedResult();
+      // 실패 시 예외 발생
+      throw OCRException('파일 OCR 처리 실패: $e');
     } finally {
       _processingCount--;
     }
@@ -153,8 +153,8 @@ class OCRService {
   /// 바이트에서 텍스트 추출 - 개선된 버전
   Future<OCRResult> extractTextFromBytes(Uint8List imageBytes) async {
     if (_isDisposed) {
-      debugPrint('🔍 OCR 서비스가 해제됨 - 시뮬레이션 모드로 전환');
-      return _generateSimulatedResult();
+      debugPrint('🔍 OCR 서비스가 해제됨');
+      throw const OCRException('OCR 서비스가 해제되었습니다.');
     }
 
     if (_processingCount >= _maxConcurrentProcessing) {
@@ -165,8 +165,8 @@ class OCRService {
     if (!_isInitialized || _textRecognizer == null) {
       final initialized = await initialize();
       if (!initialized) {
-        debugPrint('🔍 OCR 서비스 초기화 실패 - 시뮬레이션 모드로 전환');
-        return _generateSimulatedResult();
+        debugPrint('🔍 OCR 서비스 초기화 실패');
+        throw const OCRException('OCR 서비스를 초기화할 수 없습니다.');
       }
     }
 
@@ -189,7 +189,7 @@ class OCRService {
           debugPrint('🔍 Text Recognizer가 null입니다. 재초기화 시도');
           final reinitialized = await initialize();
           if (!reinitialized) {
-            return _generateSimulatedResult();
+            throw const OCRException('Text Recognizer를 초기화할 수 없습니다.');
           }
         }
 
@@ -230,18 +230,19 @@ class OCRService {
           debugPrint('🔍 신뢰도: ${result.confidence.toStringAsFixed(2)}');
           return result;
         } else {
-          debugPrint('🔍 OCR 결과가 비어있음, 시뮬레이션 모드로 전환');
-          return _generateSimulatedResult();
+          debugPrint('🔍 OCR 결과가 비어있음');
+          throw const OCRException('이미지에서 텍스트를 인식할 수 없습니다.');
         }
       } catch (e) {
-        debugPrint('🔍 실제 OCR 처리 실패, 시뮬레이션 모드로 전환: $e');
-        return _generateSimulatedResult();
+        debugPrint('🔍 실제 OCR 처리 실패: $e');
+        if (e is OCRException) rethrow;
+        throw OCRException('OCR 처리 중 오류가 발생했습니다: $e');
       }
     } catch (e) {
       debugPrint('🔍 바이트 OCR 처리 실패: $e');
       if (e is OCRException) rethrow;
-      // 실패 시에도 시뮬레이션 결과 반환 (앱 크래시 방지)
-      return _generateSimulatedResult();
+      // 실패 시 예외 발생
+      throw OCRException('바이트 OCR 처리 실패: $e');
     } finally {
       _processingCount--;
     }
@@ -271,41 +272,6 @@ class OCRService {
     }
 
     return totalChars > 0 ? (totalScore / totalChars).clamp(0.0, 1.0) : 0.0;
-  }
-
-  /// 시뮬레이션 OCR 결과 생성 (개선된 버전)
-  OCRResult _generateSimulatedResult() {
-    // 더 다양하고 현실적인 시뮬레이션 텍스트 패턴
-    final patterns = [
-      '오늘은 정말 좋은 하루였습니다.\n많은 일들이 있었지만 모두 의미가 있었어요.',
-      '일기 작성을 위한 OCR 테스트 중입니다.\n텍스트 인식이 잘 작동하고 있나요?',
-      '안녕하세요! 이것은 테스트 문서입니다.\n한글과 영문이 함께 있는 내용입니다.',
-      'Flutter 앱 개발이 순조롭게 진행되고 있습니다.\nOCR 기능 구현에 성공했네요.',
-      '감정 분석과 일기 작성 기능이\n잘 통합되어 작동하고 있습니다.',
-      '이미지에서 텍스트를 추출하는\n기능이 정상적으로 작동 중입니다.',
-    ];
-
-    // 시간 기반 랜덤 선택 (더 예측 가능한 패턴)
-    final random =
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000) % patterns.length;
-    final selectedText = patterns[random];
-
-    // 텍스트를 블록으로 분할
-    final textBlocks = selectedText.split('\n');
-
-    // 신뢰도 시뮬레이션 (0.75 ~ 0.95)
-    final confidence = 0.75 + (random * 0.04);
-
-    debugPrint(
-      '🔍 시뮬레이션 OCR 결과: ${selectedText.length}자, 신뢰도: ${confidence.toStringAsFixed(2)}',
-    );
-    debugPrint('🔍 시뮬레이션 텍스트 내용: "$selectedText"');
-
-    return OCRResult(
-      fullText: selectedText,
-      textBlocks: textBlocks,
-      confidence: confidence,
-    );
   }
 
   /// 이미지 전처리 (개선된 버전)

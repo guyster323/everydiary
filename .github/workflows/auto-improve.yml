@@ -1,0 +1,30 @@
+name: Auto Improve Code
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-improve:
+    if: contains(github.event.review.body, '@cursor-improve')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          ref: ${{ github.head_ref }}
+
+      - name: Auto-improve code
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          cursor-agent -p "Based on the review feedback, automatically fix the identified issues and commit the improvements."
+
+      - name: Push improvements
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Cursor Bot"
+          git add -A
+          git commit -m "Auto-fix: Applied AI-suggested improvements" || exit 0
+          git push

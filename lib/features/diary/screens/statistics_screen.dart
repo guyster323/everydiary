@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/widgets/custom_app_bar.dart';
@@ -98,6 +99,12 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: '일기 통계',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            context.go('/home'); // 메인 페이지로 직접 이동
+          },
+        ),
         actions: [
           // 날짜 범위 선택 버튼
           IconButton(
