@@ -61,7 +61,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   final _editorKey = GlobalKey<DiaryRichTextEditorState>();
   DateTime _selectedDate = DateTime.now();
   String? _selectedWeather;
-  String _contentDelta = '[]';
+  String _contentDelta = '[{"insert":"\\n"}]';
 
   // 감정 분석 관련
   DualEmotionAnalysisResult? _currentDualEmotion;
@@ -298,40 +298,43 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       final String currentContent = _extractTextFromDelta(_contentDelta);
 
       // 새로운 내용 생성
-      final String newContent = currentContent.isEmpty
-          ? text
-          : '$currentContent\n\n$text';
+      final String trimmed = text.trimRight();
+      final String newContent = trimmed.endsWith('\n') ? trimmed : '$trimmed\n';
 
-      // 안전한 Delta JSON 생성
-      final newContentDelta = SafeDeltaConverter.textToDelta(newContent);
+      // 에디터에 직접 삽입하여 Delta를 일관되게 유지
+      if (_editorKey.currentState != null) {
+        final editorState = _editorKey.currentState!;
+        editorState.insertOCRText(newContent);
 
-      // Delta JSON 유효성 검사 및 설정
-      try {
-        // Delta JSON이 유효한지 확인하기 위해 텍스트 추출 시도
-        final extractedText = SafeDeltaConverter.extractTextFromDelta(
-          newContentDelta,
-        );
-        if (extractedText.isNotEmpty) {
-          setState(() {
-            _contentDelta = newContentDelta;
-            _isDirty = true;
-          });
-          _loadContentToEditorWithRetry(newContentDelta, newContent, 0);
-        } else {
-          throw Exception('Delta JSON에서 텍스트 추출 실패');
+        final updatedDelta = editorState.getCurrentDeltaJson();
+        final plainText = SafeDeltaConverter.extractTextFromDelta(updatedDelta);
+
+        setState(() {
+          _contentDelta = updatedDelta;
+          _isDirty = true;
+        });
+
+        // plainText가 비어있지 않은 경우에만 감정 분석 수행
+        if (plainText.trim().isNotEmpty) {
+          _analyzeEmotionDebounced();
         }
-      } catch (e) {
-        debugPrint('🔍 Delta JSON 유효성 검사 실패, 기본 형식으로 재시도: $e');
-        final fallbackDelta = SafeDeltaConverter.textToDelta(newContent);
+
+        debugPrint(
+          '🔍 OCR 텍스트 에디터에 직접 삽입 완료 - delta 길이: ${_contentDelta.length}',
+        );
+      } else {
+        // 에디터가 아직 준비되지 않았을 경우 기존 방식으로 폴백
+        final fallback = currentContent.trim().isEmpty
+            ? newContent
+            : '$currentContent\n\n$newContent';
+        final fallbackDelta = SafeDeltaConverter.textToDelta(fallback);
         setState(() {
           _contentDelta = fallbackDelta;
           _isDirty = true;
         });
-        _loadContentToEditorWithRetry(fallbackDelta, newContent, 0);
+        _loadContentToEditorWithRetry(fallbackDelta, fallback, 0);
+        _analyzeEmotionDebounced();
       }
-
-      // 감정 분석 수행 (debounced)
-      _analyzeEmotionDebounced();
 
       debugPrint('🔍 OCR 텍스트 추가 완료');
     } catch (e) {

@@ -13,7 +13,7 @@ class OCRService {
   bool _isInitialized = false;
   bool _isDisposed = false;
   int _processingCount = 0;
-  static const int _maxConcurrentProcessing = 1;
+  static const int _maxConcurrentProcessing = 2;
   static const int _maxImageBytes = 6 * 1024 * 1024; // 6MB 허용
   TextRecognizer? _textRecognizer;
 
@@ -37,8 +37,14 @@ class OCRService {
         _textRecognizer = null;
       }
 
-      // ML Kit Text Recognizer 초기화 - 기본 생성자 사용 (한국어 스크립트는 지원되지 않음)
-      _textRecognizer = TextRecognizer();
+      // ML Kit Text Recognizer 초기화 - 가능한 경우 한국어 스크립트 활용
+      try {
+        _textRecognizer = TextRecognizer(script: TextRecognitionScript.korean);
+        debugPrint('🔍 한국어 스크립트 사용');
+      } on ArgumentError catch (_) {
+        debugPrint('⚠️ 한국어 스크립트를 지원하지 않는 환경, 기본 모드로 fallback');
+        _textRecognizer = TextRecognizer();
+      }
 
       // 초기화 테스트
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -248,9 +254,36 @@ class OCRService {
   }
 
   /// 텍스트 인식 결과가 있는지 확인
-  bool _hasRecognizedText(OCRResult result) =>
-      result.fullText.trim().isNotEmpty ||
-      result.textBlocks.any((block) => block.trim().isNotEmpty);
+  bool _hasRecognizedText(OCRResult result) {
+    if (_hasMeaningfulText(result.fullText)) {
+      return true;
+    }
+
+    for (final block in result.textBlocks) {
+      if (_hasMeaningfulText(block)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _hasMeaningfulText(String text) {
+    final normalized = text.replaceAll(RegExp(r'\s+'), '');
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    final alphanumeric = normalized.replaceAll(
+      RegExp(r'[^\p{L}\p{N}]', unicode: true),
+      '',
+    );
+
+    if (alphanumeric.length > 1) {
+      return true;
+    }
+
+    return RegExp(r'[가-힣]', unicode: true).hasMatch(normalized);
+  }
 
   /// 보수적인 이미지 전처리 (원본에 가까운 처리)
   Future<Uint8List> _preprocessImageConservative(Uint8List imageBytes) async {
