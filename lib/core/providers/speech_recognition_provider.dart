@@ -5,6 +5,21 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../services/permission_service.dart';
 import '../services/speech_recognition_service.dart';
 
+/// 음성 인식에서 사용할 수 있는 로케일 옵션
+class SpeechLocaleOption {
+  const SpeechLocaleOption({required this.code, required this.label});
+
+  final String code;
+  final String label;
+}
+
+const List<SpeechLocaleOption> kSpeechLocaleOptions = <SpeechLocaleOption>[
+  SpeechLocaleOption(code: 'ko-KR', label: '한국어'),
+  SpeechLocaleOption(code: 'en-US', label: 'English'),
+  SpeechLocaleOption(code: 'ja-JP', label: '日本語'),
+  SpeechLocaleOption(code: 'zh-CN', label: '中文'),
+];
+
 /// 음성 인식 서비스 프로바이더
 final speechRecognitionServiceProvider = Provider<SpeechRecognitionService>((
   ref,
@@ -15,6 +30,11 @@ final speechRecognitionServiceProvider = Provider<SpeechRecognitionService>((
 /// 권한 서비스 프로바이더
 final permissionServiceProvider = Provider<PermissionService>((ref) {
   return PermissionService.instance;
+});
+
+/// UI에서 사용할 로케일 옵션 제공
+final speechLocaleOptionsProvider = Provider<List<SpeechLocaleOption>>((ref) {
+  return kSpeechLocaleOptions;
 });
 
 /// 음성 인식 상태 프로바이더
@@ -77,6 +97,7 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
     try {
       final initialized = await _speechService.initialize();
       if (initialized) {
+        _speechService.setLocale(state.currentLocale);
         state = state.copyWith(
           isInitialized: true,
           status: SpeechRecognitionStatus.initialized,
@@ -192,6 +213,11 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
   void setLocale(String locale) {
     _speechService.setLocale(locale);
     state = state.copyWith(currentLocale: locale);
+  }
+
+  /// 선택 가능한 언어 중 하나를 설정
+  void setLocaleOption(SpeechLocaleOption option) {
+    setLocale(option.code);
   }
 
   /// 텍스트 업데이트

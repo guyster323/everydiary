@@ -64,22 +64,23 @@ class SpeechRecognitionPanel extends ConsumerWidget {
 
           // 메인 컨트롤 영역
           Row(
+            children: [
+              Expanded(child: _SpeechLocaleSelector(compact: compact)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // 타이머
               if (showTimer) ...[
                 const SpeechRecognitionTimerWidget(),
                 const SizedBox(width: 16),
               ],
-
-              // 마이크 버튼
               SpeechRecognitionButton(
                 onResult: onResult,
                 onError: onError,
                 size: compact ? 60.0 : 80.0,
               ),
-
-              // 파형 애니메이션
               if (showWaveform && isListening) ...[
                 const SizedBox(width: 16),
                 const SpeechWaveformWidget(height: 40, barCount: 3),
@@ -145,6 +146,82 @@ class SpeechRecognitionPanel extends ConsumerWidget {
         fontWeight: FontWeight.w500,
       ),
       textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _SpeechLocaleSelector extends ConsumerWidget {
+  const _SpeechLocaleSelector({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final localeOptions = ref.watch(speechLocaleOptionsProvider);
+    final speechState = ref.watch(speechRecognitionProvider);
+    final notifier = ref.watch(speechRecognitionProvider.notifier);
+
+    final selectedCode = localeOptions.any(
+      (option) => option.code == speechState.currentLocale,
+    )
+        ? speechState.currentLocale
+        : localeOptions.first.code;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context)
+            .colorScheme
+            .surface
+            .withValues(alpha: compact ? 0.3 : 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context)
+              .colorScheme
+              .outline
+              .withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.language,
+            size: compact ? 16 : 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedCode,
+                dropdownColor: Theme.of(context).colorScheme.surfaceBright,
+                isExpanded: true,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                items: localeOptions
+                    .map(
+                      (option) => DropdownMenuItem<String>(
+                        value: option.code,
+                        child: Text(option.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null || value == speechState.currentLocale) {
+                    return;
+                  }
+                  final selectedOption = localeOptions.firstWhere(
+                    (option) => option.code == value,
+                    orElse: () => localeOptions.first,
+                  );
+                  notifier.setLocaleOption(selectedOption);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
