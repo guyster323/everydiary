@@ -867,7 +867,7 @@
               "14.3"
             ],
             "details": "- 설치 가능성 감지 및 설치 프롬프트 표시\n- 커스텀 설치 버튼 및 UI 구현\n- 설치 이벤트 추적 및 분석\n- 앱 업데이트 감지 메커니즘 구현\n- 새 버전 사용 가능 시 사용자 알림\n- 업데이트 적용을 위한 새로고침 유도 UI\n- 설치 상태에 따른 UI 적응 (브라우저 vs 설치된 앱)",
-            "status": "pending",
+            "status": "in-progress",
             "testStrategy": ""
           }
         ]
@@ -916,7 +916,7 @@
     ],
     "metadata": {
       "created": "2025-09-04T01:55:45.055Z",
-      "updated": "2025-09-26T10:58:40.360Z",
+      "updated": "2025-09-26T11:10:54.765Z",
       "description": "Tasks for master context"
     }
   },
