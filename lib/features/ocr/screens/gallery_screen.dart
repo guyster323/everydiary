@@ -37,7 +37,6 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       final success = await _ocrService.initialize();
       if (success) {
         debugPrint('🔍 OCR 서비스 초기화 성공');
-        _ocrService.printDebugInfo();
       } else {
         debugPrint('🔍 OCR 서비스 초기화 실패');
         _showErrorDialog('OCR 서비스 초기화에 실패했습니다.');
@@ -121,23 +120,14 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       return;
     }
 
-    // OCR 서비스 상태 확인 및 재초기화
-    if (!_ocrService.isAvailable) {
+    if (!_ocrService.isInitialized || _ocrService.isDisposed) {
       debugPrint('🔍 OCR 서비스 사용 불가, 재초기화 시도');
-      _ocrService.printDebugInfo();
-
-      try {
-        final reinitialized = await _ocrService.reinitialize();
-        if (!reinitialized) {
-          _showErrorDialog('OCR 서비스를 사용할 수 없습니다. 앱을 재시작해주세요.');
-          return;
-        }
-        debugPrint('🔍 OCR 서비스 재초기화 성공');
-      } catch (e) {
-        debugPrint('🔍 OCR 서비스 재초기화 실패: $e');
+      final reinitialized = await _ocrService.initialize();
+      if (!reinitialized) {
         _showErrorDialog('OCR 서비스를 사용할 수 없습니다. 앱을 재시작해주세요.');
         return;
       }
+      debugPrint('🔍 OCR 서비스 재초기화 성공');
     }
 
     setState(() {
@@ -157,10 +147,11 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
           });
 
           try {
-            // 안전한 OCR 처리
-            final result = await _ocrService.extractTextFromBytes(image.bytes!);
+            final result = await _ocrService.extractTextFromBytes(
+              image.bytes!,
+              language: ocr_service.kSupportedOcrLanguages.first,
+            );
 
-            // 결과 검증
             if (result.isValid) {
               ocrResults.add(result);
               debugPrint('🔍 이미지 ${i + 1} OCR 성공: ${result.safeText.length}자');

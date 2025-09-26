@@ -25,6 +25,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
   final ocr_service.OCRService _ocrService = ocr_service.OCRService();
   bool _isProcessingOCR = false;
   ocr_service.OCRLanguageOption _selectedLanguage = _languageOptions.first;
+  bool _useAutoDetection = false;
 
   @override
   void initState() {
@@ -67,6 +68,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
     }
     setState(() {
       _selectedLanguage = option;
+      _useAutoDetection = false;
     });
     _ocrService.initialize(language: _selectedLanguage);
   }
@@ -249,32 +251,41 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
 
       debugPrint('📷 OCR 서비스 초기화 중...');
       await _ocrService
-          .initialize(language: _selectedLanguage)
+          .initialize(
+            language: _useAutoDetection ? null : _selectedLanguage,
+          )
           .timeout(
             const Duration(seconds: 5),
             onTimeout: () {
-              throw const ocr_service.OCRException('OCR 서비스 초기화 시간이 초과되었습니다.');
+              throw const ocr_service.OCRException(
+                'OCR 서비스 초기화 시간이 초과되었습니다.',
+              );
             },
           );
 
       String resultText = '';
       try {
-        final processedBytes = await _ocrService.preprocessImage(
-          originalBytes,
-          language: _selectedLanguage,
-        );
-        final processedResult = await _ocrService.extractTextFromBytes(
-          processedBytes,
-          language: _selectedLanguage,
-        );
-        resultText = processedResult.safeText.trim();
+        ocr_service.OCRResult ocrResult;
+        if (_useAutoDetection) {
+          ocrResult = await _ocrService.extractTextWithAutoDetectionFromBytes(
+            originalBytes,
+          );
+        } else {
+          ocrResult = await _ocrService.extractTextFromBytes(
+            originalBytes,
+            language: _selectedLanguage,
+          );
+        }
+        resultText = ocrResult.safeText.trim();
 
         if (resultText.isEmpty && sourcePath != null) {
           debugPrint('📷 OCR 결과가 비어있음 - 원본 파일로 재시도: $sourcePath');
-          final fallbackResult = await _ocrService.extractTextFromFile(
-            sourcePath,
-            language: _selectedLanguage,
-          );
+          final ocr_service.OCRResult fallbackResult = _useAutoDetection
+              ? await _ocrService.extractTextWithAutoDetection(sourcePath)
+              : await _ocrService.extractTextFromFile(
+                  sourcePath,
+                  language: _selectedLanguage,
+                );
           resultText = fallbackResult.safeText.trim();
         }
 
@@ -427,23 +438,24 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
                         ],
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // OCR 언어 선택
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child:
-                                  DropdownButton<ocr_service.OCRLanguageOption>(
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child:
+                                      DropdownButton<ocr_service.OCRLanguageOption>(
                                     dropdownColor: Colors.black87,
                                     value: _selectedLanguage,
                                     iconEnabledColor: Colors.white,
@@ -461,52 +473,96 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
                                           ),
                                         )
                                         .toList(),
-                                    onChanged: _onLanguageChanged,
+                                    onChanged: _useAutoDetection ? null : _onLanguageChanged,
                                   ),
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _useAutoDetection = !_useAutoDetection;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _useAutoDetection
+                                      ? Colors.blueAccent.withValues(alpha: 0.4)
+                                      : Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.language,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '자동 감지',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: _useAutoDetection
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-
-                        const SizedBox(width: 12),
-
-                        // 갤러리 버튼
-                        GestureDetector(
-                          onTap: _pickFromGallery,
-                          child: Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(30),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // 갤러리 버튼
+                            GestureDetector(
+                              onTap: _pickFromGallery,
+                              child: Container(
+                                width: 60,
+                                height: 60,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: const Icon(
+                                  Icons.photo_library,
+                                  color: Colors.white,
+                                  size: 30,
+                                ),
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.photo_library,
-                              color: Colors.white,
-                              size: 30,
+
+                            // 촬영 버튼
+                            GestureDetector(
+                              onTap: _takePicture,
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(40),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.black,
+                                  size: 40,
+                                ),
+                              ),
                             ),
-                          ),
+
+                            // 플레이스홀더 (대칭을 위해)
+                            const SizedBox(width: 60),
+                          ],
                         ),
-
-                        // 촬영 버튼
-                        GestureDetector(
-                          onTap: _takePicture,
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(40),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.black,
-                              size: 40,
-                            ),
-                          ),
-                        ),
-
-                        // 플레이스홀더 (대칭을 위해)
-                        const SizedBox(width: 60),
                       ],
                     ),
                   ),
