@@ -4,6 +4,41 @@ import 'package:flutter/foundation.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image/image.dart' as img;
 
+class OCRLanguageOption {
+  const OCRLanguageOption({
+    required this.code,
+    required this.label,
+    this.script,
+  });
+
+  final String code;
+  final String label;
+  final TextRecognitionScript? script;
+}
+
+const List<OCRLanguageOption> kSupportedOcrLanguages = [
+  OCRLanguageOption(
+    code: 'ko',
+    label: '한국어',
+    script: TextRecognitionScript.korean,
+  ),
+  OCRLanguageOption(
+    code: 'en',
+    label: 'English',
+    script: TextRecognitionScript.latin,
+  ),
+  OCRLanguageOption(
+    code: 'ja',
+    label: '日本語',
+    script: TextRecognitionScript.japanese,
+  ),
+  OCRLanguageOption(
+    code: 'zh',
+    label: '中文',
+    script: TextRecognitionScript.chinese,
+  ),
+];
+
 /// OCR 서비스 - 안정성과 오류 처리 개선 버전
 class OCRService {
   static final OCRService _instance = OCRService._internal();
@@ -16,15 +51,29 @@ class OCRService {
   static const int _maxConcurrentProcessing = 2;
   static const int _maxImageBytes = 6 * 1024 * 1024; // 6MB 허용
   TextRecognizer? _textRecognizer;
+  OCRLanguageOption _currentLanguage = kSupportedOcrLanguages.first;
 
-  /// 서비스 초기화 - 더 안전한 방식
-  Future<bool> initialize() async {
+  /// 현재 선택된 언어
+  OCRLanguageOption get currentLanguage => _currentLanguage;
+
+  /// 서비스 초기화 - 언어 선택 반영
+  Future<bool> initialize({OCRLanguageOption? language}) async {
     if (_isDisposed) {
       debugPrint('🔍 OCR 서비스가 이미 해제되었습니다.');
       return false;
     }
-    if (_isInitialized && _textRecognizer != null) {
-      debugPrint('🔍 OCR 서비스가 이미 초기화되었습니다.');
+
+    final OCRLanguageOption languageToUse = language ?? _currentLanguage;
+
+    final bool languageChanged = languageToUse.code != _currentLanguage.code;
+    if (languageChanged || !_isInitialized || _textRecognizer == null) {
+      _currentLanguage = languageToUse;
+      _isInitialized = false;
+      if (_textRecognizer != null) {
+        await _textRecognizer!.close();
+        _textRecognizer = null;
+      }
+    } else if (_isInitialized && _textRecognizer != null) {
       return true;
     }
 
@@ -37,12 +86,18 @@ class OCRService {
         _textRecognizer = null;
       }
 
-      // ML Kit Text Recognizer 초기화 - 가능한 경우 한국어 스크립트 활용
+      // ML Kit Text Recognizer 초기화 - 선택된 언어 적용
       try {
-        _textRecognizer = TextRecognizer(script: TextRecognitionScript.korean);
-        debugPrint('🔍 한국어 스크립트 사용');
+        if (_currentLanguage.script != null) {
+          _textRecognizer = TextRecognizer(script: _currentLanguage.script!);
+          debugPrint('🔍 OCR 언어 설정: ${_currentLanguage.label}');
+        } else {
+          _textRecognizer = TextRecognizer();
+        }
       } on ArgumentError catch (_) {
-        debugPrint('⚠️ 한국어 스크립트를 지원하지 않는 환경, 기본 모드로 fallback');
+        debugPrint(
+          '⚠️ ${_currentLanguage.label} 스크립트를 지원하지 않는 환경, 기본 모드로 fallback',
+        );
         _textRecognizer = TextRecognizer();
       }
 
@@ -87,8 +142,16 @@ class OCRService {
   }
 
   /// 파일에서 텍스트 추출 - 개선된 버전
-  Future<OCRResult> extractTextFromFile(String imagePath) async {
+  Future<OCRResult> extractTextFromFile(
+    String imagePath, {
+    OCRLanguageOption? language,
+  }) async {
+    final OCRLanguageOption lang = language ?? _currentLanguage;
     return _withGuardedProcessing(() async {
+      if (lang.code != _currentLanguage.code) {
+        await initialize(language: lang);
+      }
+
       final file = File(imagePath);
       if (!await file.exists()) {
         throw const OCRException('이미지 파일이 존재하지 않습니다.');
@@ -110,7 +173,6 @@ class OCRService {
 
       debugPrint('🔍 전처리 결과가 비어있어 원본 이미지로 재시도');
 
-      // 먼저 원본 파일 경로를 직접 시도
       final directPathResult = await _processFromFilePath(
         imagePath,
         description: '$imagePath (direct)',
@@ -119,7 +181,6 @@ class OCRService {
         return directPathResult;
       }
 
-      // 경로 기반 시도가 실패하면 원본 바이트를 그대로 사용
       return await _processBytes(
         originalBytes,
         sourceDescription: '$imagePath (raw)',
@@ -129,8 +190,16 @@ class OCRService {
   }
 
   /// 바이트에서 텍스트 추출 - 개선된 버전
-  Future<OCRResult> extractTextFromBytes(Uint8List imageBytes) async {
+  Future<OCRResult> extractTextFromBytes(
+    Uint8List imageBytes, {
+    OCRLanguageOption? language,
+  }) async {
+    final OCRLanguageOption lang = language ?? _currentLanguage;
     return _withGuardedProcessing(() async {
+      if (lang.code != _currentLanguage.code) {
+        await initialize(language: lang);
+      }
+
       if (imageBytes.isEmpty) {
         throw const OCRException('이미지 데이터가 비어있습니다.');
       }

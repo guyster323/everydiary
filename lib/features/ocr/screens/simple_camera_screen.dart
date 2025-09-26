@@ -6,6 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/services/ocr_service.dart' as ocr_service;
 
+const List<ocr_service.OCRLanguageOption> _languageOptions =
+    ocr_service.kSupportedOcrLanguages;
+
 /// 간단한 카메라 화면 (안정성 우선)
 class SimpleCameraScreen extends StatefulWidget {
   const SimpleCameraScreen({super.key});
@@ -21,6 +24,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
   bool _isLoading = false;
   final ocr_service.OCRService _ocrService = ocr_service.OCRService();
   bool _isProcessingOCR = false;
+  ocr_service.OCRLanguageOption _selectedLanguage = _languageOptions.first;
 
   @override
   void initState() {
@@ -33,13 +37,15 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
   Future<void> _initializeOCR() async {
     try {
       // 안전한 초기화 - 타임아웃 설정
-      await _ocrService.initialize().timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          debugPrint('📷 OCR 서비스 초기화 타임아웃');
-          throw Exception('OCR 서비스 초기화 타임아웃');
-        },
-      );
+      await _ocrService
+          .initialize(language: _selectedLanguage)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('📷 OCR 서비스 초기화 타임아웃');
+              throw Exception('OCR 서비스 초기화 타임아웃');
+            },
+          );
       debugPrint('📷 OCR 서비스 초기화 완료');
     } catch (e) {
       debugPrint('📷 OCR 서비스 초기화 실패: $e');
@@ -53,6 +59,16 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         );
       }
     }
+  }
+
+  void _onLanguageChanged(ocr_service.OCRLanguageOption? option) {
+    if (option == null || option.code == _selectedLanguage.code) {
+      return;
+    }
+    setState(() {
+      _selectedLanguage = option;
+    });
+    _ocrService.initialize(language: _selectedLanguage);
   }
 
   @override
@@ -244,6 +260,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
         final processedBytes = await _ocrService.preprocessImage(originalBytes);
         final processedResult = await _ocrService.extractTextFromBytes(
           processedBytes,
+          language: _selectedLanguage,
         );
         resultText = processedResult.safeText.trim();
 
@@ -251,6 +268,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
           debugPrint('📷 OCR 결과가 비어있음 - 원본 파일로 재시도: $sourcePath');
           final fallbackResult = await _ocrService.extractTextFromFile(
             sourcePath,
+            language: _selectedLanguage,
           );
           resultText = fallbackResult.safeText.trim();
         }
@@ -407,6 +425,45 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
+                        // OCR 언어 선택
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child:
+                                  DropdownButton<ocr_service.OCRLanguageOption>(
+                                    dropdownColor: Colors.black87,
+                                    value: _selectedLanguage,
+                                    iconEnabledColor: Colors.white,
+                                    style: const TextStyle(color: Colors.white),
+                                    items: _languageOptions
+                                        .map(
+                                          (option) => DropdownMenuItem(
+                                            value: option,
+                                            child: Text(
+                                              option.label,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                        .toList(),
+                                    onChanged: _onLanguageChanged,
+                                  ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 12),
+
                         // 갤러리 버튼
                         GestureDetector(
                           onTap: _pickFromGallery,
