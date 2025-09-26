@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:everydiary/core/services/pwa_install_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:everydiary/core/services/pwa_install_service.dart';
 
 part 'pwa_install_provider.g.dart';
 
@@ -26,7 +26,7 @@ class PWAInstallState extends _$PWAInstallState {
   /// 초기화
   Future<void> _initialize() async {
     debugPrint('🔄 PWA 설치 상태 초기화 시작');
-    
+
     final service = ref.read(pwaInstallServiceProvider);
     await service.initialize();
 
@@ -85,14 +85,14 @@ class PWAInstallState extends _$PWAInstallState {
     try {
       final service = ref.read(pwaInstallServiceProvider);
       final success = await service.installPWA();
-      
+
       if (success) {
         debugPrint('✅ PWA 설치 성공');
         state = state.copyWith(isInstalled: true, isInstallable: false);
       } else {
         debugPrint('❌ PWA 설치 실패');
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('❌ PWA 설치 오류: $e');
@@ -105,14 +105,14 @@ class PWAInstallState extends _$PWAInstallState {
     try {
       final service = ref.read(pwaInstallServiceProvider);
       final success = await service.updatePWA();
-      
+
       if (success) {
         debugPrint('✅ PWA 업데이트 성공');
         state = state.copyWith(isUpdateAvailable: false);
       } else {
         debugPrint('❌ PWA 업데이트 실패');
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('❌ PWA 업데이트 오류: $e');

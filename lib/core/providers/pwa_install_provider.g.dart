@@ -26,7 +26,7 @@ final pwaInstallServiceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef PwaInstallServiceRef = AutoDisposeProviderRef<PWAInstallService>;
-String _$pWAInstallStateHash() => r'a0c0272f0312ee7d9c75ad39f27b621260ea5989';
+String _$pWAInstallStateHash() => r'c7f2ede2251475e8e7ab3bea0e0483ece850950e';
 
 /// PWA 설치 상태 프로바이더
 ///

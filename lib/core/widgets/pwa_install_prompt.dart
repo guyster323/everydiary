@@ -29,10 +29,7 @@ class PWAInstallPrompt extends ConsumerWidget {
                 const SizedBox(width: 8),
                 const Text(
                   '앱 설치',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -72,7 +69,7 @@ class PWAInstallPrompt extends ConsumerWidget {
     try {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.installPWA();
-      
+
       if (success) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -99,7 +96,9 @@ class PWAInstallPrompt extends ConsumerWidget {
 
   /// 프롬프트 닫기
   void _dismissPrompt(WidgetRef ref) {
-        ref.read(pwaInstallServiceProvider).trackInstallEvent('prompt_dismissed', <String, dynamic>{});
+    ref
+        .read(pwaInstallServiceProvider)
+        .trackInstallEvent('prompt_dismissed', <String, dynamic>{});
   }
 }
 
@@ -130,10 +129,7 @@ class PWAUpdateNotification extends ConsumerWidget {
                 const SizedBox(width: 8),
                 const Text(
                   '업데이트 사용 가능',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -173,7 +169,7 @@ class PWAUpdateNotification extends ConsumerWidget {
     try {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.updatePWA();
-      
+
       if (success) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -200,7 +196,9 @@ class PWAUpdateNotification extends ConsumerWidget {
 
   /// 업데이트 알림 닫기
   void _dismissUpdateNotification(WidgetRef ref) {
-        ref.read(pwaInstallServiceProvider).trackUpdateEvent('notification_dismissed', <String, dynamic>{});
+    ref
+        .read(pwaInstallServiceProvider)
+        .trackUpdateEvent('notification_dismissed', <String, dynamic>{});
   }
 }
 
@@ -221,15 +219,18 @@ class PWAInstallStatusWidget extends ConsumerWidget {
           children: [
             const Text(
               'PWA 설치 상태',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildStatusRow('설치 상태', installState.isInstalled ? '설치됨' : '설치 안됨'),
+            _buildStatusRow(
+              '설치 상태',
+              installState.isInstalled ? '설치됨' : '설치 안됨',
+            ),
             _buildStatusRow('설치 가능', installState.isInstallable ? '가능' : '불가능'),
-            _buildStatusRow('업데이트', installState.isUpdateAvailable ? '사용 가능' : '없음'),
+            _buildStatusRow(
+              '업데이트',
+              installState.isUpdateAvailable ? '사용 가능' : '없음',
+            ),
             if (installState.currentVersion != null)
               _buildStatusRow('현재 버전', installState.currentVersion!),
             if (installState.latestVersion != null)
@@ -320,7 +321,7 @@ class PWAInstallStatusWidget extends ConsumerWidget {
     try {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.installPWA();
-      
+
       if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -339,7 +340,7 @@ class PWAInstallStatusWidget extends ConsumerWidget {
     try {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.updatePWA();
-      
+
       if (success && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

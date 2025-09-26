@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../providers/pwa_provider.dart';
 import '../providers/pwa_install_provider.dart';
+import '../providers/pwa_provider.dart';
 
 /// PWA 초기화 위젯
 /// 앱 시작 시 PWA 서비스를 초기화하고 상태를 관리합니다.
@@ -30,10 +30,10 @@ class _PWAInitializerState extends ConsumerState<PWAInitializer> {
     try {
       final pwaNotifier = ref.read(pwaProvider.notifier);
       await pwaNotifier.initialize();
-      
+
       // PWA 설치 서비스도 초기화
       ref.read(pWAInstallStateProvider);
-      
+
       debugPrint('✅ PWA 초기화 완료');
     } catch (e) {
       debugPrint('❌ PWA 초기화 실패: $e');

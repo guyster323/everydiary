@@ -13,51 +13,57 @@ class PWAInstallService {
   PWAInstallService._internal();
 
   final PWAService _pwaService = PWAService();
-  
+
   // 설치 상태
   bool _isInstalled = false;
   bool _isInstallable = false;
   bool _isUpdateAvailable = false;
   String? _currentVersion;
   String? _latestVersion;
-  
+
   // 이벤트 스트림
-  final StreamController<PWAInstallEvent> _eventController = StreamController<PWAInstallEvent>.broadcast();
+  final StreamController<PWAInstallEvent> _eventController =
+      StreamController<PWAInstallEvent>.broadcast();
   Stream<PWAInstallEvent> get eventStream => _eventController.stream;
-  
+
   // Riverpod과 통합을 위한 스트림들
-  final StreamController<bool> _installabilityController = StreamController<bool>.broadcast();
+  final StreamController<bool> _installabilityController =
+      StreamController<bool>.broadcast();
   Stream<bool> get installabilityStream => _installabilityController.stream;
-  
-  final StreamController<bool> _installedController = StreamController<bool>.broadcast();
+
+  final StreamController<bool> _installedController =
+      StreamController<bool>.broadcast();
   Stream<bool> get installedStream => _installedController.stream;
-  
-  final StreamController<bool> _updateAvailableController = StreamController<bool>.broadcast();
+
+  final StreamController<bool> _updateAvailableController =
+      StreamController<bool>.broadcast();
   Stream<bool> get updateAvailableStream => _updateAvailableController.stream;
-  
-  final StreamController<Map<String, dynamic>> _versionInfoController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get versionInfoStream => _versionInfoController.stream;
-  
+
+  final StreamController<Map<String, dynamic>> _versionInfoController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get versionInfoStream =>
+      _versionInfoController.stream;
+
   // 타이머
   Timer? _updateCheckTimer;
-  
+
   bool _isInitialized = false;
 
   /// 서비스 초기화
   Future<void> initialize() async {
     if (_isInitialized) return;
-    
+
     try {
       debugPrint('🔄 PWA 설치 서비스 초기화 시작');
-      
+
       await _pwaService.initialize();
-      
+
       // 설치 상태 확인
       await _checkInstallStatus();
-      
+
       // 업데이트 체크 타이머 시작
       _startUpdateCheckTimer();
-      
+
       _isInitialized = true;
       debugPrint('✅ PWA 설치 서비스 초기화 완료');
     } catch (e) {
@@ -71,7 +77,7 @@ class PWAInstallService {
       _isInstalled = _isAppInstalled();
       _isInstallable = _pwaService.canInstall;
       _currentVersion = await _pwaService.getServiceWorkerVersion();
-      
+
       // 스트림에 상태 변경 알림
       _installabilityController.add(_isInstallable);
       _installedController.add(_isInstalled);
@@ -79,7 +85,7 @@ class PWAInstallService {
         'currentVersion': _currentVersion,
         'latestVersion': _latestVersion,
       });
-      
+
       debugPrint('📱 PWA 설치 상태: $_isInstalled, 설치 가능: $_isInstallable');
     } catch (e) {
       debugPrint('❌ 설치 상태 확인 실패: $e');
@@ -100,15 +106,17 @@ class PWAInstallService {
       if (latestVersion != null && latestVersion != _currentVersion) {
         _latestVersion = latestVersion;
         _isUpdateAvailable = true;
-        
+
         // 스트림에 업데이트 가능성 알림
         _updateAvailableController.add(true);
         _versionInfoController.add({
           'currentVersion': _currentVersion,
           'latestVersion': _latestVersion,
         });
-        
-        _eventController.add(PWAInstallEvent.updateAvailable(_currentVersion, _latestVersion));
+
+        _eventController.add(
+          PWAInstallEvent.updateAvailable(_currentVersion, _latestVersion),
+        );
         debugPrint('🔄 업데이트 사용 가능: $_currentVersion -> $_latestVersion');
       }
     } catch (e) {
@@ -120,30 +128,30 @@ class PWAInstallService {
   Future<bool> installPWA() async {
     try {
       debugPrint('📱 PWA 설치 시작');
-      
+
       if (!_isInstallable) {
         debugPrint('❌ PWA 설치 불가능');
         return false;
       }
-      
+
       await _pwaService.installPWA();
       // PWA 설치는 사용자 상호작용이므로 성공으로 간주
-      final success = true;
+      const success = true;
       if (success) {
         _isInstalled = true;
         _isInstallable = false;
-        
+
         // 통계 업데이트
         await _updateInstallStats();
-        
+
         // 스트림에 상태 변경 알림
         _installedController.add(true);
         _installabilityController.add(false);
-        
+
         _eventController.add(PWAInstallEvent.installed());
         debugPrint('✅ PWA 설치 완료');
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('❌ PWA 설치 실패: $e');
@@ -155,33 +163,33 @@ class PWAInstallService {
   Future<bool> updatePWA() async {
     try {
       debugPrint('🔄 PWA 업데이트 시작');
-      
+
       if (!_isUpdateAvailable) {
         debugPrint('❌ 업데이트 없음');
         return false;
       }
-      
+
       // PWA 업데이트는 Service Worker 업데이트를 통해 처리
       await _pwaService.clearCache();
-      final success = true;
+      const success = true;
       if (success) {
         _isUpdateAvailable = false;
         _currentVersion = _latestVersion;
-        
+
         // 통계 업데이트
         await _updateUpdateStats();
-        
+
         // 스트림에 상태 변경 알림
         _updateAvailableController.add(false);
         _versionInfoController.add({
           'currentVersion': _currentVersion,
           'latestVersion': _latestVersion,
         });
-        
+
         _eventController.add(PWAInstallEvent.updated(_currentVersion));
         debugPrint('✅ PWA 업데이트 완료: $_currentVersion');
       }
-      
+
       return success;
     } catch (e) {
       debugPrint('❌ PWA 업데이트 실패: $e');
@@ -240,7 +248,9 @@ class PWAInstallService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final timestamp = prefs.getInt('pwa_last_install_time');
-      return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
+      return timestamp != null
+          ? DateTime.fromMillisecondsSinceEpoch(timestamp)
+          : null;
     } catch (e) {
       debugPrint('❌ 마지막 설치 시간 가져오기 실패: $e');
       return null;
@@ -263,7 +273,9 @@ class PWAInstallService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final timestamp = prefs.getInt('pwa_last_update_time');
-      return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
+      return timestamp != null
+          ? DateTime.fromMillisecondsSinceEpoch(timestamp)
+          : null;
     } catch (e) {
       debugPrint('❌ 마지막 업데이트 시간 가져오기 실패: $e');
       return null;
@@ -276,7 +288,10 @@ class PWAInstallService {
       final prefs = await SharedPreferences.getInstance();
       final currentCount = await _getInstallCount();
       await prefs.setInt('pwa_install_count', currentCount + 1);
-      await prefs.setInt('pwa_last_install_time', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+        'pwa_last_install_time',
+        DateTime.now().millisecondsSinceEpoch,
+      );
       debugPrint('📊 설치 통계 업데이트: ${currentCount + 1}');
     } catch (e) {
       debugPrint('❌ 설치 통계 업데이트 실패: $e');
@@ -289,7 +304,10 @@ class PWAInstallService {
       final prefs = await SharedPreferences.getInstance();
       final currentCount = await _getUpdateCount();
       await prefs.setInt('pwa_update_count', currentCount + 1);
-      await prefs.setInt('pwa_last_update_time', DateTime.now().millisecondsSinceEpoch);
+      await prefs.setInt(
+        'pwa_last_update_time',
+        DateTime.now().millisecondsSinceEpoch,
+      );
       debugPrint('📊 업데이트 통계 업데이트: ${currentCount + 1}');
     } catch (e) {
       debugPrint('❌ 업데이트 통계 업데이트 실패: $e');
@@ -300,7 +318,7 @@ class PWAInstallService {
   void trackInstallEvent(String eventType, Map<String, dynamic> data) {
     try {
       debugPrint('📊 설치 이벤트 추적: $eventType');
-      
+
       // 이벤트 데이터에 타임스탬프 추가
       final eventData = {
         ...data,
@@ -310,10 +328,12 @@ class PWAInstallService {
         'isInstallable': _isInstallable,
         'currentVersion': _currentVersion,
       };
-      
+
       // 이벤트 스트림에 전송
-      _eventController.add(PWAInstallEvent.installabilityChanged(_isInstallable));
-      
+      _eventController.add(
+        PWAInstallEvent.installabilityChanged(_isInstallable),
+      );
+
       // 실제 구현에서는 분석 서비스에 전송
       // 예: Firebase Analytics, Google Analytics 등
       debugPrint('📊 설치 이벤트 데이터: $eventData');
@@ -326,7 +346,7 @@ class PWAInstallService {
   void trackUpdateEvent(String eventType, Map<String, dynamic> data) {
     try {
       debugPrint('📊 업데이트 이벤트 추적: $eventType');
-      
+
       // 이벤트 데이터에 타임스탬프 추가
       final eventData = {
         ...data,
@@ -336,10 +356,12 @@ class PWAInstallService {
         'currentVersion': _currentVersion,
         'latestVersion': _latestVersion,
       };
-      
+
       // 이벤트 스트림에 전송
-      _eventController.add(PWAInstallEvent.updateStatusChanged(_isUpdateAvailable));
-      
+      _eventController.add(
+        PWAInstallEvent.updateStatusChanged(_isUpdateAvailable),
+      );
+
       // 실제 구현에서는 분석 서비스에 전송
       // 예: Firebase Analytics, Google Analytics 등
       debugPrint('📊 업데이트 이벤트 데이터: $eventData');
@@ -367,14 +389,20 @@ class PWAInstallService {
   /// 앱 설치 상태 확인
   bool _isAppInstalled() {
     if (!kIsWeb) return false;
-    
+
     try {
       // PWA 설치 상태를 확인하는 다양한 방법
       // 1. display-mode 확인
-      final isStandalone = html.window.matchMedia('(display-mode: standalone)').matches;
-      final isMinimalUi = html.window.matchMedia('(display-mode: minimal-ui)').matches;
-      final isFullscreen = html.window.matchMedia('(display-mode: fullscreen)').matches;
-      
+      final isStandalone = html.window
+          .matchMedia('(display-mode: standalone)')
+          .matches;
+      final isMinimalUi = html.window
+          .matchMedia('(display-mode: minimal-ui)')
+          .matches;
+      final isFullscreen = html.window
+          .matchMedia('(display-mode: fullscreen)')
+          .matches;
+
       return isStandalone || isMinimalUi || isFullscreen;
     } catch (e) {
       debugPrint('❌ 앱 설치 상태 확인 실패: $e');
@@ -401,13 +429,18 @@ abstract class PWAInstallEvent {
   PWAInstallEvent() : timestamp = DateTime.now();
 
   factory PWAInstallEvent.installed() = PWAInstalledEvent;
-  factory PWAInstallEvent.updateAvailable(String? current, String? latest) = PWAUpdateAvailableEvent;
+  factory PWAInstallEvent.updateAvailable(String? current, String? latest) =
+      PWAUpdateAvailableEvent;
   factory PWAInstallEvent.updated(String? version) = PWAUpdatedEvent;
   factory PWAInstallEvent.installPromptShown() = PWAInstallPromptShownEvent;
-  factory PWAInstallEvent.installPromptDismissed() = PWAInstallPromptDismissedEvent;
-  factory PWAInstallEvent.installabilityChanged(bool isInstallable) = PWAInstallabilityChangedEvent;
-  factory PWAInstallEvent.installedStatusChanged(bool isInstalled) = PWAInstalledStatusChangedEvent;
-  factory PWAInstallEvent.updateStatusChanged(bool isUpdateAvailable) = PWAUpdateStatusChangedEvent;
+  factory PWAInstallEvent.installPromptDismissed() =
+      PWAInstallPromptDismissedEvent;
+  factory PWAInstallEvent.installabilityChanged(bool isInstallable) =
+      PWAInstallabilityChangedEvent;
+  factory PWAInstallEvent.installedStatusChanged(bool isInstalled) =
+      PWAInstalledStatusChangedEvent;
+  factory PWAInstallEvent.updateStatusChanged(bool isUpdateAvailable) =
+      PWAUpdateStatusChangedEvent;
 }
 
 class PWAInstalledEvent extends PWAInstallEvent {
