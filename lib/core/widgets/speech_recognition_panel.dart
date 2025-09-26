@@ -161,25 +161,20 @@ class _SpeechLocaleSelector extends ConsumerWidget {
     final speechState = ref.watch(speechRecognitionProvider);
     final notifier = ref.watch(speechRecognitionProvider.notifier);
 
-    final selectedCode = localeOptions.any(
-      (option) => option.code == speechState.currentLocale,
-    )
+    final selectedCode =
+        localeOptions.any((option) => option.code == speechState.currentLocale)
         ? speechState.currentLocale
         : localeOptions.first.code;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context)
-            .colorScheme
-            .surface
-            .withValues(alpha: compact ? 0.3 : 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surface.withValues(alpha: compact ? 0.3 : 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context)
-              .colorScheme
-              .outline
-              .withValues(alpha: 0.2),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -197,8 +192,8 @@ class _SpeechLocaleSelector extends ConsumerWidget {
                 dropdownColor: Theme.of(context).colorScheme.surfaceBright,
                 isExpanded: true,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
                 items: localeOptions
                     .map(
                       (option) => DropdownMenuItem<String>(

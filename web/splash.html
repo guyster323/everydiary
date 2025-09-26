@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EveryDiary</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0175C2 0%, #00B4DB 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .splash-container {
+            text-align: center;
+            color: white;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+            background: white;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-icon img {
+            width: 80px;
+            height: 80px;
+        }
+
+        .app-name {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-description {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 32px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="splash-container">
+        <div class="app-icon">
+            <img src="icons/Icon-192.png" alt="EveryDiary" />
+        </div>
+        <h1 class="app-name">EveryDiary</h1>
+        <p class="app-description">AI 기반 스마트 일기 앱</p>
+        <div class="loading-spinner"></div>
+        <p class="loading-text">로딩 중...</p>
+    </div>
+
+    <script>
+        // 스플래시 스크린이 3초 후에 자동으로 사라지도록 설정
+        setTimeout(() => {
+            // 메인 앱으로 리다이렉트
+            window.location.href = '/';
+        }, 3000);
+    </script>
+</body>
+</html>

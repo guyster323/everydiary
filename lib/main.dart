@@ -10,6 +10,7 @@ import 'core/routing/app_router.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
 import 'core/utils/logger.dart';
+import 'core/widgets/pwa_initializer.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
@@ -66,34 +67,36 @@ class EveryDiaryApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: themeManager,
       builder: (context, child) {
-        return MaterialApp.router(
-          title: config.appName,
-          debugShowCheckedModeBanner: EnvironmentConfig.isDebug,
-          theme: themeManager.lightTheme,
-          darkTheme: themeManager.darkTheme,
-          themeMode: ThemeMode.values.firstWhere(
-            (mode) => mode.name == themeManager.materialThemeMode.name,
+        return PWAInitializer(
+          child: MaterialApp.router(
+            title: config.appName,
+            debugShowCheckedModeBanner: EnvironmentConfig.isDebug,
+            theme: themeManager.lightTheme,
+            darkTheme: themeManager.darkTheme,
+            themeMode: ThemeMode.values.firstWhere(
+              (mode) => mode.name == themeManager.materialThemeMode.name,
+            ),
+            routerConfig: AppRouter.router,
+            // 한글 로케일 설정
+            locale: const Locale('ko', 'KR'),
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+              FlutterQuillLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+            // 한글 입력을 위한 설정
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: const TextScaler.linear(1.0), // 텍스트 스케일링 고정
+                  platformBrightness: MediaQuery.of(context).platformBrightness,
+                ),
+                child: child!,
+              );
+            },
           ),
-          routerConfig: AppRouter.router,
-          // 한글 로케일 설정
-          locale: const Locale('ko', 'KR'),
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-            FlutterQuillLocalizations.delegate,
-          ],
-          supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-          // 한글 입력을 위한 설정
-          builder: (context, child) {
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(1.0), // 텍스트 스케일링 고정
-                platformBrightness: MediaQuery.of(context).platformBrightness,
-              ),
-              child: child!,
-            );
-          },
         );
       },
     );

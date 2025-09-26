@@ -1,23 +1,113 @@
 {
-    "name": "everydiary",
-    "short_name": "everydiary",
+    "name": "EveryDiary - AI 일기 앱",
+    "short_name": "EveryDiary",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "AI 기반 감정 분석과 다국어 OCR을 지원하는 스마트 일기 앱",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "scope": "/",
+    "lang": "ko",
+    "categories": ["productivity", "lifestyle"],
+    "dir": "ltr",
+    "display_override": ["window-controls-overlay", "standalone"],
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "launch_handler": {
+        "client_mode": "navigate-existing"
+    },
+    "protocol_handlers": [
+        {
+            "protocol": "web+everydiary",
+            "url": "/?action=%s"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "새 일기 작성",
+            "short_name": "새 일기",
+            "description": "새로운 일기를 작성합니다",
+            "url": "/?action=new-diary",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "일기 목록",
+            "short_name": "목록",
+            "description": "일기 목록을 확인합니다",
+            "url": "/?action=diary-list",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "OCR 스캔",
+            "short_name": "OCR",
+            "description": "이미지에서 텍스트를 추출합니다",
+            "url": "/?action=ocr-scan",
+            "icons": [
+                {
+                    "src": "icons/Icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "EveryDiary 메인 화면"
+        }
+    ],
     "icons": [
+        {
+            "src": "icons/Icon-72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/Icon-96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/Icon-144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any"
+        },
         {
             "src": "icons/Icon-192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "icons/Icon-384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "icons/Icon-maskable-192.png",
@@ -31,5 +121,8 @@
             "type": "image/png",
             "purpose": "maskable"
         }
-    ]
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7"
 }
