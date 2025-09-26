@@ -73,7 +73,8 @@ dependencies:
   file_picker: ^8.1.2
   camera: ^0.10.5+5
   image: ^4.1.7
-  google_mlkit_text_recognition: ^0.13.0 # 0.15.0에서 변경하여 크래시 방지
+  google_mlkit_text_recognition: ^0.15.0
+  # 언어별 확장 플러그인은 Android Gradle에 추가 (japanese/chinese/korean)
 
   # Speech & Text Recognition
   speech_to_text: ^7.3.0

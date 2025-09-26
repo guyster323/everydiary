@@ -248,16 +248,21 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
       }
 
       debugPrint('📷 OCR 서비스 초기화 중...');
-      await _ocrService.initialize().timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          throw const ocr_service.OCRException('OCR 서비스 초기화 시간이 초과되었습니다.');
-        },
-      );
+      await _ocrService
+          .initialize(language: _selectedLanguage)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw const ocr_service.OCRException('OCR 서비스 초기화 시간이 초과되었습니다.');
+            },
+          );
 
       String resultText = '';
       try {
-        final processedBytes = await _ocrService.preprocessImage(originalBytes);
+        final processedBytes = await _ocrService.preprocessImage(
+          originalBytes,
+          language: _selectedLanguage,
+        );
         final processedResult = await _ocrService.extractTextFromBytes(
           processedBytes,
           language: _selectedLanguage,

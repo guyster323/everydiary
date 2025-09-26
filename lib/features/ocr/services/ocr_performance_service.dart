@@ -33,14 +33,28 @@ class OCRPerformanceService {
 
       if (enablePreprocessing) {
         final preprocessStopwatch = Stopwatch()..start();
-        processedBytes = await _ocrService.preprocessImage(imageBytes);
+        final languageOption = ocr_service.kSupportedOcrLanguages.firstWhere(
+          (option) => option.script == script,
+          orElse: () => ocr_service.kSupportedOcrLanguages.first,
+        );
+        processedBytes = await _ocrService.preprocessImage(
+          imageBytes,
+          language: languageOption,
+        );
         preprocessStopwatch.stop();
         preprocessingTime = preprocessStopwatch.elapsedMilliseconds;
       }
 
       // OCR 처리 시간 측정
       final ocrStopwatch = Stopwatch()..start();
-      final result = await _ocrService.extractTextFromBytes(processedBytes);
+      final languageOption = ocr_service.kSupportedOcrLanguages.firstWhere(
+        (option) => option.script == script,
+        orElse: () => ocr_service.kSupportedOcrLanguages.first,
+      );
+      final result = await _ocrService.extractTextFromBytes(
+        processedBytes,
+        language: languageOption,
+      );
       ocrStopwatch.stop();
 
       stopwatch.stop();

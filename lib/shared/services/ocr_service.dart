@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -52,15 +53,17 @@ class OCRService {
   static const int _maxImageBytes = 6 * 1024 * 1024; // 6MB 허용
   TextRecognizer? _textRecognizer;
   OCRLanguageOption _currentLanguage = kSupportedOcrLanguages.first;
+  bool _usingFallbackScript = false;
 
   /// 현재 선택된 언어
   OCRLanguageOption get currentLanguage => _currentLanguage;
+  bool get isUsingFallbackScript => _usingFallbackScript;
 
   /// 서비스 초기화 - 언어 선택 반영
   Future<bool> initialize({OCRLanguageOption? language}) async {
     if (_isDisposed) {
-      debugPrint('🔍 OCR 서비스가 이미 해제되었습니다.');
-      return false;
+      debugPrint('🔍 OCR 서비스가 해제됨 - 재초기화 진행');
+      _isDisposed = false;
     }
 
     final OCRLanguageOption languageToUse = language ?? _currentLanguage;
@@ -69,6 +72,7 @@ class OCRService {
     if (languageChanged || !_isInitialized || _textRecognizer == null) {
       _currentLanguage = languageToUse;
       _isInitialized = false;
+      _usingFallbackScript = false;
       if (_textRecognizer != null) {
         await _textRecognizer!.close();
         _textRecognizer = null;
@@ -99,6 +103,13 @@ class OCRService {
           '⚠️ ${_currentLanguage.label} 스크립트를 지원하지 않는 환경, 기본 모드로 fallback',
         );
         _textRecognizer = TextRecognizer();
+        _usingFallbackScript = true;
+      } catch (error, stackTrace) {
+        debugPrint('⚠️ ${_currentLanguage.label} 스크립트 초기화 실패: $error');
+        debugPrint(stackTrace.toString());
+        debugPrint('⚠️ 기본 TextRecognizer로 fallback');
+        _textRecognizer = TextRecognizer();
+        _usingFallbackScript = true;
       }
 
       // 초기화 테스트
@@ -112,6 +123,7 @@ class OCRService {
       debugPrint('🔍 OCR 서비스 초기화 실패: $e');
       _isInitialized = false;
       _textRecognizer = null;
+      _usingFallbackScript = false;
       return false;
     }
   }
@@ -161,7 +173,10 @@ class OCRService {
       _validateSize(fileSize);
 
       final originalBytes = await file.readAsBytes();
-      final processedBytes = await preprocessImage(originalBytes);
+      final processedBytes = await preprocessImage(
+        originalBytes,
+        language: lang,
+      );
       final processedResult = await _processBytes(
         processedBytes,
         sourceDescription: '$imagePath (processed)',
@@ -206,7 +221,7 @@ class OCRService {
 
       _validateSize(imageBytes.length);
 
-      final processedBytes = await preprocessImage(imageBytes);
+      final processedBytes = await preprocessImage(imageBytes, language: lang);
       final processedResult = await _processBytes(
         processedBytes,
         sourceDescription: 'memory-bytes (processed)',
@@ -235,7 +250,10 @@ class OCRService {
       }
 
       // 보수적인 전처리로 재시도
-      final conservativeBytes = await _preprocessImageConservative(imageBytes);
+      final conservativeBytes = await _preprocessImageConservative(
+        imageBytes,
+        language: lang,
+      );
       final conservativeResult = await _processBytes(
         conservativeBytes,
         sourceDescription: 'memory-bytes (conservative)',
@@ -263,7 +281,10 @@ class OCRService {
   }
 
   /// 이미지 전처리 (개선된 버전)
-  Future<Uint8List> preprocessImage(Uint8List imageBytes) async {
+  Future<Uint8List> preprocessImage(
+    Uint8List imageBytes, {
+    required OCRLanguageOption language,
+  }) async {
     try {
       // 이미지 디코딩
       final image = img.decodeImage(imageBytes);
@@ -293,32 +314,50 @@ class OCRService {
         );
       }
 
-      // 한국어 텍스트 인식을 위한 강화된 전처리
-      // 1. 그레이스케일 변환 (텍스트 인식 향상)
-      final grayscale = img.grayscale(resizedImage);
-
-      // 2. 대비 강화 (한국어 문자 선명도 향상)
-      final contrasted = img.adjustColor(
-        grayscale,
-        contrast: 1.8, // 대비 대폭 증가
-        brightness: 1.15, // 밝기 증가
+      final processed = _applyLanguagePreprocessing(
+        resizedImage,
+        language: language,
       );
 
-      // 3. 최종 품질 개선
-      final enhanced = img.adjustColor(
-        contrasted,
-        contrast: 1.2,
-        brightness: 1.05,
-      );
+      debugPrint('🔍 ${language.label} 전처리 완료');
 
-      debugPrint('🔍 한국어 텍스트 최적화 완료');
-
-      // PNG로 저장 (JPEG 압축 손실 방지)
-      return Uint8List.fromList(img.encodePng(enhanced));
+      return Uint8List.fromList(img.encodePng(processed));
     } catch (e) {
       debugPrint('🔍 이미지 전처리 실패: $e');
       // 전처리 실패 시 원본 반환
       return imageBytes;
+    }
+  }
+
+  img.Image _applyLanguagePreprocessing(
+    img.Image image, {
+    required OCRLanguageOption language,
+  }) {
+    switch (language.code) {
+      case 'ko':
+        final grayscale = img.grayscale(image);
+        final contrasted = img.adjustColor(
+          grayscale,
+          contrast: 1.8,
+          brightness: 1.15,
+        );
+        return img.adjustColor(contrasted, contrast: 1.2, brightness: 1.05);
+      case 'ja':
+        final grayscale = img.grayscale(image);
+        final contrasted = img.adjustColor(
+          grayscale,
+          contrast: 1.5,
+          brightness: 1.05,
+        );
+        return img.gaussianBlur(contrasted, radius: 1);
+      case 'zh':
+        final grayscale = img.grayscale(image);
+        return img.adjustColor(grayscale, contrast: 1.4, brightness: 1.1);
+      case 'en':
+        final grayscale = img.grayscale(image);
+        return img.adjustColor(grayscale, contrast: 1.3, brightness: 1.05);
+      default:
+        return img.adjustColor(image, contrast: 1.2, brightness: 1.05);
     }
   }
 
@@ -355,7 +394,10 @@ class OCRService {
   }
 
   /// 보수적인 이미지 전처리 (원본에 가까운 처리)
-  Future<Uint8List> _preprocessImageConservative(Uint8List imageBytes) async {
+  Future<Uint8List> _preprocessImageConservative(
+    Uint8List imageBytes, {
+    required OCRLanguageOption language,
+  }) async {
     try {
       final img.Image? originalImage = img.decodeImage(imageBytes);
       if (originalImage == null) {
@@ -363,20 +405,34 @@ class OCRService {
         return imageBytes;
       }
 
-      // 원본 크기 유지하되, 품질만 개선
-      final enhanced = img.adjustColor(
+      final enhanced = _applyConservativeAdjustments(
         originalImage,
-        contrast: 1.3, // 대비 약간 증가
-        brightness: 1.1, // 밝기 약간 증가
+        language: language,
       );
 
       debugPrint('🔍 보수적 전처리 완료 (원본 크기 유지)');
 
-      // PNG로 저장 (압축 손실 방지)
       return Uint8List.fromList(img.encodePng(enhanced));
     } catch (e) {
       debugPrint('⚠️ 보수적 전처리 실패: $e');
       return imageBytes;
+    }
+  }
+
+  img.Image _applyConservativeAdjustments(
+    img.Image image, {
+    required OCRLanguageOption language,
+  }) {
+    switch (language.code) {
+      case 'ja':
+      case 'zh':
+        return img.adjustColor(image, contrast: 1.2, brightness: 1.05);
+      case 'ko':
+        return img.adjustColor(image, contrast: 1.3, brightness: 1.1);
+      case 'en':
+        return img.adjustColor(image, contrast: 1.05, brightness: 1.02);
+      default:
+        return img.adjustColor(image, contrast: 1.1, brightness: 1.05);
     }
   }
 
@@ -389,7 +445,7 @@ class OCRService {
 
   /// 서비스 정보 가져오기
   Map<String, dynamic> getServiceInfo() {
-    return {
+    return <String, Object?>{
       'isInitialized': _isInitialized,
       'isDisposed': _isDisposed,
       'isAvailable': isAvailable,
@@ -533,7 +589,11 @@ class OCRService {
       );
       final recognizedText = await recognizer
           .processImage(inputImage)
-          .timeout(const Duration(seconds: 12));
+          .timeout(const Duration(seconds: 12))
+          .catchError((Object error) {
+            debugPrint('🔍 ML Kit 처리 예외 ($sourceDescription): $error');
+            throw const OCRException('OCR 엔진 처리 중 오류가 발생했습니다.');
+          });
 
       debugPrint('🔍 Raw OCR 텍스트 길이: ${recognizedText.text.length}');
       debugPrint('🔍 인식된 블록 수: ${recognizedText.blocks.length}');
@@ -580,10 +640,14 @@ class OCRService {
         textBlocks: blockTexts,
         confidence: _calculateAverageConfidence(recognizedText.blocks),
       );
+    } on TimeoutException {
+      debugPrint('⏱️ OCR 처리 타임아웃 ($sourceDescription)');
+      throw const OCRException('텍스트 인식 시간이 초과되었습니다.');
     } on OCRException {
       rethrow;
-    } catch (e) {
+    } catch (e, stack) {
       debugPrint('🔍 실제 OCR 처리 실패 ($sourceDescription): $e');
+      debugPrint(stack.toString());
       throw OCRException('OCR 처리 중 오류가 발생했습니다: $e');
     }
   }
