@@ -183,6 +183,27 @@ class ImageAttachmentService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addExternalImage({
+    required String localPath,
+    required String fileName,
+    required int fileSize,
+    required String mimeType,
+  }) {
+    final attachedImage = AttachedImage(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      originalPath: localPath,
+      localPath: localPath,
+      fileName: fileName,
+      fileSize: fileSize,
+      createdAt: DateTime.now(),
+    );
+
+    _attachedImages.add(attachedImage);
+    notifyListeners();
+
+    Logger.info('외부 이미지 추가: $fileName');
+  }
+
   @override
   void dispose() {
     // 메모리 정리

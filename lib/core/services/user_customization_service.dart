@@ -54,7 +54,7 @@ class UserCustomizationSettings {
     'contrast': contrast,
     'saturation': saturation,
     'blur_radius': blurRadius,
-    'overlay_color': overlayColor.value,
+    'overlay_color': overlayColor.toARGB32(),
     'overlay_opacity': overlayOpacity,
     'enable_auto_optimization': enableAutoOptimization,
     'enable_style_presets': enableStylePresets,
@@ -222,7 +222,7 @@ class UserCustomizationService {
     try {
       final newSettings = _settings.copyWith(overlayColor: overlayColor);
       await updateSettings(newSettings);
-      debugPrint('✅ 오버레이 색상 업데이트: ${overlayColor.value}');
+      debugPrint('✅ 오버레이 색상 업데이트: ${overlayColor.toARGB32()}');
     } catch (e) {
       debugPrint('❌ 오버레이 색상 업데이트 실패: $e');
     }

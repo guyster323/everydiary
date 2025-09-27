@@ -1,19 +1,17 @@
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../services/cache_manager_service.dart';
 
-part 'cache_manager_provider.g.dart';
+final cacheManagerServiceProvider = AutoDisposeProvider<CacheManagerService>((
+  ref,
+) {
+  final service = CacheManagerService();
+  ref.onDispose(service.dispose);
+  return service;
+});
 
-/// 캐시 관리 서비스 프로바이더
-@riverpod
-CacheManagerService cacheManagerService(CacheManagerServiceRef ref) {
-  return CacheManagerService();
-}
-
-/// 캐시 관리자
-@riverpod
-class CacheManagerNotifier extends _$CacheManagerNotifier {
+class CacheManagerNotifier extends AutoDisposeNotifier<Map<String, dynamic>> {
   @override
   Map<String, dynamic> build() {
     _initialize();
@@ -25,7 +23,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     };
   }
 
-  /// 초기화
   Future<void> _initialize() async {
     try {
       debugPrint('🔄 캐시 관리자 초기화 시작');
@@ -33,7 +30,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
       final service = ref.read(cacheManagerServiceProvider);
       await service.initialize();
 
-      // 이벤트 스트림 구독
       service.eventStream.listen(
         (CacheEvent event) {
           _handleCacheEvent(event);
@@ -43,7 +39,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
         },
       );
 
-      // 초기 통계 로드
       await _loadStats();
 
       debugPrint('✅ 캐시 관리자 초기화 완료');
@@ -52,13 +47,10 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 이벤트 처리
   void _handleCacheEvent(CacheEvent event) {
-    // 통계 업데이트
     _loadStats();
   }
 
-  /// 통계 로드
   Future<void> _loadStats() async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -88,15 +80,18 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 항목 추가
-  Future<void> addCacheItem(String key, dynamic data, {
+  Future<void> addCacheItem(
+    String key,
+    dynamic data, {
     Duration? expiry,
     CachePriority priority = CachePriority.normal,
     String? category,
   }) async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
-      await service.addCacheItem(key, data,
+      await service.addCacheItem(
+        key,
+        data,
         expiry: expiry,
         priority: priority,
         category: category,
@@ -107,7 +102,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 항목 가져오기
   Future<dynamic> getCacheItem(String key) async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -118,7 +112,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 항목 제거
   Future<void> removeCacheItem(String key) async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -129,7 +122,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 정리 수행
   Future<void> performCleanup() async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -140,7 +132,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 카테고리 캐시 정리
   Future<void> clearCategory(String category) async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -151,7 +142,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 전체 캐시 정리
   Future<void> clearAllCache() async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -162,7 +152,6 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 캐시 마이그레이션
   Future<void> migrateCache(String fromVersion, String toVersion) async {
     try {
       final service = ref.read(cacheManagerServiceProvider);
@@ -173,21 +162,23 @@ class CacheManagerNotifier extends _$CacheManagerNotifier {
     }
   }
 
-  /// 통계 새로고침
   Future<void> refreshStats() async {
     await _loadStats();
   }
 }
 
-/// 캐시 통계 프로바이더
-@riverpod
-Map<String, dynamic> cacheStats(CacheStatsRef ref) {
-  return ref.watch(cacheManagerNotifierProvider);
-}
+final cacheManagerNotifierProvider =
+    AutoDisposeNotifierProvider<CacheManagerNotifier, Map<String, dynamic>>(
+      CacheManagerNotifier.new,
+    );
 
-/// 캐시 카테고리 통계 프로바이더
-@riverpod
-Map<String, dynamic> cacheCategoryStats(CacheCategoryStatsRef ref) {
+final cacheStatsProvider = AutoDisposeProvider<Map<String, dynamic>>((ref) {
+  return ref.watch(cacheManagerNotifierProvider);
+});
+
+final cacheCategoryStatsProvider = AutoDisposeProvider<Map<String, dynamic>>((
+  ref,
+) {
   final service = ref.read(cacheManagerServiceProvider);
   final stats = service.getCacheStats();
 
@@ -197,61 +188,12 @@ Map<String, dynamic> cacheCategoryStats(CacheCategoryStatsRef ref) {
   }
 
   return categoryStats;
-}
+});
 
-/// 캐시 이벤트 프로바이더
-@riverpod
-List<Map<String, dynamic>> cacheEvents(CacheEventsRef ref) {
-  // 실제 구현에서는 이벤트 스트림을 구독하여 이벤트를 수집
-  return [];
-}
-
-/// 캐시 항목 프로바이더
-@riverpod
-Future<dynamic> cacheItem(CacheItemRef ref, String key) async {
-  final notifier = ref.read(cacheManagerNotifierProvider.notifier);
-  return await notifier.getCacheItem(key);
-}
-
-/// 캐시 크기 프로바이더
-@riverpod
-int cacheSize(CacheSizeRef ref) {
-  final stats = ref.watch(cacheStatsProvider);
-  return stats['totalSize'] as int? ?? 0;
-}
-
-/// 캐시 항목 수 프로바이더
-@riverpod
-int cacheItemCount(CacheItemCountRef ref) {
-  final stats = ref.watch(cacheStatsProvider);
-  return stats['totalItems'] as int? ?? 0;
-}
-
-/// 캐시 카테고리 수 프로바이더
-@riverpod
-int cacheCategoryCount(CacheCategoryCountRef ref) {
-  final stats = ref.watch(cacheStatsProvider);
-  return stats['categories'] as int? ?? 0;
-}
-
-/// 캐시 사용률 프로바이더
-@riverpod
-double cacheUsageRate(CacheUsageRateRef ref) {
-  final size = ref.watch(cacheSizeProvider);
-  const maxSize = 50 * 1024 * 1024; // 50MB
-  return (size / maxSize).clamp(0.0, 1.0);
-}
-
-/// 캐시 상태 프로바이더
-@riverpod
-String cacheStatus(CacheStatusRef ref) {
-  final usageRate = ref.watch(cacheUsageRateProvider);
-
-  if (usageRate < 0.5) {
-    return '정상';
-  } else if (usageRate < 0.8) {
-    return '주의';
-  } else {
-    return '위험';
-  }
-}
+final cacheCategoryProvider = AutoDisposeProvider.family<CacheStats, String>((
+  ref,
+  category,
+) {
+  final service = ref.read(cacheManagerServiceProvider);
+  return service.getCategoryStats(category);
+});

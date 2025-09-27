@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/cache_manager_provider.dart';
+import '../providers/offline_cache_provider.dart';
 
 /// 캐시 디버그 위젯
 class CacheDebugWidget extends ConsumerWidget {
@@ -25,10 +26,7 @@ class CacheDebugWidget extends ConsumerWidget {
                 const SizedBox(width: 8),
                 const Text(
                   '캐시 디버그 정보',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 IconButton(
@@ -56,9 +54,17 @@ class CacheDebugWidget extends ConsumerWidget {
       childAspectRatio: 2.5,
       children: [
         _buildStatCard('총 항목', '${stats['totalItems'] ?? 0}개', Icons.inventory),
-        _buildStatCard('총 크기', _formatBytes((stats['totalSize'] as int?) ?? 0), Icons.storage),
+        _buildStatCard(
+          '총 크기',
+          _formatBytes((stats['totalSize'] as int?) ?? 0),
+          Icons.storage,
+        ),
         _buildStatCard('카테고리', '${stats['categories'] ?? 0}개', Icons.category),
-        _buildStatCard('마지막 정리', _formatDateTime(stats['lastCleanup']), Icons.cleaning_services),
+        _buildStatCard(
+          '마지막 정리',
+          _formatDateTime(stats['lastCleanup']),
+          Icons.cleaning_services,
+        ),
       ],
     );
   }
@@ -76,18 +82,12 @@ class CacheDebugWidget extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 2),
             Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -183,15 +183,23 @@ class CacheDebugWidget extends ConsumerWidget {
 
   /// 바이트 포맷팅
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   /// 날짜 시간 포맷팅
   String _formatDateTime(dynamic dateTime) {
-    if (dateTime == null) return '없음';
+    if (dateTime == null) {
+      return '없음';
+    }
     if (dateTime is String) {
       final dt = DateTime.tryParse(dateTime);
       if (dt != null) {
@@ -222,9 +230,15 @@ class CacheDetailsDialog extends ConsumerWidget {
             children: [
               _buildSectionTitle('전체 통계'),
               _buildStatRow('총 항목 수', '${cacheStats['totalItems'] ?? 0}개'),
-              _buildStatRow('총 크기', _formatBytes((cacheStats['totalSize'] as int?) ?? 0)),
+              _buildStatRow(
+                '총 크기',
+                _formatBytes((cacheStats['totalSize'] as int?) ?? 0),
+              ),
               _buildStatRow('카테고리 수', '${cacheStats['categories'] ?? 0}개'),
-              _buildStatRow('마지막 정리', _formatDateTime(cacheStats['lastCleanup'])),
+              _buildStatRow(
+                '마지막 정리',
+                _formatDateTime(cacheStats['lastCleanup']),
+              ),
               const SizedBox(height: 16),
               _buildSectionTitle('카테고리별 통계'),
               ...categoryStats.entries.map((MapEntry<String, dynamic> entry) {
@@ -251,10 +265,7 @@ class CacheDetailsDialog extends ConsumerWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -284,10 +295,7 @@ class CacheDetailsDialog extends ConsumerWidget {
           children: [
             Text(
               category,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
             ),
             const SizedBox(height: 4),
             Row(
@@ -305,15 +313,23 @@ class CacheDetailsDialog extends ConsumerWidget {
 
   /// 바이트 포맷팅
   String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    if (bytes < 1024 * 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   /// 날짜 시간 포맷팅
   String _formatDateTime(dynamic dateTime) {
-    if (dateTime == null) return '없음';
+    if (dateTime == null) {
+      return '없음';
+    }
     if (dateTime is String) {
       final dt = DateTime.tryParse(dateTime);
       if (dt != null) {
@@ -330,7 +346,11 @@ class CacheMonitoringWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cacheEvents = ref.watch(cacheEventsProvider);
+    final cacheState = ref.watch(offlineCacheProvider);
+    final events = cacheState.syncStats['events'];
+    final cacheEvents = events is List
+        ? events.cast<Map<String, dynamic>>()
+        : <Map<String, dynamic>>[];
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -341,21 +361,22 @@ class CacheMonitoringWidget extends ConsumerWidget {
           children: [
             const Text(
               '캐시 이벤트 모니터링',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             SizedBox(
               height: 200,
-              child: ListView.builder(
-                itemCount: cacheEvents.length,
-                itemBuilder: (context, index) {
-                  final event = cacheEvents[index];
-                  return _buildEventItem(event);
-                },
-              ),
+              child: cacheEvents.isEmpty
+                  ? const Center(child: Text('이벤트가 없습니다.'))
+                  : ListView.builder(
+                      itemCount: cacheEvents.length,
+                      itemBuilder: (context, index) {
+                        final event = cacheEvents[index];
+                        final type = event['type'] as String? ?? 'unknown';
+                        final key = event['key'] as String? ?? 'unknown';
+                        return _buildEventItem(type, key, event['timestamp']);
+                      },
+                    ),
             ),
           ],
         ),
@@ -364,29 +385,19 @@ class CacheMonitoringWidget extends ConsumerWidget {
   }
 
   /// 이벤트 아이템 빌드
-  Widget _buildEventItem(Map<String, dynamic> event) {
+  Widget _buildEventItem(String type, String key, Object? timestamp) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Icon(
-            _getEventIcon(event['type'] as String),
-            size: 16,
-            color: _getEventColor(event['type'] as String),
-          ),
+          Icon(_getEventIcon(type), size: 16, color: _getEventColor(type)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              '${event['type']}: ${event['key']}',
-              style: const TextStyle(fontSize: 12),
-            ),
+            child: Text('$type: $key', style: const TextStyle(fontSize: 12)),
           ),
           Text(
-            _formatTime(event['timestamp']),
-            style: const TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-            ),
+            _formatTime(timestamp),
+            style: const TextStyle(fontSize: 10, color: Colors.grey),
           ),
         ],
       ),

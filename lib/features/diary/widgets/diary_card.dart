@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/widgets/custom_card.dart';
+import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
 
 /// 일기 카드 위젯
@@ -94,13 +96,50 @@ class DiaryCard extends StatelessWidget {
   Widget _buildTitle(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        diary.title!,
-        style: Theme.of(
-          context,
-        ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (diary.attachments.isNotEmpty)
+            _buildThumbnail(context, diary.attachments.first),
+          if (diary.attachments.isNotEmpty) const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              diary.title!,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThumbnail(BuildContext context, Attachment attachment) {
+    final filePath = attachment.thumbnailPath ?? attachment.filePath;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.file(
+        File(filePath),
+        width: 72,
+        height: 72,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.image_not_supported,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          );
+        },
       ),
     );
   }

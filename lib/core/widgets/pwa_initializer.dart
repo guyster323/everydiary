@@ -28,11 +28,11 @@ class _PWAInitializerState extends ConsumerState<PWAInitializer> {
 
   Future<void> _initializePWA() async {
     try {
-      final pwaNotifier = ref.read(pwaProvider.notifier);
-      await pwaNotifier.initialize();
+      final notifier = ref.read(pwaProvider.notifier);
+      await notifier.initialize();
 
       // PWA 설치 서비스도 초기화
-      ref.read(pWAInstallStateProvider);
+      ref.read(pwaInstallStateNotifierProvider);
 
       debugPrint('✅ PWA 초기화 완료');
     } catch (e) {

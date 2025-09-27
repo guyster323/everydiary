@@ -1,6 +1,6 @@
+import 'package:everydiary/core/providers/pwa_install_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:everydiary/core/providers/pwa_install_provider.dart';
 
 /// 앱 시작 시 PWA 설치 서비스를 초기화하는 서비스
 class PWAInstallInitializer {
@@ -17,8 +17,7 @@ class PWAInstallInitializer {
 
     debugPrint('🔄 PWAInstallInitializer 초기화 시작');
     try {
-      // PWAInstallState를 읽어 초기화 로직을 트리거
-      _container.read(pWAInstallStateProvider);
+      _container.read(pwaInstallStateNotifierProvider);
       _isInitialized = true;
       debugPrint('✅ PWAInstallInitializer 초기화 완료');
     } catch (e) {

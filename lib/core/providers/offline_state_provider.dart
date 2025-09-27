@@ -1,19 +1,17 @@
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../services/offline_state_manager.dart';
 
-part 'offline_state_provider.g.dart';
+final offlineStateManagerProvider = AutoDisposeProvider<OfflineStateManager>((
+  ref,
+) {
+  final manager = OfflineStateManager();
+  ref.onDispose(manager.dispose);
+  return manager;
+});
 
-/// 오프라인 상태 프로바이더
-@riverpod
-OfflineStateManager offlineStateManager(OfflineStateManagerRef ref) {
-  return OfflineStateManager();
-}
-
-/// 오프라인 상태 관리자
-@riverpod
-class OfflineStateNotifier extends _$OfflineStateNotifier {
+class OfflineStateNotifier extends AutoDisposeNotifier<OfflineState> {
   @override
   OfflineState build() {
     _initialize();
@@ -85,57 +83,48 @@ class OfflineStateNotifier extends _$OfflineStateNotifier {
   }
 }
 
-/// 오프라인 상태 프로바이더
-@riverpod
-OfflineState offlineState(OfflineStateRef ref) {
-  return ref.watch(offlineStateNotifierProvider);
-}
+final offlineStateNotifierProvider =
+    AutoDisposeNotifierProvider<OfflineStateNotifier, OfflineState>(
+      OfflineStateNotifier.new,
+    );
 
-/// 온라인 상태 프로바이더
-@riverpod
-bool isOnline(IsOnlineRef ref) {
+final offlineStateProvider = AutoDisposeProvider<OfflineState>((ref) {
+  return ref.watch(offlineStateNotifierProvider);
+});
+
+final isOnlineProvider = AutoDisposeProvider<bool>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.isOnline;
-}
+});
 
-/// 오프라인 모드 상태 프로바이더
-@riverpod
-bool isOfflineMode(IsOfflineModeRef ref) {
+final isOfflineModeProvider = AutoDisposeProvider<bool>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.isOfflineMode;
-}
+});
 
-/// 오프라인 모드 강제 설정 상태 프로바이더
-@riverpod
-bool isOfflineModeForced(IsOfflineModeForcedRef ref) {
+final isOfflineModeForcedProvider = AutoDisposeProvider<bool>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.isOfflineModeForced;
-}
+});
 
-/// 네트워크 연결 타입 프로바이더
-@riverpod
-String connectionType(ConnectionTypeRef ref) {
+final connectionTypeProvider = AutoDisposeProvider<String>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.connectionType;
-}
+});
 
-/// 오프라인 지속 시간 프로바이더
-@riverpod
-Duration? offlineDuration(OfflineDurationRef ref) {
+final offlineDurationProvider = AutoDisposeProvider<Duration?>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.offlineDuration;
-}
+});
 
-/// 온라인 지속 시간 프로바이더
-@riverpod
-Duration? onlineDuration(OnlineDurationRef ref) {
+final onlineDurationProvider = AutoDisposeProvider<Duration?>((ref) {
   final offlineState = ref.watch(offlineStateProvider);
   return offlineState.onlineDuration;
-}
+});
 
-/// 오프라인 상태 정보 프로바이더
-@riverpod
-Map<String, dynamic> offlineStateInfo(OfflineStateInfoRef ref) {
+final offlineStateInfoProvider = AutoDisposeProvider<Map<String, dynamic>>((
+  ref,
+) {
   final notifier = ref.read(offlineStateNotifierProvider.notifier);
   return notifier.getOfflineStateInfo();
-}
+});

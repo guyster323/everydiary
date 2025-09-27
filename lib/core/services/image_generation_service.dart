@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:everydiary/core/services/openai_service.dart';
+import 'package:everydiary/core/config/api_keys.dart';
 import 'package:everydiary/core/services/text_analysis_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 이미지 생성 결과 모델
@@ -15,28 +19,49 @@ class ImageGenerationResult {
   final String emotion;
   final DateTime generatedAt;
   final Map<String, dynamic> metadata;
+  final String? localImagePath;
 
-  const ImageGenerationResult({
+  ImageGenerationResult({
     required this.imageUrl,
     required this.prompt,
     required this.style,
     required this.topic,
     required this.emotion,
     required this.generatedAt,
-    required this.metadata,
-  });
+    Map<String, dynamic>? metadata,
+    this.localImagePath,
+  }) : metadata = Map<String, dynamic>.unmodifiable(
+         metadata ?? <String, dynamic>{},
+       );
 
-  Map<String, dynamic> toJson() => {
-    'image_url': imageUrl,
-    'prompt': prompt,
-    'style': style,
-    'topic': topic,
-    'emotion': emotion,
-    'generated_at': generatedAt.toIso8601String(),
-    'metadata': metadata,
-  };
+  Map<String, dynamic> toJson() {
+    final data = {
+      'image_url': imageUrl,
+      'prompt': prompt,
+      'style': style,
+      'topic': topic,
+      'emotion': emotion,
+      'generated_at': generatedAt.toIso8601String(),
+      'metadata': metadata,
+    };
+    if (localImagePath != null) {
+      data['local_image_path'] = localImagePath!;
+    }
+    return data;
+  }
 
   factory ImageGenerationResult.fromJson(Map<String, dynamic> json) {
+    final Object? metadataJson = json['metadata'];
+    final Map<String, dynamic> metadataMap = switch (metadataJson) {
+      final Map<String, dynamic> explicitMap => Map<String, dynamic>.from(
+        explicitMap,
+      ),
+      final Map<dynamic, dynamic> dynamicMap => dynamicMap.map(
+        (key, value) => MapEntry(key.toString(), value),
+      ),
+      final String metadataString => _parseMetadataString(metadataString),
+      _ => <String, dynamic>{},
+    };
     return ImageGenerationResult(
       imageUrl: json['image_url'] as String,
       prompt: json['prompt'] as String,
@@ -44,9 +69,23 @@ class ImageGenerationResult {
       topic: json['topic'] as String,
       emotion: json['emotion'] as String,
       generatedAt: DateTime.parse(json['generated_at'] as String),
-      metadata: json['metadata'] as Map<String, dynamic>,
+      metadata: metadataMap,
+      localImagePath: json['local_image_path'] as String?,
     );
   }
+}
+
+Map<String, dynamic> _parseMetadataString(String raw) {
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is Map<String, dynamic>) {
+      return Map<String, dynamic>.from(decoded);
+    }
+    if (decoded is Map) {
+      return decoded.map((key, value) => MapEntry(key.toString(), value));
+    }
+  } catch (_) {}
+  return <String, dynamic>{};
 }
 
 /// 이미지 생성 서비스
@@ -57,13 +96,16 @@ class ImageGenerationService {
   factory ImageGenerationService() => _instance;
   ImageGenerationService._internal();
 
+  static const int _dailyGenerationLimit = 50;
+
   bool _isInitialized = false;
   final Map<String, ImageGenerationResult> _cache = {};
   final List<Map<String, dynamic>> _generationHistory = [];
 
   // 의존성 서비스들
   late TextAnalysisService _textAnalysisService;
-  late OpenAIService _openAIService;
+
+  Future<bool> get canGenerateTodayAsync => _canGenerateToday();
 
   /// 서비스 초기화
   Future<void> initialize() async {
@@ -74,10 +116,7 @@ class ImageGenerationService {
 
       // 의존성 서비스 초기화
       _textAnalysisService = TextAnalysisService();
-      _openAIService = OpenAIService();
-
       await _textAnalysisService.initialize();
-      await _openAIService.initialize();
 
       // 캐시된 생성 결과 로드
       await _loadCache();
@@ -92,6 +131,45 @@ class ImageGenerationService {
     }
   }
 
+  Future<bool> _canGenerateToday() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final todayKey = _todayUsageKey;
+      final currentUsage = prefs.getInt(todayKey) ?? 0;
+      return currentUsage < _dailyGenerationLimit;
+    } catch (e) {
+      debugPrint('❌ 사용량 확인 실패: $e');
+      return true;
+    }
+  }
+
+  Future<void> _recordGenerationUsage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final todayKey = _todayUsageKey;
+      final currentUsage = prefs.getInt(todayKey) ?? 0;
+      await prefs.setInt(todayKey, currentUsage + 1);
+
+      final keys = prefs
+          .getKeys()
+          .where((key) => key.startsWith('image_generation_usage_'))
+          .toList();
+      for (final key in keys) {
+        if (key != todayKey) {
+          await prefs.remove(key);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ 사용량 기록 실패: $e');
+    }
+  }
+
+  String get _todayUsageKey {
+    final now = DateTime.now();
+    final dateKey = '${now.year}-${now.month}-${now.day}';
+    return 'image_generation_usage_$dateKey';
+  }
+
   /// 텍스트에서 이미지 생성
   Future<ImageGenerationResult?> generateImageFromText(String text) async {
     if (!_isInitialized) {
@@ -104,57 +182,66 @@ class ImageGenerationService {
       return null;
     }
 
+    if (!await _canGenerateToday()) {
+      debugPrint(
+        '⚠️ 이미지 생성 일일 제한($_dailyGenerationLimit건)을 초과했습니다. 24시간 후 다시 시도해주세요.',
+      );
+      return null;
+    }
+
     try {
       debugPrint('🎨 텍스트에서 이미지 생성 시작');
 
-      // 캐시 확인
-      final cacheKey = _generateCacheKey(text);
-      if (_cache.containsKey(cacheKey)) {
-        debugPrint('📋 캐시된 이미지 생성 결과 사용');
-        return _cache[cacheKey];
-      }
-
-      // 1단계: 텍스트 분석
       final analysisResult = await _textAnalysisService.analyzeText(text);
       if (analysisResult == null) {
         debugPrint('❌ 텍스트 분석 실패');
         return null;
       }
 
-      // 2단계: 프롬프트 생성
-      final prompt = await _generateOptimizedPrompt(analysisResult);
+      final cacheKey = _generateCacheKey(
+        '$text|${analysisResult.topic}|${analysisResult.mood}',
+      );
+      if (_cache.containsKey(cacheKey)) {
+        debugPrint('📋 캐시된 이미지 생성 결과 사용');
+        return _cache[cacheKey];
+      }
+
+      final prompt = await _generateOptimizedPrompt(analysisResult, text);
       if (prompt == null) {
         debugPrint('❌ 프롬프트 생성 실패');
         return null;
       }
 
-      // 3단계: 이미지 생성
-      final imageResult = await _generateImage(prompt, analysisResult);
-      if (imageResult == null) {
-        debugPrint('❌ 이미지 생성 실패');
+      final generationResult = await _generateImageWithFallback(prompt);
+      if (generationResult == null) {
+        debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
         return null;
       }
 
-      // 4단계: 결과 캐싱 및 이력 저장
+      final savedImagePath = await _saveBase64Image(
+        generationResult['image_base64'] as String,
+      );
+      final generationMetadata = <String, dynamic>{
+        'analysis_result': analysisResult.toJson(),
+        'original_text': text,
+        'generation_service': generationResult['service'],
+        'generation_time': DateTime.now().toIso8601String(),
+      };
       final result = ImageGenerationResult(
-        imageUrl: imageResult['data'][0]['url'] as String,
+        imageUrl: savedImagePath ?? generationResult['image_url'] as String,
         prompt: prompt,
-        style: _determineStyle(analysisResult),
+        style: analysisResult.mood,
         topic: analysisResult.topic,
         emotion: analysisResult.emotion,
         generatedAt: DateTime.now(),
-        metadata: {
-          'analysis_result': analysisResult.toJson(),
-          'original_text': text,
-          'generation_time': DateTime.now().toIso8601String(),
-        },
+        metadata: generationMetadata,
+        localImagePath: savedImagePath,
       );
 
-      // 캐시에 저장
       _cache[cacheKey] = result;
       await _saveCache();
+      await _recordGenerationUsage();
 
-      // 생성 이력에 추가
       _generationHistory.add({
         'text': text,
         'result': result.toJson(),
@@ -170,59 +257,196 @@ class ImageGenerationService {
     }
   }
 
-  /// 분석 결과에서 최적화된 프롬프트 생성
-  Future<String?> _generateOptimizedPrompt(TextAnalysisResult analysis) async {
+  Future<Map<String, String>?> _generateImageWithFallback(String prompt) async {
+    final geminiResult = await _generateImageWithGemini(prompt);
+    if (geminiResult != null) {
+      return {
+        'service': 'Gemini',
+        'image_base64': geminiResult,
+        'image_url': 'gemini-inline-data',
+      };
+    }
+
+    final huggingFaceResult = await _generateImageWithHuggingFace(prompt);
+    if (huggingFaceResult != null) {
+      return {
+        'service': 'HuggingFace',
+        'image_base64': huggingFaceResult,
+        'image_url': 'huggingface-generated',
+      };
+    }
+
+    return null;
+  }
+
+  Future<String?> _generateImageWithGemini(String prompt) async {
+    if (ApiKeys.geminiApiKey.isEmpty) {
+      debugPrint('⚠️ Gemini API 키가 설정되지 않았습니다.');
+      return null;
+    }
+
     try {
-      debugPrint('🎯 프롬프트 최적화 시작');
-
-      // 기본 프롬프트 템플릿 생성
-      final basePrompt = _createBasePrompt(analysis);
-
-      // OpenAI를 통한 프롬프트 최적화
-      final optimizedPrompt = await _openAIService.optimizeImagePrompt(
-        originalPrompt: basePrompt,
-        emotion: analysis.emotion,
-        topic: analysis.topic,
-        keywords: analysis.keywords,
-        style: _determineStyle(analysis),
+      final uri = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${ApiKeys.geminiApiKey}',
       );
 
-      return optimizedPrompt ?? basePrompt;
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': '이미지를 생성해주세요: $prompt'},
+              ],
+            },
+          ],
+          'generationConfig': {
+            'temperature': 0.7,
+            'topK': 40,
+            'topP': 0.95,
+            'maxOutputTokens': 1024,
+          },
+          'safetySettings': [
+            {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'},
+            {
+              'category': 'HARM_CATEGORY_HATE_SPEECH',
+              'threshold': 'BLOCK_NONE',
+            },
+            {
+              'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+              'threshold': 'BLOCK_NONE',
+            },
+            {
+              'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              'threshold': 'BLOCK_NONE',
+            },
+          ],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final firstCandidate = candidates.first as Map<String, dynamic>;
+          final content = firstCandidate['content'] as Map<String, dynamic>?;
+          if (content != null) {
+            final parts = content['parts'] as List<dynamic>?;
+            if (parts != null && parts.isNotEmpty) {
+              final firstPart = parts.first as Map<String, dynamic>;
+              final text = firstPart['text'] as String?;
+              if (text != null && text.isNotEmpty) {
+                debugPrint('✅ Gemini 이미지 생성 성공');
+                return text; // Gemini는 텍스트로 이미지 URL을 반환
+              }
+            }
+          }
+        }
+        debugPrint('❌ Gemini 응답에 이미지 데이터가 없습니다: ${response.body}');
+        return null;
+      }
+
+      debugPrint('❌ Gemini 이미지 생성 실패: ${response.statusCode} ${response.body}');
+      return null;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Gemini 이미지 생성 중 예외 발생: $e\n$stackTrace');
+      return null;
+    }
+  }
+
+  Future<String?> _generateImageWithHuggingFace(String prompt) async {
+    if (ApiKeys.huggingFaceApiKey.isEmpty) {
+      debugPrint('⚠️ Hugging Face API 키가 설정되지 않았습니다.');
+      return null;
+    }
+
+    try {
+      final uri = Uri.parse(
+        'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5',
+      );
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
+        },
+        body: jsonEncode({
+          'inputs': prompt,
+          'parameters': {
+            'negative_prompt':
+                'blurry, low quality, distorted, disfigured, text, watermark',
+            'num_inference_steps': 25,
+            'guidance_scale': 7.5,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final bytes = response.bodyBytes;
+        if (bytes.isNotEmpty) {
+          debugPrint('✅ Hugging Face 이미지 생성 성공');
+          return base64Encode(bytes);
+        }
+        debugPrint('❌ Hugging Face 응답에 이미지 데이터가 없습니다.');
+        return null;
+      }
+
+      debugPrint(
+        '❌ Hugging Face 이미지 생성 실패: ${response.statusCode} ${response.body}',
+      );
+      return null;
     } catch (e) {
-      debugPrint('❌ 프롬프트 최적화 실패: $e');
-      return _createBasePrompt(analysis);
+      debugPrint('❌ Hugging Face 이미지 생성 중 예외 발생: $e');
+      return null;
     }
   }
 
-  /// 기본 프롬프트 생성
-  String _createBasePrompt(TextAnalysisResult analysis) {
-    final style = _determineStyle(analysis);
-    final mood = _getMoodDescription(analysis.mood);
-    final topic = _getTopicDescription(analysis.topic);
-    final keywords = analysis.keywords.take(3).join(', ');
+  Future<String?> _saveBase64Image(String base64Data) async {
+    try {
+      final bytes = base64Decode(base64Data);
+      final directory = await getApplicationDocumentsDirectory();
+      final imagesDir = Directory(p.join(directory.path, 'generated_images'));
+      if (!await imagesDir.exists()) {
+        await imagesDir.create(recursive: true);
+        debugPrint('📁 생성된 이미지 디렉토리 생성: ${imagesDir.path}');
+      }
 
-    return 'A $style $topic image with $mood mood, featuring $keywords, high quality, detailed, beautiful composition';
-  }
+      final fileName =
+          'diary_generated_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(p.join(imagesDir.path, fileName));
+      await file.writeAsBytes(bytes, flush: true);
 
-  /// 스타일 결정
-  String _determineStyle(TextAnalysisResult analysis) {
-    switch (analysis.topic) {
-      case '여행':
-        return 'photorealistic travel photography';
-      case '음식':
-        return 'food photography with warm lighting';
-      case '운동':
-        return 'dynamic sports photography';
-      case '감정':
-        return 'artistic emotional illustration';
-      case '일상':
-        return 'lifestyle photography';
-      default:
-        return 'artistic illustration';
+      debugPrint('✅ 생성된 이미지 저장: ${file.path}');
+      return file.path;
+    } catch (e) {
+      debugPrint('❌ 이미지 저장 실패: $e');
+      return null;
     }
   }
 
-  /// 기분 설명 생성
+  Future<String?> _generateOptimizedPrompt(
+    TextAnalysisResult analysis,
+    String originalText,
+  ) async {
+    try {
+      final moodDescription = _getMoodDescription(analysis.mood);
+      final topicDescription = _getTopicDescription(analysis.topic);
+      final keywords = analysis.keywords.take(3).join(', ');
+      final summarySnippet = analysis.summary.isNotEmpty
+          ? analysis.summary
+          : (originalText.length > 120
+                ? '${originalText.substring(0, 120)}...'
+                : originalText);
+
+      return 'Watercolor illustration, soft dreamy colors, $moodDescription mood, $topicDescription, featuring $keywords. Diary context: $summarySnippet';
+    } catch (e) {
+      debugPrint('❌ 프롬프트 생성 실패: $e');
+      return null;
+    }
+  }
+
   String _getMoodDescription(String mood) {
     switch (mood) {
       case '사랑':
@@ -244,55 +468,24 @@ class ImageGenerationService {
       case '평온':
         return 'peaceful and serene';
       default:
-        return 'neutral and balanced';
+        return 'balanced and reflective';
     }
   }
 
-  /// 주제 설명 생성
   String _getTopicDescription(String topic) {
     switch (topic) {
       case '여행':
         return 'travel destination landscape';
       case '음식':
-        return 'delicious food scene';
+        return 'a delicious food scene';
       case '운동':
-        return 'active lifestyle scene';
+        return 'dynamic lifestyle moment';
       case '감정':
-        return 'emotional expression scene';
+        return 'expressive emotional portrait';
       case '일상':
-        return 'daily life moment';
+        return 'cozy everyday scenery';
       default:
-        return 'general scene';
-    }
-  }
-
-  /// 이미지 생성 (OpenAI DALL-E)
-  Future<Map<String, dynamic>?> _generateImage(
-    String prompt,
-    TextAnalysisResult analysis,
-  ) async {
-    try {
-      debugPrint('🎨 DALL-E 이미지 생성 시작');
-
-      final result = await _openAIService.generateImage(
-        prompt: prompt,
-        model: 'dall-e-3',
-        size: '1024x1024',
-        quality: 'standard',
-        style: 'vivid',
-        n: 1,
-      );
-
-      if (result != null) {
-        debugPrint('✅ DALL-E 이미지 생성 완료');
-        return result;
-      } else {
-        debugPrint('❌ DALL-E 이미지 생성 실패');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('❌ 이미지 생성 실패: $e');
-      return null;
+        return 'poetic diary imagery';
     }
   }
 
@@ -314,6 +507,18 @@ class ImageGenerationService {
         for (final entry in cacheData.entries) {
           final resultData = entry.value as Map<String, dynamic>;
           _cache[entry.key] = ImageGenerationResult.fromJson(resultData);
+        }
+      }
+
+      // 사용량 키 초기화 (하루 단위로 재설정)
+      final todayKey = _todayUsageKey;
+      final keys = prefs
+          .getKeys()
+          .where((key) => key.startsWith('image_generation_usage_'))
+          .toList();
+      for (final key in keys) {
+        if (key != todayKey) {
+          await prefs.remove(key);
         }
       }
     } catch (e) {

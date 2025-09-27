@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/pwa_install_provider.dart';
+import '../providers/pwa_provider.dart';
 
 /// PWA 설치 프롬프트 위젯
 class PWAInstallPrompt extends ConsumerWidget {
@@ -9,10 +10,15 @@ class PWAInstallPrompt extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final installState = ref.watch(pWAInstallStateProvider);
+    final installState = ref.watch(pwaInstallStateNotifierProvider);
+    final isInstallable = ref.watch(pwaInstallableProvider);
 
-    // 설치된 경우 또는 설치 불가능한 경우 숨김
-    if (installState.isInstalled || !installState.isInstallable) {
+    debugPrint(
+      '🔍 PWA Install Prompt - isInstalled: ${installState.isInstalled}, isInstallable: $isInstallable',
+    );
+
+    // 설치된 경우 숨김 (설치 불가능한 경우는 표시)
+    if (installState.isInstalled) {
       return const SizedBox.shrink();
     }
 
@@ -70,24 +76,15 @@ class PWAInstallPrompt extends ConsumerWidget {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.installPWA();
 
-      if (success) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('앱이 성공적으로 설치되었습니다!'),
-              backgroundColor: Colors.green,
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? '앱이 성공적으로 설치되었습니다!' : '앱 설치에 실패했습니다. 다시 시도해주세요.',
             ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('앱 설치에 실패했습니다. 다시 시도해주세요.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('❌ PWA 설치 오류: $e');
@@ -108,7 +105,7 @@ class PWAUpdateNotification extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final installState = ref.watch(pWAInstallStateProvider);
+    final installState = ref.watch(pwaInstallStateNotifierProvider);
 
     // 업데이트가 없는 경우 숨김
     if (!installState.isUpdateAvailable) {
@@ -140,7 +137,7 @@ class PWAUpdateNotification extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '새 버전 (${installState.latestVersion})이 사용 가능합니다.',
+              '새 버전 (${installState.latestVersion ?? '-'})이 사용 가능합니다.',
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 16),
@@ -170,24 +167,15 @@ class PWAUpdateNotification extends ConsumerWidget {
       final installService = ref.read(pwaInstallServiceProvider);
       final success = await installService.updatePWA();
 
-      if (success) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('앱이 성공적으로 업데이트되었습니다!'),
-              backgroundColor: Colors.green,
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? '업데이트가 완료되었습니다!' : '업데이트에 실패했습니다. 다시 시도해주세요.',
             ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('앱 업데이트에 실패했습니다. 다시 시도해주세요.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('❌ PWA 업데이트 오류: $e');
@@ -198,7 +186,7 @@ class PWAUpdateNotification extends ConsumerWidget {
   void _dismissUpdateNotification(WidgetRef ref) {
     ref
         .read(pwaInstallServiceProvider)
-        .trackUpdateEvent('notification_dismissed', <String, dynamic>{});
+        .trackUpdateEvent('update_prompt_dismissed', <String, dynamic>{});
   }
 }
 
@@ -208,7 +196,7 @@ class PWAInstallStatusWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final installState = ref.watch(pWAInstallStateProvider);
+    final installState = ref.watch(pwaInstallStateNotifierProvider);
 
     return Card(
       margin: const EdgeInsets.all(16),

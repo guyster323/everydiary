@@ -1,45 +1,39 @@
 import 'package:flutter/foundation.dart';
 
-/// PWA 서비스 스텁 (웹이 아닌 플랫폼용)
+/// Android 전용 PWA 서비스 (실제 네이티브 설치 유도 로그용)
 class PWAService {
   static final PWAService _instance = PWAService._internal();
   factory PWAService() => _instance;
   PWAService._internal();
 
-  bool get isServiceWorkerSupported => false;
-  bool get isServiceWorkerRegistered => false;
-  bool get isOnline => true;
-  bool get canInstall => false;
+  bool get canInstall => true;
 
   Future<void> initialize() async {
-    debugPrint('🔧 PWA Service: 웹이 아닌 환경에서는 PWA를 지원하지 않습니다.');
+    debugPrint('🔧 Android PWA Service 초기화 완료');
   }
 
-  Future<void> addToOfflineQueue(Map<String, dynamic> data) async {
-    // 웹이 아닌 환경에서는 아무것도 하지 않음
-  }
-
-  Future<bool> requestNotificationPermission() async => false;
-
-  Future<void> sendNotification(
-    String title,
-    String body, {
-    Map<String, dynamic>? data,
-  }) async {
-    // 웹이 아닌 환경에서는 아무것도 하지 않음
-  }
-
-  Future<void> clearCache() async {
-    // 웹이 아닌 환경에서는 아무것도 하지 않음
+  Future<bool> isAppInstalled() async {
+    // Android 네이티브 설치 여부 체크는 별도로 처리하지 않음
+    return false;
   }
 
   Future<String?> getServiceWorkerVersion() async => null;
 
   Future<void> installPWA() async {
-    // 웹이 아닌 환경에서는 아무것도 하지 않음
+    debugPrint('📱 Android: 네이티브 설치 안내 표시');
   }
 
-  void printDebugInfo() {
-    debugPrint('🔧 PWA Service: 웹이 아닌 환경에서는 PWA를 지원하지 않습니다.');
-  }
+  Future<void> clearCache() async {}
+
+  Future<void> addToOfflineQueue(Map<String, dynamic> data) async {}
+
+  Future<bool> requestNotificationPermission() async => true;
+
+  Future<void> sendNotification(
+    String title,
+    String body, {
+    Map<String, dynamic>? data,
+  }) async {}
+
+  void printDebugInfo() {}
 }

@@ -1,50 +1,35 @@
-import 'dart:async';
-
 import 'package:everydiary/core/services/user_customization_service.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-part 'user_customization_provider.g.dart';
+final userCustomizationServiceProvider =
+    AutoDisposeProvider<UserCustomizationService>((ref) {
+      final service = UserCustomizationService();
+      ref.onDispose(service.dispose);
+      return service;
+    });
 
-/// 사용자 커스터마이징 서비스 프로바이더
-@riverpod
-UserCustomizationService userCustomizationService(
-  UserCustomizationServiceRef ref,
-) {
-  final service = UserCustomizationService();
-  ref.onDispose(() => service.dispose());
-  return service;
-}
+final userCustomizationInitializationProvider = AutoDisposeFutureProvider<void>(
+  (ref) async {
+    final service = ref.read(userCustomizationServiceProvider);
+    await service.initialize();
+  },
+);
 
-/// 사용자 커스터마이징 서비스 초기화 프로바이더
-@riverpod
-Future<void> userCustomizationInitialization(
-  UserCustomizationInitializationRef ref,
-) async {
-  final service = ref.read(userCustomizationServiceProvider);
-  await service.initialize();
-}
+final userCustomizationSettingsProvider =
+    AutoDisposeProvider<UserCustomizationSettings>((ref) {
+      final service = ref.read(userCustomizationServiceProvider);
+      return service.currentSettings;
+    });
 
-/// 사용자 커스터마이징 설정 프로바이더
-@riverpod
-UserCustomizationSettings userCustomizationSettings(
-  UserCustomizationSettingsRef ref,
-) {
-  final service = ref.read(userCustomizationServiceProvider);
-  return service.currentSettings;
-}
-
-/// 사용자 커스터마이징 설정 관리 프로바이더
-@riverpod
 class UserCustomizationSettingsNotifier
-    extends _$UserCustomizationSettingsNotifier {
+    extends AutoDisposeAsyncNotifier<UserCustomizationSettings> {
   @override
   Future<UserCustomizationSettings> build() async {
     final service = ref.read(userCustomizationServiceProvider);
     return service.currentSettings;
   }
 
-  /// 설정 업데이트
   Future<void> updateSettings(UserCustomizationSettings newSettings) async {
     try {
       state = const AsyncValue.loading();
@@ -60,7 +45,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 스타일 업데이트
   Future<void> updateStyle(ImageStyle style) async {
     try {
       state = const AsyncValue.loading();
@@ -78,7 +62,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 밝기 업데이트
   Future<void> updateBrightness(double brightness) async {
     try {
       state = const AsyncValue.loading();
@@ -96,7 +79,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 대비 업데이트
   Future<void> updateContrast(double contrast) async {
     try {
       state = const AsyncValue.loading();
@@ -114,7 +96,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 포화도 업데이트
   Future<void> updateSaturation(double saturation) async {
     try {
       state = const AsyncValue.loading();
@@ -132,7 +113,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 블러 반경 업데이트
   Future<void> updateBlurRadius(double blurRadius) async {
     try {
       state = const AsyncValue.loading();
@@ -150,7 +130,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 오버레이 색상 업데이트
   Future<void> updateOverlayColor(Color overlayColor) async {
     try {
       state = const AsyncValue.loading();
@@ -161,14 +140,13 @@ class UserCustomizationSettingsNotifier
       final currentSettings = await future;
       final newSettings = currentSettings.copyWith(overlayColor: overlayColor);
       state = AsyncValue.data(newSettings);
-      debugPrint('✅ 오버레이 색상 업데이트: ${overlayColor.value}');
+      debugPrint('✅ 오버레이 색상 업데이트: ${overlayColor.toARGB32()}');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
       debugPrint('❌ 오버레이 색상 업데이트 실패: $e');
     }
   }
 
-  /// 오버레이 투명도 업데이트
   Future<void> updateOverlayOpacity(double overlayOpacity) async {
     try {
       state = const AsyncValue.loading();
@@ -188,7 +166,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 자동 최적화 토글
   Future<void> toggleAutoOptimization() async {
     try {
       state = const AsyncValue.loading();
@@ -208,7 +185,6 @@ class UserCustomizationSettingsNotifier
     }
   }
 
-  /// 스타일 프리셋 토글
   Future<void> toggleStylePresets() async {
     try {
       state = const AsyncValue.loading();
@@ -229,16 +205,19 @@ class UserCustomizationSettingsNotifier
   }
 }
 
-/// 즐겨찾기 스타일 관리 프로바이더
-@riverpod
-class FavoriteStylesNotifier extends _$FavoriteStylesNotifier {
+final userCustomizationSettingsNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<
+      UserCustomizationSettingsNotifier,
+      UserCustomizationSettings
+    >(UserCustomizationSettingsNotifier.new);
+
+class FavoriteStylesNotifier extends AutoDisposeAsyncNotifier<List<String>> {
   @override
   Future<List<String>> build() async {
     final service = ref.read(userCustomizationServiceProvider);
     return service.currentSettings.favoriteStyles;
   }
 
-  /// 즐겨찾기 스타일 추가
   Future<void> addFavoriteStyle(String styleName) async {
     try {
       state = const AsyncValue.loading();
@@ -261,7 +240,6 @@ class FavoriteStylesNotifier extends _$FavoriteStylesNotifier {
     }
   }
 
-  /// 즐겨찾기 스타일 제거
   Future<void> removeFavoriteStyle(String styleName) async {
     try {
       state = const AsyncValue.loading();
@@ -285,16 +263,19 @@ class FavoriteStylesNotifier extends _$FavoriteStylesNotifier {
   }
 }
 
-/// 커스텀 프리셋 관리 프로바이더
-@riverpod
-class CustomPresetsNotifier extends _$CustomPresetsNotifier {
+final favoriteStylesNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<FavoriteStylesNotifier, List<String>>(
+      FavoriteStylesNotifier.new,
+    );
+
+class CustomPresetsNotifier
+    extends AutoDisposeAsyncNotifier<Map<String, dynamic>> {
   @override
   Future<Map<String, dynamic>> build() async {
     final service = ref.read(userCustomizationServiceProvider);
     return service.currentSettings.customPresets;
   }
 
-  /// 커스텀 프리셋 저장
   Future<void> saveCustomPreset(
     String presetName,
     Map<String, dynamic> preset,
@@ -319,7 +300,6 @@ class CustomPresetsNotifier extends _$CustomPresetsNotifier {
     }
   }
 
-  /// 커스텀 프리셋 삭제
   Future<void> deleteCustomPreset(String presetName) async {
     try {
       state = const AsyncValue.loading();
@@ -338,7 +318,6 @@ class CustomPresetsNotifier extends _$CustomPresetsNotifier {
     }
   }
 
-  /// 커스텀 프리셋 적용
   Future<void> applyCustomPreset(String presetName) async {
     try {
       state = const AsyncValue.loading();
@@ -346,7 +325,6 @@ class CustomPresetsNotifier extends _$CustomPresetsNotifier {
       final service = ref.read(userCustomizationServiceProvider);
       await service.applyCustomPreset(presetName);
 
-      // 설정이 변경되었으므로 설정 프로바이더를 무효화
       ref.invalidate(userCustomizationSettingsNotifierProvider);
 
       state = const AsyncValue.data({});
@@ -358,31 +336,29 @@ class CustomPresetsNotifier extends _$CustomPresetsNotifier {
   }
 }
 
-/// 기본 프리셋 프로바이더
-@riverpod
-List<Map<String, dynamic>> defaultPresets(DefaultPresetsRef ref) {
-  final service = ref.read(userCustomizationServiceProvider);
-  return service.getDefaultPresets();
-}
+final customPresetsNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<
+      CustomPresetsNotifier,
+      Map<String, dynamic>
+    >(CustomPresetsNotifier.new);
 
-/// 사용자 커스터마이징 이력 프로바이더
-@riverpod
-List<Map<String, dynamic>> userCustomizationHistory(
-  UserCustomizationHistoryRef ref,
+final defaultPresetsProvider = AutoDisposeProvider<List<Map<String, dynamic>>>((
+  ref,
 ) {
   final service = ref.read(userCustomizationServiceProvider);
-  return service.getCustomizationHistory();
-}
+  return service.getDefaultPresets();
+});
 
-/// 사용자 커스터마이징 캐시 관리 프로바이더
-@riverpod
-class UserCustomizationCacheNotifier extends _$UserCustomizationCacheNotifier {
+final userCustomizationHistoryProvider =
+    AutoDisposeProvider<List<Map<String, dynamic>>>((ref) {
+      final service = ref.read(userCustomizationServiceProvider);
+      return service.getCustomizationHistory();
+    });
+
+class UserCustomizationCacheNotifier extends AutoDisposeAsyncNotifier<void> {
   @override
-  Future<void> build() async {
-    // 초기화 시 아무것도 하지 않음
-  }
+  Future<void> build() async {}
 
-  /// 커스터마이징 이력 초기화
   Future<void> clearHistory() async {
     try {
       state = const AsyncValue.loading();
@@ -398,3 +374,8 @@ class UserCustomizationCacheNotifier extends _$UserCustomizationCacheNotifier {
     }
   }
 }
+
+final userCustomizationCacheNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<UserCustomizationCacheNotifier, void>(
+      UserCustomizationCacheNotifier.new,
+    );

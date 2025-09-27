@@ -1,37 +1,27 @@
-import 'dart:async';
-
 import 'package:everydiary/core/services/text_analysis_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-part 'text_analysis_provider.g.dart';
-
-/// 텍스트 분석 서비스 프로바이더
-@riverpod
-TextAnalysisService textAnalysisService(TextAnalysisServiceRef ref) {
+final textAnalysisServiceProvider = AutoDisposeProvider<TextAnalysisService>((
+  ref,
+) {
   final service = TextAnalysisService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
-}
+});
 
-/// 텍스트 분석 서비스 초기화 프로바이더
-@riverpod
-Future<void> textAnalysisInitialization(
-  TextAnalysisInitializationRef ref,
+final textAnalysisInitializationProvider = AutoDisposeFutureProvider<void>((
+  ref,
 ) async {
   final service = ref.read(textAnalysisServiceProvider);
   await service.initialize();
-}
+});
 
-/// 텍스트 분석 결과 프로바이더
-@riverpod
-class TextAnalysisNotifier extends _$TextAnalysisNotifier {
+class TextAnalysisNotifier
+    extends AutoDisposeAsyncNotifier<TextAnalysisResult?> {
   @override
-  Future<TextAnalysisResult?> build() async {
-    return null;
-  }
+  Future<TextAnalysisResult?> build() async => null;
 
-  /// 텍스트 분석
   Future<void> analyzeText(String text) async {
     try {
       state = const AsyncValue.loading();
@@ -51,7 +41,6 @@ class TextAnalysisNotifier extends _$TextAnalysisNotifier {
     }
   }
 
-  /// 캐시된 결과 가져오기
   void getCachedResult(String text) {
     try {
       final service = ref.read(textAnalysisServiceProvider);
@@ -70,28 +59,26 @@ class TextAnalysisNotifier extends _$TextAnalysisNotifier {
     }
   }
 
-  /// 분석 상태 초기화
   void reset() {
     state = const AsyncValue.data(null);
   }
 }
 
-/// 텍스트 분석 이력 프로바이더
-@riverpod
-List<Map<String, dynamic>> textAnalysisHistory(TextAnalysisHistoryRef ref) {
-  final service = ref.read(textAnalysisServiceProvider);
-  return service.getAnalysisHistory();
-}
+final textAnalysisNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<TextAnalysisNotifier, TextAnalysisResult?>(
+      TextAnalysisNotifier.new,
+    );
 
-/// 텍스트 분석 캐시 관리 프로바이더
-@riverpod
-class TextAnalysisCacheNotifier extends _$TextAnalysisCacheNotifier {
+final textAnalysisHistoryProvider =
+    AutoDisposeProvider<List<Map<String, dynamic>>>((ref) {
+      final service = ref.read(textAnalysisServiceProvider);
+      return service.getAnalysisHistory();
+    });
+
+class TextAnalysisCacheNotifier extends AutoDisposeAsyncNotifier<void> {
   @override
-  Future<void> build() async {
-    // 초기화 시 아무것도 하지 않음
-  }
+  Future<void> build() async {}
 
-  /// 캐시 초기화
   Future<void> clearCache() async {
     try {
       state = const AsyncValue.loading();
@@ -107,7 +94,6 @@ class TextAnalysisCacheNotifier extends _$TextAnalysisCacheNotifier {
     }
   }
 
-  /// 분석 이력 초기화
   Future<void> clearHistory() async {
     try {
       state = const AsyncValue.loading();
@@ -123,3 +109,8 @@ class TextAnalysisCacheNotifier extends _$TextAnalysisCacheNotifier {
     }
   }
 }
+
+final textAnalysisCacheNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<TextAnalysisCacheNotifier, void>(
+      TextAnalysisCacheNotifier.new,
+    );

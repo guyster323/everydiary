@@ -322,6 +322,10 @@ class CacheManagerService {
     return Map.from(_cacheStats);
   }
 
+  CacheStats getCategoryStats(String category) {
+    return _cacheStats[category] ?? CacheStats(category: category);
+  }
+
   /// 특정 카테고리 캐시 정리
   Future<void> clearCategory(String category) async {
     try {

@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/services/image_generation_service.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
+import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/models/tag.dart';
 import '../../../shared/services/database_service.dart';
@@ -35,7 +39,13 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   String? _error;
   late DiaryRepository _diaryRepository;
   late DiaryHistoryService _historyService;
+  late ImageGenerationService _imageGenerationService;
   StreamSubscription<void>? _refreshSubscription;
+
+  // AI 생성 이미지 관련
+  bool _isGeneratingImage = false;
+  ImageGenerationResult? _generatedImage;
+  String? _imageError;
 
   // 탭 상태
   int _selectedTabIndex = 0;
@@ -56,6 +66,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
     super.initState();
     _diaryRepository = DiaryRepository(DatabaseService()); // 향후 싱글톤 인스턴스 사용 예정
     _historyService = DiaryHistoryService();
+    _imageGenerationService = ImageGenerationService();
 
     // 애니메이션 컨트롤러 초기화
     _contentAnimationController = AnimationController(
@@ -84,6 +95,80 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
     });
 
     _loadDiary();
+  }
+
+  /// AI 생성 이미지 로드
+  Future<void> _loadGeneratedImage() async {
+    if (_diary == null || _diary!.content.isEmpty) {
+      setState(() {
+        _generatedImage = null;
+        _imageError = null;
+      });
+      return;
+    }
+
+    if (_diary!.attachments.isNotEmpty) {
+      setState(() {
+        _generatedImage = null;
+        _imageError = null;
+      });
+      return;
+    }
+
+    try {
+      final text = _extractTextFromDelta(_diary!.content);
+
+      if (text.isEmpty) {
+        setState(() {
+          _generatedImage = null;
+          _imageError = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _isGeneratingImage = true;
+        _imageError = null;
+      });
+
+      await _imageGenerationService.initialize();
+
+      final cachedImage = _imageGenerationService.getCachedResult(text);
+
+      if (cachedImage != null) {
+        setState(() {
+          _generatedImage = cachedImage;
+          _isGeneratingImage = false;
+        });
+        debugPrint('✅ 캐시된 AI 생성 이미지 로드 완료');
+        return;
+      }
+
+      final generatedImage = await _imageGenerationService
+          .generateImageFromText(text);
+
+      if (generatedImage != null) {
+        setState(() {
+          _generatedImage = generatedImage;
+          _isGeneratingImage = false;
+        });
+        debugPrint('✅ AI 이미지 생성 완료 및 로드');
+      } else {
+        setState(() {
+          _generatedImage = null;
+          _isGeneratingImage = false;
+          _imageError = '이미지 생성에 실패했습니다';
+        });
+        debugPrint('❌ AI 생성 이미지 생성 실패');
+      }
+    } catch (e) {
+      debugPrint('❌ AI 생성 이미지 로드 실패: $e');
+      setState(() {
+        _generatedImage = null;
+        _isGeneratingImage = false;
+        _imageError = '이미지를 불러오는 중 오류가 발생했습니다';
+      });
+    }
   }
 
   /// 감정 분석 수행
@@ -195,6 +280,9 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
         // 감정 분석 수행
         _analyzeEmotion();
+
+        // AI 생성 이미지 확인
+        await _loadGeneratedImage();
 
         // 애니메이션 시작
         _contentAnimationController.forward();
@@ -464,8 +552,26 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
               // 내용
               _buildContent(),
 
-              // 첨부 파일
-              if (_diary!.attachments.isNotEmpty) _buildAttachments(),
+              // 첨부 파일 (AI 생성 이미지 포함)
+              if (_diary!.attachments.isNotEmpty)
+                _buildSavedAssociationImages(),
+
+              // AI 생성 이미지 (저장된 이미지가 없을 때 백그라운드 생성)
+              if (_diary!.attachments.isEmpty)
+                Builder(
+                  builder: (context) {
+                    if (_isGeneratingImage) {
+                      return _buildAssociationImageLoading();
+                    }
+                    if (_generatedImage != null) {
+                      return _buildAssociationImage();
+                    }
+                    if (_imageError != null) {
+                      return _buildAssociationImageError();
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
 
               // 태그
               if (_diary!.tags.isNotEmpty) _buildTags(),
@@ -564,8 +670,10 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
     );
   }
 
-  /// 첨부 파일
-  Widget _buildAttachments() {
+  /// 일기 연상 이미지 (AI 생성 이미지)
+  Widget _buildAssociationImage() {
+    if (_generatedImage == null) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -574,24 +682,234 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '첨부 파일',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              // 제목
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '일기 연상 이미지',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              // 향후 첨부 파일 표시 구현 예정
-              Text(
-                '첨부 파일 ${_diary!.attachments.length}개',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              const SizedBox(height: 12),
+
+              // AI 생성 이미지
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _generatedImage!.localImagePath != null
+                    ? Image.file(
+                        File(_generatedImage!.localImagePath!),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildAssociationImageNetworkFallback();
+                        },
+                      )
+                    : _buildAssociationImageNetworkFallback(),
+              ),
+              const SizedBox(height: 12),
+
+              // 이미지 정보
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '생성 프롬프트',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _generatedImage!.prompt,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildImageInfoChip('감정', _generatedImage!.emotion),
+                        const SizedBox(width: 8),
+                        _buildImageInfoChip('스타일', _generatedImage!.style),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        _buildImageInfoChip('주제', _generatedImage!.topic),
+                        const Spacer(),
+                        Text(
+                          '생성일: ${_formatDateTime(_generatedImage!.generatedAt.toIso8601String())}',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssociationImageLoading() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '일기 연상 이미지 생성 중...',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '일기 내용을 기반으로 AI 이미지를 생성하고 있습니다.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAssociationImageError() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '일기 연상 이미지를 표시할 수 없습니다',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _imageError ?? '알 수 없는 오류가 발생했습니다.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: 12),
+              RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: 'Gemini 또는 Hugging Face API 키를 설정하거나 ',
+                    ),
+                    TextSpan(
+                      text: '다시 시도',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => _loadGeneratedImage(),
+                    ),
+                    const TextSpan(text: ' 해보세요.'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 이미지 정보 칩
+  Widget _buildImageInfoChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        '$label: $value',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -894,5 +1212,142 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
     return weatherMap[weather] ??
         {'icon': Icons.wb_cloudy, 'color': Colors.grey};
+  }
+
+  Widget _buildAssociationImageNetworkFallback() {
+    return Image.network(
+      _generatedImage!.imageUrl,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 200,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.errorContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image,
+                  size: 48,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '이미지를 불러올 수 없습니다',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSavedAssociationImages() {
+    final imageAttachments = _diary!.attachments
+        .where((attachment) => attachment.fileType == FileType.image.value)
+        .toList();
+
+    if (imageAttachments.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '일기 연상 이미지',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...imageAttachments.asMap().entries.map((entry) {
+                final index = entry.key;
+                final attachment = entry.value;
+                final filePath = attachment.filePath;
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == imageAttachments.length - 1 ? 0 : 12,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      File(filePath),
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.image_not_supported,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '이미지를 불러올 수 없습니다',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

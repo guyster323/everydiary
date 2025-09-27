@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:html' as html;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,6 +59,9 @@ class PWAInstallService {
 
       // 설치 상태 확인
       await _checkInstallStatus();
+      debugPrint(
+        '📊 PWA 초기 상태 - 설치 가능: $_isInstallable, 설치됨: $_isInstalled, 버전: $_currentVersion',
+      );
 
       // 업데이트 체크 타이머 시작
       _startUpdateCheckTimer();
@@ -74,7 +76,7 @@ class PWAInstallService {
   /// 설치 상태 확인
   Future<void> _checkInstallStatus() async {
     try {
-      _isInstalled = _isAppInstalled();
+      _isInstalled = await _pwaService.isAppInstalled();
       _isInstallable = _pwaService.canInstall;
       _currentVersion = await _pwaService.getServiceWorkerVersion();
 
@@ -387,29 +389,6 @@ class PWAInstallService {
   }
 
   /// 앱 설치 상태 확인
-  bool _isAppInstalled() {
-    if (!kIsWeb) return false;
-
-    try {
-      // PWA 설치 상태를 확인하는 다양한 방법
-      // 1. display-mode 확인
-      final isStandalone = html.window
-          .matchMedia('(display-mode: standalone)')
-          .matches;
-      final isMinimalUi = html.window
-          .matchMedia('(display-mode: minimal-ui)')
-          .matches;
-      final isFullscreen = html.window
-          .matchMedia('(display-mode: fullscreen)')
-          .matches;
-
-      return isStandalone || isMinimalUi || isFullscreen;
-    } catch (e) {
-      debugPrint('❌ 앱 설치 상태 확인 실패: $e');
-      return false;
-    }
-  }
-
   /// 서비스 정리
   void dispose() {
     _updateCheckTimer?.cancel();

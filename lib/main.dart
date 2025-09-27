@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -7,10 +8,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/android_native_service_manager.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
 import 'core/utils/logger.dart';
-import 'core/widgets/pwa_initializer.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
@@ -48,6 +49,18 @@ void main() async {
     // 테마 매니저 초기화
     await theme_manager.ThemeManager().initialize();
 
+    // Android 네이티브 서비스 초기화 (웹 환경에서는 건너뜀)
+    if (!kIsWeb) {
+      try {
+        await AndroidNativeServiceManager().initialize();
+        Logger.info('✅ Android Native Service Manager 초기화 완료');
+      } catch (e) {
+        Logger.warning('❌ Android Native Service Manager 초기화 실패: $e');
+      }
+    } else {
+      Logger.info('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
+    }
+
     runApp(const ProviderScope(child: EveryDiaryApp()));
   } catch (e) {
     Logger.error('Failed to initialize app: $e');
@@ -67,36 +80,34 @@ class EveryDiaryApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: themeManager,
       builder: (context, child) {
-        return PWAInitializer(
-          child: MaterialApp.router(
-            title: config.appName,
-            debugShowCheckedModeBanner: EnvironmentConfig.isDebug,
-            theme: themeManager.lightTheme,
-            darkTheme: themeManager.darkTheme,
-            themeMode: ThemeMode.values.firstWhere(
-              (mode) => mode.name == themeManager.materialThemeMode.name,
-            ),
-            routerConfig: AppRouter.router,
-            // 한글 로케일 설정
-            locale: const Locale('ko', 'KR'),
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-              FlutterQuillLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-            // 한글 입력을 위한 설정
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: const TextScaler.linear(1.0), // 텍스트 스케일링 고정
-                  platformBrightness: MediaQuery.of(context).platformBrightness,
-                ),
-                child: child!,
-              );
-            },
+        return MaterialApp.router(
+          title: config.appName,
+          debugShowCheckedModeBanner: EnvironmentConfig.isDebug,
+          theme: themeManager.lightTheme,
+          darkTheme: themeManager.darkTheme,
+          themeMode: ThemeMode.values.firstWhere(
+            (mode) => mode.name == themeManager.materialThemeMode.name,
           ),
+          routerConfig: AppRouter.router,
+          // 한글 로케일 설정
+          locale: const Locale('ko', 'KR'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            FlutterQuillLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
+          // 한글 입력을 위한 설정
+          builder: (context, child) {
+            return MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                textScaler: const TextScaler.linear(1.0), // 텍스트 스케일링 고정
+                platformBrightness: MediaQuery.of(context).platformBrightness,
+              ),
+              child: child!,
+            );
+          },
         );
       },
     );

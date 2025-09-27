@@ -1,40 +1,26 @@
-import 'dart:async';
-
 import 'package:everydiary/core/services/background_optimization_service.dart';
 import 'package:everydiary/core/services/image_generation_service.dart';
 import 'package:flutter/material.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-part 'background_optimization_provider.g.dart';
+final backgroundOptimizationServiceProvider =
+    AutoDisposeProvider<BackgroundOptimizationService>((ref) {
+      final service = BackgroundOptimizationService();
+      ref.onDispose(service.dispose);
+      return service;
+    });
 
-/// 배경 최적화 서비스 프로바이더
-@riverpod
-BackgroundOptimizationService backgroundOptimizationService(
-  BackgroundOptimizationServiceRef ref,
-) {
-  final service = BackgroundOptimizationService();
-  ref.onDispose(() => service.dispose());
-  return service;
-}
+final backgroundOptimizationInitializationProvider =
+    AutoDisposeFutureProvider<void>((ref) async {
+      final service = ref.read(backgroundOptimizationServiceProvider);
+      await service.initialize();
+    });
 
-/// 배경 최적화 서비스 초기화 프로바이더
-@riverpod
-Future<void> backgroundOptimizationInitialization(
-  BackgroundOptimizationInitializationRef ref,
-) async {
-  final service = ref.read(backgroundOptimizationServiceProvider);
-  await service.initialize();
-}
-
-/// 배경 최적화 결과 프로바이더
-@riverpod
-class BackgroundOptimizationNotifier extends _$BackgroundOptimizationNotifier {
+class BackgroundOptimizationNotifier
+    extends AutoDisposeAsyncNotifier<Map<String, dynamic>?> {
   @override
-  Future<Map<String, dynamic>?> build() async {
-    return null;
-  }
+  Future<Map<String, dynamic>?> build() async => null;
 
-  /// 배경 이미지 최적화
   Future<void> optimizeBackground(
     ImageGenerationResult imageResult,
     Size screenSize,
@@ -57,7 +43,6 @@ class BackgroundOptimizationNotifier extends _$BackgroundOptimizationNotifier {
     }
   }
 
-  /// 캐시된 최적화 결과 가져오기
   void getCachedOptimization(
     ImageGenerationResult imageResult,
     Size screenSize,
@@ -82,32 +67,31 @@ class BackgroundOptimizationNotifier extends _$BackgroundOptimizationNotifier {
     }
   }
 
-  /// 최적화 상태 초기화
   void reset() {
     state = const AsyncValue.data(null);
   }
 }
 
-/// 배경 최적화 설정 프로바이더
-@riverpod
-BackgroundOptimizationSettings backgroundOptimizationSettings(
-  BackgroundOptimizationSettingsRef ref,
-) {
-  final service = ref.read(backgroundOptimizationServiceProvider);
-  return service.currentSettings;
-}
+final backgroundOptimizationNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<
+      BackgroundOptimizationNotifier,
+      Map<String, dynamic>?
+    >(BackgroundOptimizationNotifier.new);
 
-/// 배경 최적화 설정 관리 프로바이더
-@riverpod
+final backgroundOptimizationSettingsProvider =
+    AutoDisposeProvider<BackgroundOptimizationSettings>((ref) {
+      final service = ref.read(backgroundOptimizationServiceProvider);
+      return service.currentSettings;
+    });
+
 class BackgroundOptimizationSettingsNotifier
-    extends _$BackgroundOptimizationSettingsNotifier {
+    extends AutoDisposeAsyncNotifier<BackgroundOptimizationSettings> {
   @override
   Future<BackgroundOptimizationSettings> build() async {
     final service = ref.read(backgroundOptimizationServiceProvider);
     return service.currentSettings;
   }
 
-  /// 설정 업데이트
   Future<void> updateSettings(
     BackgroundOptimizationSettings newSettings,
   ) async {
@@ -125,7 +109,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 블러 반경 업데이트
   Future<void> updateBlurRadius(double blurRadius) async {
     try {
       final currentSettings = await future;
@@ -137,7 +120,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 밝기 업데이트
   Future<void> updateBrightness(double brightness) async {
     try {
       final currentSettings = await future;
@@ -149,7 +131,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 대비 업데이트
   Future<void> updateContrast(double contrast) async {
     try {
       final currentSettings = await future;
@@ -161,7 +142,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 포화도 업데이트
   Future<void> updateSaturation(double saturation) async {
     try {
       final currentSettings = await future;
@@ -173,7 +153,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 오버레이 색상 업데이트
   Future<void> updateOverlayColor(Color overlayColor) async {
     try {
       final currentSettings = await future;
@@ -185,7 +164,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 오버레이 투명도 업데이트
   Future<void> updateOverlayOpacity(double overlayOpacity) async {
     try {
       final currentSettings = await future;
@@ -199,7 +177,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 자동 대비 조정 토글
   Future<void> toggleAutoContrast() async {
     try {
       final currentSettings = await future;
@@ -213,7 +190,6 @@ class BackgroundOptimizationSettingsNotifier
     }
   }
 
-  /// 텍스트 가독성 토글
   Future<void> toggleTextReadability() async {
     try {
       final currentSettings = await future;
@@ -228,25 +204,23 @@ class BackgroundOptimizationSettingsNotifier
   }
 }
 
-/// 배경 최적화 이력 프로바이더
-@riverpod
-List<Map<String, dynamic>> backgroundOptimizationHistory(
-  BackgroundOptimizationHistoryRef ref,
-) {
-  final service = ref.read(backgroundOptimizationServiceProvider);
-  return service.getOptimizationHistory();
-}
+final backgroundOptimizationSettingsNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<
+      BackgroundOptimizationSettingsNotifier,
+      BackgroundOptimizationSettings
+    >(BackgroundOptimizationSettingsNotifier.new);
 
-/// 배경 최적화 캐시 관리 프로바이더
-@riverpod
+final backgroundOptimizationHistoryProvider =
+    AutoDisposeProvider<List<Map<String, dynamic>>>((ref) {
+      final service = ref.read(backgroundOptimizationServiceProvider);
+      return service.getOptimizationHistory();
+    });
+
 class BackgroundOptimizationCacheNotifier
-    extends _$BackgroundOptimizationCacheNotifier {
+    extends AutoDisposeAsyncNotifier<void> {
   @override
-  Future<void> build() async {
-    // 초기화 시 아무것도 하지 않음
-  }
+  Future<void> build() async {}
 
-  /// 캐시 초기화
   Future<void> clearCache() async {
     try {
       state = const AsyncValue.loading();
@@ -262,7 +236,6 @@ class BackgroundOptimizationCacheNotifier
     }
   }
 
-  /// 최적화 이력 초기화
   Future<void> clearHistory() async {
     try {
       state = const AsyncValue.loading();
@@ -278,3 +251,8 @@ class BackgroundOptimizationCacheNotifier
     }
   }
 }
+
+final backgroundOptimizationCacheNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<BackgroundOptimizationCacheNotifier, void>(
+      BackgroundOptimizationCacheNotifier.new,
+    );

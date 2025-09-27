@@ -26,6 +26,9 @@ android {
         versionCode flutter.versionCode
         versionName flutter.versionName
         multiDexEnabled true
+
+        buildConfigField "String", "GEMINI_API_KEY", "\"${project.findProperty('AIzaSyD5-akvjn0fCX7ZVRbyyw01EE9yYqIjOCY') ?: ''}\""
+        buildConfigField "String", "HUGGING_FACE_API_KEY", "\"${project.findProperty('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') ?: ''}\""
     }
 
     buildTypes {
@@ -49,6 +52,17 @@ android {
                     "proguard-rules.pro"
         }
     }
+
+    buildFeatures {
+        buildConfig true
+    }
+}
+
+if (System.getenv("GEMINI_API_KEY") != null) {
+    project.ext.set("GEMINI_API_KEY", System.getenv("GEMINI_API_KEY"))
+}
+if (System.getenv("HUGGING_FACE_API_KEY") != null) {
+    project.ext.set("HUGGING_FACE_API_KEY", System.getenv("HUGGING_FACE_API_KEY"))
 }
 
 flutter {

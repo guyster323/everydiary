@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/services/image_generation_service.dart';
 import '../../../core/utils/logger.dart';
 import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
@@ -91,7 +93,14 @@ class DiarySaveService extends ChangeNotifier {
         return _handleError(DiarySaveResult.databaseError, '일기 생성에 실패했습니다');
       }
 
-      // 2. 이미지 첨부파일 저장
+      // 2-1. AI 이미지 자동 생성 (백그라운드)
+      if (_imageService.imageCount > 0) {
+        Logger.info('이미 첨부된 이미지가 있어 AI 자동 생성을 건너뜁니다', tag: 'DiarySaveService');
+      } else {
+        await _generateAndAttachAIImage(diaryEntry.id!, contentPlainText);
+      }
+
+      // 3. 이미지 첨부파일 저장
       Logger.info('이미지 첨부파일 저장 시작', tag: 'DiarySaveService');
       final imageSaveResult = await _saveAttachments(diaryEntry.id!);
       if (imageSaveResult != DiarySaveResult.success) {
@@ -99,7 +108,7 @@ class DiarySaveService extends ChangeNotifier {
       }
       Logger.info('이미지 첨부파일 저장 완료', tag: 'DiarySaveService');
 
-      // 3. 태그 연결 저장
+      // 4. 태그 연결 저장
       Logger.info('태그 연결 저장 시작', tag: 'DiarySaveService');
       final tagSaveResult = await _saveDiaryTags(diaryEntry.id!);
       if (tagSaveResult != DiarySaveResult.success) {
@@ -107,14 +116,18 @@ class DiarySaveService extends ChangeNotifier {
       }
       Logger.info('태그 연결 저장 완료', tag: 'DiarySaveService');
 
-      // 4. 백업 생성 (선택적)
-      Logger.info('백업 생성 시작', tag: 'DiarySaveService');
-      try {
-        await _createBackup(diaryEntry);
-        Logger.info('백업 생성 완료', tag: 'DiarySaveService');
-      } catch (e) {
-        Logger.warning('백업 생성 실패, 일기는 저장됨: $e', tag: 'DiarySaveService');
-        Logger.error('백업 생성 실패: $e', tag: 'DiarySaveService');
+      // 5. 백업 생성 (선택적) - 웹 환경에서는 건너뜀
+      if (!kIsWeb) {
+        Logger.info('백업 생성 시작', tag: 'DiarySaveService');
+        try {
+          await _createBackup(diaryEntry);
+          Logger.info('백업 생성 완료', tag: 'DiarySaveService');
+        } catch (e) {
+          Logger.warning('백업 생성 실패, 일기는 저장됨: $e', tag: 'DiarySaveService');
+          Logger.error('백업 생성 실패: $e', tag: 'DiarySaveService');
+        }
+      } else {
+        Logger.info('웹 환경에서는 백업 생성을 건너뜁니다', tag: 'DiarySaveService');
       }
 
       Logger.info('일기 저장 완료 로그 시작', tag: 'DiarySaveService');
@@ -216,6 +229,12 @@ class DiarySaveService extends ChangeNotifier {
   /// 첨부파일 저장
   Future<DiarySaveResult> _saveAttachments(int diaryId) async {
     try {
+      // 웹 환경에서는 첨부파일 저장을 건너뜀
+      if (kIsWeb) {
+        Logger.info('웹 환경에서는 첨부파일 저장을 건너뜁니다', tag: 'DiarySaveService');
+        return DiarySaveResult.success;
+      }
+
       final images = _imageService.toJson();
       if (images.isEmpty) {
         return DiarySaveResult.success;
@@ -429,5 +448,77 @@ class DiarySaveService extends ChangeNotifier {
     final words = _calculateWordCount(content);
     final minutes = (words / wordsPerMinute).ceil();
     return minutes.clamp(1, 60);
+  }
+
+  Future<void> _generateAndAttachAIImage(int diaryId, String plainText) async {
+    try {
+      if (plainText.trim().isEmpty) {
+        Logger.info('일기 내용이 비어 AI 이미지 생성을 건너뜁니다', tag: 'DiarySaveService');
+        return;
+      }
+
+      final imageService = ImageGenerationService();
+      await imageService.initialize();
+
+      final result = await imageService.generateImageFromText(plainText);
+
+      if (result == null || result.localImagePath == null) {
+        Logger.info('AI 이미지 생성 실패 또는 저장 경로 없음', tag: 'DiarySaveService');
+        return;
+      }
+
+      final file = File(result.localImagePath!);
+      if (!await file.exists()) {
+        Logger.info('AI 이미지 파일이 존재하지 않아 저장을 건너뜁니다', tag: 'DiarySaveService');
+        return;
+      }
+
+      final stats = await file.stat();
+      final fileName = path.basename(file.path);
+      final fileSize = stats.size;
+
+      _imageService.addExternalImage(
+        localPath: file.path,
+        fileName: fileName,
+        fileSize: fileSize,
+        mimeType: 'image/png',
+      );
+
+      final attachmentData = {
+        'filePath': file.path,
+        'fileName': fileName,
+        'fileType': FileType.image.value,
+        'fileSize': fileSize,
+        'mimeType': 'image/png',
+        'thumbnailPath': null,
+        'width': null,
+        'height': null,
+      };
+
+      final db = await _databaseService.database;
+      final now = DateTime.now().toIso8601String();
+
+      await db.insert('attachments', {
+        'diary_id': diaryId,
+        'file_path': attachmentData['filePath'],
+        'file_name': attachmentData['fileName'],
+        'file_type': attachmentData['fileType'],
+        'file_size': attachmentData['fileSize'],
+        'mime_type': attachmentData['mimeType'],
+        'thumbnail_path': attachmentData['thumbnailPath'],
+        'width': attachmentData['width'],
+        'height': attachmentData['height'],
+        'created_at': now,
+        'updated_at': now,
+        'is_deleted': 0,
+      });
+
+      Logger.info(
+        'AI 이미지 첨부 저장 완료: ${attachmentData['fileName']}',
+        tag: 'DiarySaveService',
+      );
+    } catch (e) {
+      Logger.warning('AI 이미지 생성/저장 중 오류: $e', tag: 'DiarySaveService');
+    }
   }
 }

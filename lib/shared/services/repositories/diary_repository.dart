@@ -56,6 +56,8 @@ class DiaryRepository {
 
       Logger.info('데이터베이스 삽입 성공 - ID: $id', tag: 'DiaryRepository');
 
+      final attachments = await _databaseService.getAttachmentsByDiaryId(id);
+
       final diaryEntry = DiaryEntry(
         id: id,
         userId: dto.userId,
@@ -74,7 +76,9 @@ class DiaryRepository {
         createdAt: now,
         updatedAt: now,
         isDeleted: false,
-        attachments: [],
+        attachments: attachments
+            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
+            .toList(),
         tags: [],
       );
 
@@ -100,7 +104,15 @@ class DiaryRepository {
     );
 
     if (maps.isNotEmpty) {
-      return DiaryEntry.fromJson(_convertDbMapToJson(maps.first));
+      final diary = DiaryEntry.fromJson(_convertDbMapToJson(maps.first));
+      final attachments = await _databaseService.getAttachmentsByDiaryId(
+        diary.id!,
+      );
+      return diary.copyWith(
+        attachments: attachments
+            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
+            .toList(),
+      );
     }
     return null;
   }
@@ -132,9 +144,22 @@ class DiaryRepository {
     }
 
     final maps = await db.rawQuery(query, whereArgs);
-    return maps
+    final diaries = maps
         .map((map) => DiaryEntry.fromJson(_convertDbMapToJson(map)))
         .toList();
+
+    for (var i = 0; i < diaries.length; i++) {
+      final attachments = await _databaseService.getAttachmentsByDiaryId(
+        diaries[i].id!,
+      );
+      diaries[i] = diaries[i].copyWith(
+        attachments: attachments
+            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
+            .toList(),
+      );
+    }
+
+    return diaries;
   }
 
   /// 필터링된 일기 목록 조회
@@ -191,9 +216,22 @@ class DiaryRepository {
     }
 
     final maps = await db.rawQuery(query, whereArgs);
-    return maps
+    final diaries = maps
         .map((map) => DiaryEntry.fromJson(_convertDbMapToJson(map)))
         .toList();
+
+    for (var i = 0; i < diaries.length; i++) {
+      final attachments = await _databaseService.getAttachmentsByDiaryId(
+        diaries[i].id!,
+      );
+      diaries[i] = diaries[i].copyWith(
+        attachments: attachments
+            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
+            .toList(),
+      );
+    }
+
+    return diaries;
   }
 
   /// 특정 날짜의 일기 조회
@@ -349,6 +387,19 @@ class DiaryRepository {
       'isDeleted': dbMap['is_deleted'] == 1,
       'attachments': <Attachment>[], // 첨부파일은 별도 조회 필요
       'tags': <Tag>[], // 태그는 별도 조회 필요
+    };
+  }
+
+  /// 첨부파일 맵을 JSON으로 변환 (snake_case -> camelCase)
+  Map<String, dynamic> _convertAttachmentMap(Map<String, dynamic> dbMap) {
+    return {
+      'id': dbMap['id'],
+      'diaryId': dbMap['diary_id'],
+      'url': dbMap['url'],
+      'type': dbMap['type'],
+      'createdAt': dbMap['created_at'],
+      'updatedAt': dbMap['updated_at'],
+      'isDeleted': dbMap['is_deleted'] == 1,
     };
   }
 }

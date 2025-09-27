@@ -2,21 +2,20 @@ import 'dart:async';
 
 import 'package:everydiary/core/services/pwa_install_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-part 'pwa_install_provider.g.dart';
-
-/// PWA 설치 서비스 프로바이더
-@riverpod
-PWAInstallService pwaInstallService(PwaInstallServiceRef ref) {
+final pwaInstallServiceProvider = AutoDisposeProvider<PWAInstallService>((ref) {
   final service = PWAInstallService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
-}
+});
 
-/// PWA 설치 상태 프로바이더
-@riverpod
-class PWAInstallState extends _$PWAInstallState {
+final pwaInstallStateNotifierProvider =
+    AutoDisposeNotifierProvider<PWAInstallStateNotifier, PWAInstallStateData>(
+      PWAInstallStateNotifier.new,
+    );
+
+class PWAInstallStateNotifier extends AutoDisposeNotifier<PWAInstallStateData> {
   @override
   PWAInstallStateData build() {
     _initialize();
@@ -29,6 +28,14 @@ class PWAInstallState extends _$PWAInstallState {
 
     final service = ref.read(pwaInstallServiceProvider);
     await service.initialize();
+
+    state = state.copyWith(
+      isInstallable: service.isInstallable,
+      isInstalled: service.isInstalled,
+      isUpdateAvailable: service.isUpdateAvailable,
+      currentVersion: service.currentVersion,
+      latestVersion: service.latestVersion,
+    );
 
     // 설치 가능성 스트림 구독
     service.installabilityStream.listen(

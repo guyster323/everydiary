@@ -2,30 +2,27 @@ import 'dart:async';
 
 import 'package:everydiary/core/services/image_generation_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'image_generation_provider.g.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 /// 이미지 생성 서비스 프로바이더
-@riverpod
-ImageGenerationService imageGenerationService(ImageGenerationServiceRef ref) {
-  final service = ImageGenerationService();
-  ref.onDispose(() => service.dispose());
-  return service;
-}
+final imageGenerationServiceProvider =
+    Provider.autoDispose<ImageGenerationService>((ref) {
+      final service = ImageGenerationService();
+      ref.onDispose(service.dispose);
+      return service;
+    });
 
 /// 이미지 생성 서비스 초기화 프로바이더
-@riverpod
-Future<void> imageGenerationInitialization(
-  ImageGenerationInitializationRef ref,
+final imageGenerationInitializationProvider = FutureProvider.autoDispose<void>((
+  ref,
 ) async {
   final service = ref.read(imageGenerationServiceProvider);
   await service.initialize();
-}
+});
 
-/// 이미지 생성 결과 프로바이더
-@riverpod
-class ImageGenerationNotifier extends _$ImageGenerationNotifier {
+/// 이미지 생성 결과 노티파이어
+class ImageGenerationNotifier
+    extends AutoDisposeAsyncNotifier<ImageGenerationResult?> {
   @override
   Future<ImageGenerationResult?> build() async {
     return null;
@@ -34,19 +31,19 @@ class ImageGenerationNotifier extends _$ImageGenerationNotifier {
   /// 텍스트에서 이미지 생성
   Future<void> generateImageFromText(String text) async {
     try {
-      state = const AsyncValue.loading();
+      state = const AsyncLoading();
 
       final service = ref.read(imageGenerationServiceProvider);
       final result = await service.generateImageFromText(text);
 
       if (result != null) {
-        state = AsyncValue.data(result);
+        state = AsyncData(result);
         debugPrint('✅ 이미지 생성 완료');
       } else {
-        state = AsyncValue.error('이미지 생성에 실패했습니다.', StackTrace.current);
+        state = AsyncError('이미지 생성에 실패했습니다.', StackTrace.current);
       }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      state = AsyncError(e, stackTrace);
       debugPrint('❌ 이미지 생성 실패: $e');
     }
   }
@@ -58,53 +55,54 @@ class ImageGenerationNotifier extends _$ImageGenerationNotifier {
       final cachedResult = service.getCachedResult(text);
 
       if (cachedResult != null) {
-        state = AsyncValue.data(cachedResult);
+        state = AsyncData(cachedResult);
         debugPrint('📋 캐시된 이미지 생성 결과 사용');
       } else {
-        state = const AsyncValue.data(null);
+        state = const AsyncData(null);
         debugPrint('❌ 캐시된 결과 없음');
       }
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      state = AsyncError(e, stackTrace);
       debugPrint('❌ 캐시된 결과 가져오기 실패: $e');
     }
   }
 
   /// 생성 상태 초기화
   void reset() {
-    state = const AsyncValue.data(null);
+    state = const AsyncData(null);
   }
 }
+
+final imageGenerationNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<
+      ImageGenerationNotifier,
+      ImageGenerationResult?
+    >(ImageGenerationNotifier.new);
 
 /// 이미지 생성 이력 프로바이더
-@riverpod
-List<Map<String, dynamic>> imageGenerationHistory(
-  ImageGenerationHistoryRef ref,
-) {
-  final service = ref.read(imageGenerationServiceProvider);
-  return service.getGenerationHistory();
-}
+final imageGenerationHistoryProvider =
+    Provider.autoDispose<List<Map<String, dynamic>>>((ref) {
+      final service = ref.read(imageGenerationServiceProvider);
+      return service.getGenerationHistory();
+    });
 
-/// 이미지 생성 캐시 관리 프로바이더
-@riverpod
-class ImageGenerationCacheNotifier extends _$ImageGenerationCacheNotifier {
+/// 이미지 생성 캐시 관리 노티파이어
+class ImageGenerationCacheNotifier extends AutoDisposeAsyncNotifier<void> {
   @override
-  Future<void> build() async {
-    // 초기화 시 아무것도 하지 않음
-  }
+  Future<void> build() async {}
 
   /// 캐시 초기화
   Future<void> clearCache() async {
     try {
-      state = const AsyncValue.loading();
+      state = const AsyncLoading();
 
       final service = ref.read(imageGenerationServiceProvider);
       await service.clearCache();
 
-      state = const AsyncValue.data(null);
+      state = const AsyncData(null);
       debugPrint('✅ 이미지 생성 캐시 초기화 완료');
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      state = AsyncError(e, stackTrace);
       debugPrint('❌ 캐시 초기화 실패: $e');
     }
   }
@@ -112,16 +110,21 @@ class ImageGenerationCacheNotifier extends _$ImageGenerationCacheNotifier {
   /// 생성 이력 초기화
   Future<void> clearHistory() async {
     try {
-      state = const AsyncValue.loading();
+      state = const AsyncLoading();
 
       final service = ref.read(imageGenerationServiceProvider);
       await service.clearHistory();
 
-      state = const AsyncValue.data(null);
+      state = const AsyncData(null);
       debugPrint('✅ 이미지 생성 이력 초기화 완료');
     } catch (e, stackTrace) {
-      state = AsyncValue.error(e, stackTrace);
+      state = AsyncError(e, stackTrace);
       debugPrint('❌ 이력 초기화 실패: $e');
     }
   }
 }
+
+final imageGenerationCacheNotifierProvider =
+    AutoDisposeAsyncNotifierProvider<ImageGenerationCacheNotifier, void>(
+      ImageGenerationCacheNotifier.new,
+    );

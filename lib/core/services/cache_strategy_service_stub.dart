@@ -12,45 +12,51 @@ enum CacheStrategy {
 /// 리소스 타입
 enum ResourceType { static, dynamic, api, image, data }
 
-/// 캐싱 전략을 관리하는 서비스 (웹이 아닌 플랫폼용 스텁)
+/// 안드로이드 전용 캐시 전략 서비스 (기본 로그만 수행)
 class CacheStrategyService {
-  /// 캐시 전략 초기화
   Future<void> initialize() async {
-    debugPrint('🗂️ 캐시 전략 서비스 초기화 (스텁)');
+    debugPrint('🗂️ Android CacheStrategyService 초기화');
   }
 
-  /// 리소스 타입에 따른 캐시 전략 결정
   CacheStrategy getStrategyForResource(String url, ResourceType type) {
-    return CacheStrategy.cacheFirst;
+    switch (type) {
+      case ResourceType.api:
+        return CacheStrategy.networkFirst;
+      case ResourceType.image:
+        return CacheStrategy.staleWhileRevalidate;
+      default:
+        return CacheStrategy.cacheFirst;
+    }
   }
 
-  /// 리소스 타입 자동 감지
   ResourceType detectResourceType(String url) {
-    return ResourceType.static;
+    if (url.endsWith('.jpg') || url.endsWith('.png')) {
+      return ResourceType.image;
+    }
+    if (url.contains('/api/')) {
+      return ResourceType.api;
+    }
+    return ResourceType.dynamic;
   }
 
-  /// 캐시에 리소스 저장
   Future<void> cacheResource(
     String url,
     dynamic response,
     ResourceType type,
   ) async {
-    debugPrint('💾 리소스 캐시 (스텁): $url');
+    debugPrint('💾 캐시 저장($type): $url');
   }
 
-  /// 캐시에서 리소스 가져오기
   Future<dynamic> getCachedResource(String url, ResourceType type) async {
-    debugPrint('📦 캐시에서 리소스 로드 (스텁): $url');
+    debugPrint('📦 캐시 조회($type): $url');
     return null;
   }
 
-  /// 캐시 통계 정보 가져오기
   Future<Map<String, dynamic>> getCacheStats() async {
     return {};
   }
 
-  /// 모든 캐시 삭제
   Future<void> clearAllCaches() async {
-    debugPrint('🗑️ 모든 캐시 삭제 (스텁)');
+    debugPrint('🗑️ 캐시 전체 삭제 (Android)');
   }
 }

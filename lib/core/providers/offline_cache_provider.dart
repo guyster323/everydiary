@@ -1,11 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../services/cache_strategy_service.dart';
 import '../services/indexed_db_service.dart';
 import '../services/offline_sync_service.dart';
-
-part 'offline_cache_provider.g.dart';
 
 /// 동기화 상태 열거형
 enum SyncStatus { idle, syncing, pending, failed, completed }
@@ -67,28 +65,41 @@ class OfflineCacheState {
   }
 }
 
+final offlineCacheNotifierProvider =
+    AutoDisposeNotifierProvider<OfflineCacheNotifier, OfflineCacheState>(
+      OfflineCacheNotifier.new,
+    );
+
 /// 오프라인 캐시 서비스 프로바이더
-@riverpod
-CacheStrategyService cacheStrategyService(CacheStrategyServiceRef ref) {
+CacheStrategyService cacheStrategyService(Ref ref) {
   return CacheStrategyService();
 }
 
+final cacheStrategyServiceProvider = AutoDisposeProvider<CacheStrategyService>(
+  cacheStrategyService,
+);
+
 /// IndexedDB 서비스 프로바이더
-@riverpod
-IndexedDBService indexedDBService(IndexedDBServiceRef ref) {
+IndexedDBService indexedDBService(Ref ref) {
   return IndexedDBService();
 }
 
+final indexedDBServiceProvider = AutoDisposeProvider<IndexedDBService>(
+  indexedDBService,
+);
+
 /// 오프라인 동기화 서비스 프로바이더
-@riverpod
-OfflineSyncService offlineSyncService(OfflineSyncServiceRef ref) {
-  final indexedDB = ref.watch(indexedDBServiceProvider);
+OfflineSyncService offlineSyncService(Ref ref) {
+  final indexedDB = ref.read(indexedDBServiceProvider);
   return OfflineSyncService(indexedDB);
 }
 
+final offlineSyncServiceProvider = AutoDisposeProvider<OfflineSyncService>(
+  offlineSyncService,
+);
+
 /// 오프라인 캐시 상태 관리자
-@riverpod
-class OfflineCacheNotifier extends _$OfflineCacheNotifier {
+class OfflineCacheNotifier extends AutoDisposeNotifier<OfflineCacheState> {
   @override
   OfflineCacheState build() {
     _initialize();
@@ -239,37 +250,30 @@ class OfflineCacheNotifier extends _$OfflineCacheNotifier {
 }
 
 /// 오프라인 캐시 프로바이더
-@riverpod
-OfflineCacheState offlineCache(OfflineCacheRef ref) {
-  return ref.watch(offlineCacheNotifierProvider);
-}
+final offlineCacheProvider = AutoDisposeProvider<OfflineCacheState>(
+  (ref) => ref.watch(offlineCacheNotifierProvider),
+);
 
 /// 오프라인 캐시 초기화 프로바이더
-@riverpod
-Future<void> offlineCacheInitialization(
-  OfflineCacheInitializationRef ref,
-) async {
+final offlineCacheInitializationProvider = FutureProvider<void>((ref) async {
   final notifier = ref.read(offlineCacheNotifierProvider.notifier);
   await notifier._initialize();
-}
+});
 
 /// 온라인 상태 프로바이더
-@riverpod
-bool onlineStatus(OnlineStatusRef ref) {
+final onlineStatusProvider = AutoDisposeProvider<bool>((ref) {
   final cache = ref.watch(offlineCacheProvider);
   return cache.isOnline;
-}
+});
 
 /// 동기화 상태 프로바이더
-@riverpod
-SyncStatus syncStatus(SyncStatusRef ref) {
+final syncStatusProvider = AutoDisposeProvider<SyncStatus>((ref) {
   final cache = ref.watch(offlineCacheProvider);
   return cache.syncStatus;
-}
+});
 
 /// 오프라인 큐 상태 프로바이더
-@riverpod
-Map<String, int> offlineQueueStatus(OfflineQueueStatusRef ref) {
+final offlineQueueStatusProvider = AutoDisposeProvider<Map<String, int>>((ref) {
   final cache = ref.watch(offlineCacheProvider);
   return {'pending': cache.pendingCount, 'failed': cache.failedCount};
-}
+});

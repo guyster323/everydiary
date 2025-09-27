@@ -226,4 +226,15 @@ class DatabaseService {
   void dispose() {
     _connectionMonitor.dispose();
   }
+
+  Future<List<Map<String, dynamic>>> getAttachmentsByDiaryId(
+    int diaryId,
+  ) async {
+    final db = await database;
+    return db.query(
+      'attachments',
+      where: 'diary_id = ? AND is_deleted = 0',
+      whereArgs: [diaryId],
+    );
+  }
 }

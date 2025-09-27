@@ -113,13 +113,13 @@ class BackgroundSyncIndicator extends ConsumerWidget {
       case SyncStatus.syncing:
         return Colors.blue;
       case SyncStatus.pending:
-        return Colors.orange.withOpacity(0.1);
+        return Colors.orange.withValues(alpha: 0.1);
       case SyncStatus.failed:
-        return Colors.red.withOpacity(0.1);
+        return Colors.red.withValues(alpha: 0.1);
       case SyncStatus.completed:
-        return Colors.green.withOpacity(0.1);
+        return Colors.green.withValues(alpha: 0.1);
       case SyncStatus.idle:
-        return Colors.blue.withOpacity(0.1);
+        return Colors.blue.withValues(alpha: 0.1);
     }
   }
 

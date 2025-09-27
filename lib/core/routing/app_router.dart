@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/diary/screens/calendar_view_screen.dart';
@@ -9,6 +10,11 @@ import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../config/config.dart';
+import '../providers/pwa_provider.dart';
+import '../widgets/cache_info_widget.dart';
+import '../widgets/debug_log_widget.dart';
+import '../widgets/pwa_install_button.dart';
+import '../widgets/pwa_install_prompt.dart';
 
 /// 앱 라우터 설정
 class AppRouter {
@@ -163,8 +169,22 @@ class ErrorPage extends StatelessWidget {
 }
 
 /// 홈 페이지 (임시)
-class EveryDiaryHomePage extends StatelessWidget {
+class EveryDiaryHomePage extends ConsumerStatefulWidget {
   const EveryDiaryHomePage({super.key});
+
+  @override
+  ConsumerState<EveryDiaryHomePage> createState() => _EveryDiaryHomePageState();
+}
+
+class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // PWA 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(pwaProvider.notifier).initialize();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -173,92 +193,112 @@ class EveryDiaryHomePage extends StatelessWidget {
         title: Text(ConfigManager.instance.config.appName),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.book, size: 100, color: Colors.deepPurple),
-            const SizedBox(height: 20),
-            Text(
-              'Welcome to ${ConfigManager.instance.config.appName}!',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'Environment: ${EnvironmentConfig.environmentName}',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/diary'),
-              icon: const Icon(Icons.list),
-              label: const Text('일기 목록'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Icon(Icons.book, size: 100, color: Colors.deepPurple),
+                const SizedBox(height: 20),
+                Text(
+                  'Welcome to ${ConfigManager.instance.config.appName}!',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/diary/write'),
-              icon: const Icon(Icons.edit),
-              label: const Text('일기 작성하기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(height: 20),
+                Text(
+                  'Environment: ${EnvironmentConfig.environmentName}',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/diary/calendar'),
-              icon: const Icon(Icons.calendar_month),
-              label: const Text('캘린더 보기'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/diary'),
+                  icon: const Icon(Icons.list),
+                  label: const Text('일기 목록'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/diary/statistics'),
-              icon: const Icon(Icons.analytics),
-              label: const Text('일기 통계'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/diary/write'),
+                  icon: const Icon(Icons.edit),
+                  label: const Text('일기 작성하기'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/memory'),
-              icon: const Icon(Icons.psychology),
-              label: const Text('회상'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                const SizedBox(height: 20),
+                // PWA 설치 프롬프트
+                const PWAInstallPrompt(),
+                const SizedBox(height: 10),
+                // PWA 설치 버튼
+                const PWAInstallButton(),
+                const SizedBox(height: 20),
+                // 캐시 정보
+                const CacheInfoWidget(),
+                const SizedBox(height: 20),
+                // 디버그 로그
+                const DebugLogWidget(),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/diary/calendar'),
+                  icon: const Icon(Icons.calendar_month),
+                  label: const Text('캘린더 보기'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/diary/statistics'),
+                  icon: const Icon(Icons.bar_chart),
+                  label: const Text('통계 보기'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/memory'),
+                  icon: const Icon(Icons.memory),
+                  label: const Text('추억 리마인더'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

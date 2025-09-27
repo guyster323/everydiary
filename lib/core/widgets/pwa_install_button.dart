@@ -5,11 +5,7 @@ import '../providers/pwa_provider.dart';
 
 /// PWA 설치 버튼 위젯
 class PWAInstallButton extends ConsumerWidget {
-  const PWAInstallButton({
-    super.key,
-    this.compact = false,
-    this.onInstalled,
-  });
+  const PWAInstallButton({super.key, this.compact = false, this.onInstalled});
 
   final bool compact;
   final VoidCallback? onInstalled;
@@ -17,6 +13,8 @@ class PWAInstallButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pwaState = ref.watch(pwaProvider);
+
+    debugPrint('🔍 PWA Install Button - canInstall: ${pwaState.canInstall}');
 
     // PWA 설치 불가능한 경우 숨김
     if (!pwaState.canInstall) {
@@ -33,8 +31,8 @@ class PWAInstallButton extends ConsumerWidget {
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
           padding: compact
-            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
-            : const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8)
+              : const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
     );
@@ -42,17 +40,15 @@ class PWAInstallButton extends ConsumerWidget {
 
   Future<void> _handleInstall(BuildContext context, WidgetRef ref) async {
     try {
-      final pwaNotifier = ref.read(pwaProvider.notifier);
-      await pwaNotifier.installPWA();
+      final notifier = ref.read(pwaProvider.notifier);
+      await notifier.installPWA();
 
-      if (onInstalled != null) {
-        onInstalled!();
-      }
+      onInstalled?.call();
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('PWA 설치가 시작되었습니다.'),
+            content: Text('앱 설치가 진행됩니다.'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -61,7 +57,7 @@ class PWAInstallButton extends ConsumerWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('PWA 설치 실패: $e'),
+            content: Text('설치 실패: $e'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -78,38 +74,19 @@ class PWAStatusWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pwaState = ref.watch(pwaProvider);
-    final isOnline = ref.watch(onlineStatusProvider);
 
     return Container(
       padding: const EdgeInsets.all(8.0),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 온라인 상태 표시
           Icon(
-            isOnline ? Icons.wifi : Icons.wifi_off,
+            pwaState.canInstall ? Icons.install_mobile : Icons.mobile_friendly,
             size: 16,
-            color: isOnline ? Colors.green : Colors.red,
+            color: pwaState.canInstall ? Colors.orange : Colors.green,
           ),
           const SizedBox(width: 4),
-
-          // Service Worker 상태 표시
-          if (pwaState.isServiceWorkerRegistered)
-            const Icon(
-              Icons.offline_bolt,
-              size: 16,
-              color: Colors.blue,
-            ),
-
-          const SizedBox(width: 4),
-
-          // PWA 설치 가능 상태 표시
-          if (pwaState.canInstall)
-            const Icon(
-              Icons.install_mobile,
-              size: 16,
-              color: Colors.orange,
-            ),
+          Text(pwaState.canInstall ? '설치 가능' : '설치 완료'),
         ],
       ),
     );
@@ -132,10 +109,7 @@ class PWADebugWidget extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDebugItem('Service Worker 지원', pwaState.isServiceWorkerSupported),
-              _buildDebugItem('Service Worker 등록', pwaState.isServiceWorkerRegistered),
-              _buildDebugItem('온라인 상태', pwaState.isOnline),
-              _buildDebugItem('PWA 설치 가능', pwaState.canInstall),
+              _buildDebugItem('설치 가능', pwaState.canInstall),
               _buildDebugItem('초기화 완료', pwaState.isInitialized),
             ],
           ),
@@ -149,18 +123,6 @@ class PWADebugWidget extends ConsumerWidget {
                   ref.read(pwaProvider.notifier).printDebugInfo();
                 },
                 child: const Text('콘솔 로그'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () async {
-                  await ref.read(pwaProvider.notifier).clearCache();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('캐시가 정리되었습니다.')),
-                    );
-                  }
-                },
-                child: const Text('캐시 정리'),
               ),
             ],
           ),
@@ -192,61 +154,24 @@ class PWANotificationWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
+    return const Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '알림 설정',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'PWA에서 푸시 알림을 받으려면 권한을 허용해주세요.',
+            SizedBox(height: 8),
+            Text(
+              '네이티브 앱 알림을 사용하려면 시스템 설정에서 권한을 허용해주세요.',
               style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: () => _requestNotificationPermission(context, ref),
-              icon: const Icon(Icons.notifications),
-              label: const Text('알림 권한 요청'),
             ),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> _requestNotificationPermission(BuildContext context, WidgetRef ref) async {
-    try {
-      final granted = await ref.read(pwaProvider.notifier).requestNotificationPermission();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              granted
-                ? '알림 권한이 허용되었습니다.'
-                : '알림 권한이 거부되었습니다.',
-            ),
-            backgroundColor: granted ? Colors.green : Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('알림 권한 요청 실패: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }
