@@ -27,8 +27,8 @@ android {
         versionName flutter.versionName
         multiDexEnabled true
 
-        buildConfigField "String", "GEMINI_API_KEY", "\"${project.findProperty('AIzaSyD5-akvjn0fCX7ZVRbyyw01EE9yYqIjOCY') ?: ''}\""
-        buildConfigField "String", "HUGGING_FACE_API_KEY", "\"${project.findProperty('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') ?: ''}\""
+        buildConfigField "String", "GEMINI_API_KEY", "\"${project.findProperty('GEMINI_API_KEY') ?: ''}\""
+        buildConfigField "String", "HUGGING_FACE_API_KEY", "\"${project.findProperty('HUGGING_FACE_API_KEY') ?: ''}\""
     }
 
     buildTypes {
