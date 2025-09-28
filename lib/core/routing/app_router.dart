@@ -14,6 +14,7 @@ import '../../features/diary/screens/diary_detail_screen.dart';
 import '../../features/diary/screens/diary_list_screen.dart';
 import '../../features/diary/screens/diary_write_screen.dart';
 import '../../features/diary/screens/statistics_screen.dart';
+import '../../features/diary/services/diary_list_service.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../config/config.dart';
@@ -23,29 +24,72 @@ import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/repositories/diary_repository.dart';
 
-final latestDiaryImageProvider = FutureProvider<String?>((ref) async {
-  if (kIsWeb) {
-    return null;
-  }
-
+Future<String?> _loadLatestDiaryImagePath() async {
   final repository = DiaryRepository(DatabaseService());
   final diaries = await repository.getDiaryEntriesWithFilter(
-    const DiaryEntryFilter(limit: 5),
+    const DiaryEntryFilter(limit: 10),
   );
 
   for (final diary in diaries) {
     for (final attachment in diary.attachments) {
-      final path = attachment.thumbnailPath?.isNotEmpty == true
+      final candidate = attachment.thumbnailPath?.isNotEmpty == true
           ? attachment.thumbnailPath!
           : attachment.filePath;
 
-      if (path.isNotEmpty && File(path).existsSync()) {
-        return path;
+      if (candidate.isEmpty) {
+        continue;
+      }
+
+      if (await File(candidate).exists()) {
+        return candidate;
       }
     }
   }
 
   return null;
+}
+
+final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((ref) async* {
+  if (kIsWeb) {
+    yield null;
+    return;
+  }
+
+  final controller = StreamController<String?>();
+
+  Future<void> emitLatest() async {
+    final latestPath = await _loadLatestDiaryImagePath();
+    if (!controller.isClosed) {
+      controller.add(latestPath);
+    }
+  }
+
+  await emitLatest();
+
+  final refreshNotifier = DiaryListRefreshNotifier();
+  final refreshSubscription = refreshNotifier.refreshStream.listen((_) {
+    unawaited(emitLatest());
+  });
+
+  final authSubscription = ref.listen<AuthState>(authStateProvider, (_, __) {
+    unawaited(emitLatest());
+  });
+
+  final googleSubscription = ref.listen<GoogleAuthState>(
+    googleAuthProvider,
+    (_, __) => unawaited(emitLatest()),
+  );
+
+  ref.onDispose(() {
+    refreshSubscription.cancel();
+    authSubscription.close();
+    googleSubscription.close();
+    if (!controller.isClosed) {
+      controller.close();
+    }
+  });
+
+  yield* controller.stream;
 });
 
 class AppRouter {

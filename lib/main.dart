@@ -9,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
 import 'core/routing/app_router.dart';
-import 'core/services/admin_setup_service.dart';
 import 'core/services/android_native_service_manager.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
@@ -73,14 +72,6 @@ void main() async {
       }
     } else {
       Logger.info('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
-    }
-
-    // 기본 관리자 계정 생성
-    try {
-      await AdminSetupService.ensureAdminAccount();
-      Logger.info('✅ 관리자 계정 설정 완료');
-    } catch (e) {
-      Logger.warning('❌ 관리자 계정 설정 실패: $e');
     }
 
     runApp(const ProviderScope(child: EveryDiaryApp()));

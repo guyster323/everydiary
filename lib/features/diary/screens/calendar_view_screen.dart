@@ -275,7 +275,8 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                     eventLoader: _calendarService.getEventsForDay,
                     startingDayOfWeek: StartingDayOfWeek.sunday,
                     calendarStyle: const CalendarStyle(
-                      cellMargin: EdgeInsets.zero,
+                      cellMargin:
+                          EdgeInsets.symmetric(horizontal: 2, vertical: 4),
                       cellPadding: EdgeInsets.zero,
                       outsideDaysVisible: false,
                       selectedDecoration: BoxDecoration(),
@@ -396,43 +397,31 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     final hasEvents = events.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(2),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Stack(
+          fit: StackFit.expand,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                border: Border.all(
-                  color: theme.colorScheme.outline.withValues(alpha: 0.35),
-                ),
-                image: imagePath != null
-                    ? DecorationImage(
-                        image: FileImage(File(imagePath)),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-            ),
-              if (imagePath != null)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.35),
-                ),
-              ),
+            if (imagePath != null)
+              Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+                errorBuilder: (context, _, __) =>
+                    Container(color: theme.colorScheme.surfaceContainerHighest),
+              )
+            else
+              Container(color: theme.colorScheme.surfaceContainerHighest),
+            if (imagePath != null)
+              Container(color: Colors.black.withValues(alpha: 0.3)),
             if (isOutside)
-              Positioned.fill(
-                child: Container(
-                  color: theme.colorScheme.surface.withValues(alpha: 0.6),
-                ),
-              ),
-            Align(
-              alignment: Alignment.topLeft,
+              Container(color: theme.colorScheme.surface.withValues(alpha: 0.6)),
+            Positioned(
+              top: 6,
+              left: 6,
               child: Container(
-                margin: const EdgeInsets.all(6),
-                width: 28,
-                height: 28,
+                width: 20,
+                height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isSelected
@@ -448,7 +437,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 alignment: Alignment.center,
                 child: Text(
                   '${day.day}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: isSelected
                         ? theme.colorScheme.onPrimary
@@ -462,8 +451,8 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 right: 6,
                 bottom: 6,
                 child: Container(
-                  width: 8,
-                  height: 8,
+                  width: 6,
+                  height: 6,
                   decoration: const BoxDecoration(
                     color: _eventDotColor,
                     shape: BoxShape.circle,
