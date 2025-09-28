@@ -58,8 +58,14 @@ class JwtService {
     return base64Url.encode(bytes);
   }
 
+  static bool _isLocalToken(String token) =>
+      token.startsWith('local_') || token.startsWith('local_refresh_');
+
   /// 토큰 검증
   static Future<bool> verifyToken(String token) async {
+    if (_isLocalToken(token)) {
+      return true;
+    }
     try {
       // 블랙리스트 확인
       if (await TokenBlacklistService.isTokenBlacklisted(token)) {
@@ -95,6 +101,9 @@ class JwtService {
 
   /// 토큰 만료 확인
   static bool isTokenExpired(String token) {
+    if (_isLocalToken(token)) {
+      return false;
+    }
     try {
       final payload = getTokenPayload(token);
       if (payload == null) return true;
@@ -156,6 +165,10 @@ class JwtService {
   static Future<bool> needsTokenRefresh() async {
     final accessToken = await getAccessToken();
     if (accessToken == null) return false;
+
+    if (_isLocalToken(accessToken)) {
+      return false;
+    }
 
     // 토큰이 유효하지 않으면 갱신 필요
     if (!await verifyToken(accessToken) || isTokenExpired(accessToken)) {

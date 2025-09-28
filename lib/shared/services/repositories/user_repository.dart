@@ -14,7 +14,8 @@ class UserRepository {
 
     final id = await db.insert('users', {
       'email': dto.email,
-      'name': dto.name,
+      'username': dto.name,
+      'password_hash': null,
       'created_at': now,
       'updated_at': now,
       'is_deleted': 0,
@@ -79,7 +80,9 @@ class UserRepository {
     final updateData = <String, dynamic>{'updated_at': now};
 
     if (dto.email != null) updateData['email'] = dto.email;
-    if (dto.name != null) updateData['name'] = dto.name;
+    if (dto.name != null) {
+      updateData['username'] = dto.name;
+    }
 
     final rowsAffected = await db.update(
       'users',

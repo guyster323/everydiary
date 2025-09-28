@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/utils/logger.dart';
 import '../models/auth_token.dart';
 import '../models/user.dart';
+import 'database_service.dart';
 import 'jwt_service.dart';
 import 'password_service.dart';
 import 'session_service.dart';
@@ -30,6 +32,13 @@ class AuthService {
       // 이메일 형식 검증
       _validateEmail(request.email);
 
+      // 로컬 데이터베이스에 사용자 저장
+      final localRegisterResult = await _registerLocalUser(request);
+      if (localRegisterResult != null) {
+        return localRegisterResult;
+      }
+
+      // 서버 API 호출 (로컬 등록 실패 시)
       final response = await _dio.post<Map<String, dynamic>>(
         '/auth/register',
         data: request.toJson(),
@@ -69,6 +78,83 @@ class AuthService {
     }
   }
 
+  /// 로컬 사용자 등록
+  Future<AuthResponse?> _registerLocalUser(RegisterRequest request) async {
+    try {
+      final databaseService = DatabaseService();
+      final db = await databaseService.database;
+
+      // 기존 사용자 확인
+      final existingUsers = await db.query(
+        'users',
+        where: 'email = ? AND is_deleted = 0',
+        whereArgs: [request.email],
+      );
+
+      if (existingUsers.isNotEmpty) {
+        throw Exception('이미 존재하는 이메일입니다.');
+      }
+
+      // 비밀번호 해시화
+      final hashedPassword = PasswordService.hashPassword(request.password);
+
+      final username = (request.displayName?.trim().isNotEmpty ?? false)
+          ? request.displayName!.trim()
+          : request.email.split('@').first;
+
+      // 사용자 생성
+      final now = DateTime.now().toIso8601String();
+      final userId = await db.insert('users', {
+        'email': request.email,
+        'username': username,
+        'password_hash': hashedPassword,
+        'profile_image_url': null,
+        'is_premium': 0,
+        'premium_expires_at': null,
+        'created_at': now,
+        'updated_at': now,
+        'is_deleted': 0,
+      });
+
+      // User 객체 생성
+      final user = _mapDbUserToUser({
+        'id': userId,
+        'email': request.email,
+        'username': username,
+        'created_at': now,
+        'updated_at': now,
+        'password_hash': hashedPassword,
+        'is_premium': 0,
+        'premium_expires_at': null,
+        'is_deleted': 0,
+      });
+
+      // 임시 토큰 생성 (로컬 인증용)
+      final tokens = AuthToken(
+        accessToken: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        refreshToken: 'local_refresh_${DateTime.now().millisecondsSinceEpoch}',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        tokenType: 'Bearer',
+      );
+
+      // 토큰 저장
+      await JwtService.saveTokens(tokens);
+
+      // 세션 생성
+      await _sessionService.createSession(user, tokens);
+
+      return AuthResponse(
+        tokens: tokens,
+        user: user.toJson(),
+        success: true,
+        message: '회원가입 성공',
+      );
+    } catch (e) {
+      debugPrint('로컬 사용자 등록 실패: $e');
+      return null;
+    }
+  }
+
   /// 로그인
   Future<AuthResponse> login(LoginRequest request) async {
     try {
@@ -76,6 +162,17 @@ class AuthService {
       if (await _sessionService.isAccountLocked()) {
         final remainingTime = await _sessionService.getRemainingLockoutTime();
         throw Exception('계정이 잠겼습니다. ${remainingTime?.inMinutes}분 후 다시 시도해주세요.');
+      }
+
+      // 로컬 데이터베이스에서 사용자 검증 먼저 시도
+      final localAuthResult = await _validateLocalUser(
+        request.email,
+        request.password,
+      );
+      if (localAuthResult != null) {
+        // 로컬 인증 성공
+        await _sessionService.recordLoginAttempt(request.email, true);
+        return localAuthResult;
       }
 
       final response = await _dio.post<Map<String, dynamic>>(
@@ -104,11 +201,11 @@ class AuthService {
           success: authResponse.success,
           message: authResponse.message,
         );
-      } else {
-        // 로그인 실패 기록
-        await _sessionService.recordLoginAttempt(request.email, false);
-        throw Exception('로그인에 실패했습니다.');
       }
+
+      // 로그인 실패 기록
+      await _sessionService.recordLoginAttempt(request.email, false);
+      throw Exception('로그인에 실패했습니다.');
     } on DioException catch (e) {
       // 로그인 실패 기록
       await _sessionService.recordLoginAttempt(request.email, false);
@@ -383,6 +480,107 @@ class AuthService {
     if (!emailRegex.hasMatch(email)) {
       throw Exception('올바른 이메일 형식이 아닙니다.');
     }
+  }
+
+  /// 로컬 사용자 검증
+  Future<AuthResponse?> _validateLocalUser(
+    String email,
+    String password,
+  ) async {
+    try {
+      final databaseService = DatabaseService();
+      final db = await databaseService.database;
+
+      // 사용자 조회
+      final users = await db.query(
+        'users',
+        where: 'email = ? AND is_deleted = 0',
+        whereArgs: [email],
+      );
+
+      if (users.isEmpty) {
+        return null;
+      }
+
+      final userData = users.first;
+      final storedPasswordHash = userData['password_hash'] as String?;
+
+      if (storedPasswordHash == null) {
+        return null;
+      }
+
+      // 비밀번호 검증
+      final isPasswordValid = PasswordService.verifyPassword(
+        password,
+        storedPasswordHash,
+      );
+      if (!isPasswordValid) {
+        return null;
+      }
+
+      // User 객체 생성
+      final user = _mapDbUserToUser(userData);
+
+      // 임시 토큰 생성 (로컬 인증용)
+      final tokens = AuthToken(
+        accessToken: 'local_${DateTime.now().millisecondsSinceEpoch}',
+        refreshToken: 'local_refresh_${DateTime.now().millisecondsSinceEpoch}',
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
+        tokenType: 'Bearer',
+      );
+
+      // 토큰 저장
+      await JwtService.saveTokens(tokens);
+
+      // 세션 생성
+      await _sessionService.createSession(user, tokens);
+
+      return AuthResponse(
+        tokens: tokens,
+        user: user.toJson(),
+        success: true,
+        message: '로그인 성공',
+      );
+    } catch (e) {
+      debugPrint('로컬 사용자 검증 실패: $e');
+      return null;
+    }
+  }
+
+  User _mapDbUserToUser(Map<String, dynamic> data) {
+    String? getString(String key) => data[key] as String?;
+
+    bool toBool(dynamic value, {bool defaultValue = false}) {
+      if (value is bool) return value;
+      if (value is num) return value != 0;
+      if (value is String) {
+        final lower = value.toLowerCase();
+        if (lower == 'true' || lower == '1') return true;
+        if (lower == 'false' || lower == '0') return false;
+      }
+      return defaultValue;
+    }
+
+    final now = DateTime.now().toIso8601String();
+
+    return User(
+      id: data['id'] is num ? (data['id'] as num).toInt() : data['id'] as int?,
+      email: getString('email'),
+      name: getString('username') ?? getString('name') ?? '사용자',
+      avatarUrl: getString('profile_image_url'),
+      bio: getString('bio'),
+      birthDate: getString('birth_date'),
+      gender: getString('gender'),
+      createdAt: getString('created_at') ?? now,
+      updatedAt: getString('updated_at') ?? now,
+      lastLoginAt: getString('last_login_at'),
+      isDeleted: toBool(data['is_deleted']),
+      isPremium: toBool(data['is_premium']),
+      premiumExpiresAt: getString('premium_expires_at'),
+      isEmailVerified: toBool(data['is_email_verified']),
+      roles: const [],
+      passwordHash: getString('password_hash'),
+    );
   }
 }
 

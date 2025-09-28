@@ -54,6 +54,8 @@ class TextAnalysisService {
   factory TextAnalysisService() => _instance;
   TextAnalysisService._internal();
 
+  static const String _cacheVersion = 'v2';
+
   bool _isInitialized = false;
   final Map<String, TextAnalysisResult> _cache = {};
   final List<Map<String, dynamic>> _analysisHistory = [];
@@ -139,7 +141,11 @@ class TextAnalysisService {
       final topic = _classifyTopic(text, keywords);
 
       // 기분 분석
-      final mood = _analyzeMood(text, emotionData['emotion'] as String);
+      final mood = _analyzeMood(
+        text,
+        emotionData['emotion'] as String,
+        dominantSignal: emotionData['dominant'] as String?,
+      );
 
       // 요약 생성
       final summary = _generateSummary(text);
@@ -161,142 +167,159 @@ class TextAnalysisService {
 
   /// 감정 분석 (키워드 기반)
   Map<String, dynamic> _analyzeEmotion(String text) {
-    final positiveKeywords = [
-      '좋다',
-      '행복',
-      '기쁘',
-      '즐거',
-      '사랑',
-      '웃음',
-      '즐겁',
-      '만족',
-      '성공',
-      '좋은',
-      '멋진',
-      '훌륭',
-      '완벽',
-      '최고',
-      '최고의',
-      '훌륭한',
-      '멋진',
-      '감사',
-      '고마',
-      '축하',
-      '축하해',
-      '축하하',
-      '축하드',
-      '축하합',
-      '즐거운',
-      '행복한',
-      '기쁜',
-      '좋은',
-      '멋진',
-      '훌륭한',
-      '완벽한',
-    ];
-
-    final negativeKeywords = [
-      '나쁘',
-      '슬프',
-      '우울',
-      '화나',
-      '짜증',
-      '실망',
-      '걱정',
-      '불안',
-      '스트레스',
-      '나쁜',
-      '슬픈',
-      '우울한',
-      '화난',
-      '짜증나는',
-      '실망스러운',
-      '걱정스러운',
-      '불안한',
-      '스트레스받는',
-      '힘들',
-      '어렵',
-      '문제',
-      '고민',
-      '걱정',
-      '힘든',
-      '어려운',
-      '문제가',
-      '고민이',
-      '걱정이',
-      '우울한',
-      '슬픈',
-    ];
-
-    final neutralKeywords = [
-      '일상',
-      '평범',
-      '보통',
-      '그냥',
-      '그저',
-      '단순',
-      '일반',
-      '평소',
-      '일상적인',
-      '평범한',
-      '보통의',
-      '그냥의',
-      '그저의',
-      '단순한',
-      '일반적인',
-      '평소의',
-      '보통',
-      '일반',
-      '평범',
-      '그냥',
-      '그저',
-    ];
-
     final lowerText = text.toLowerCase();
 
-    int positiveCount = 0;
-    int negativeCount = 0;
-    int neutralCount = 0;
+    const positiveWeights = <String, double>{
+      '행복': 1.4,
+      '행복하': 1.4,
+      '행복한': 1.4,
+      '좋았': 1.1,
+      '좋다': 1.0,
+      '기쁘': 1.2,
+      '즐거': 1.2,
+      '사랑': 1.1,
+      '감사': 1.1,
+      '만족': 1.0,
+      '편안': 0.9,
+      '평온': 0.9,
+      '안심': 1.1,
+      '미소': 1.0,
+      '웃음': 1.0,
+    };
 
-    // 긍정 키워드 카운트
-    for (final keyword in positiveKeywords) {
-      if (lowerText.contains(keyword.toLowerCase())) {
-        positiveCount++;
+    const negativeWeights = <String, double>{
+      '걱정': 2.2,
+      '걱정이': 2.2,
+      '걱정되': 2.2,
+      '불안': 2.3,
+      '슬프': 1.6,
+      '우울': 1.6,
+      '힘들': 1.2,
+      '짜증': 1.1,
+      '화나': 1.2,
+      '실망': 1.1,
+      '두려': 1.8,
+      '긴장': 1.5,
+      '스트레스': 1.5,
+      '외롭': 1.5,
+      '괴롭': 1.6,
+    };
+
+    const neutralWeights = <String, double>{
+      '일상': 0.6,
+      '평범': 0.6,
+      '보통': 0.6,
+      '그냥': 0.6,
+      '그저': 0.6,
+      '단순': 0.6,
+      '일반': 0.6,
+      '평소': 0.6,
+    };
+
+    double scoreFor(Map<String, double> weights) {
+      double score = 0;
+      for (final entry in weights.entries) {
+        if (lowerText.contains(entry.key)) {
+          score += entry.value;
+        }
       }
+      return score;
     }
 
-    // 부정 키워드 카운트
-    for (final keyword in negativeKeywords) {
-      if (lowerText.contains(keyword.toLowerCase())) {
-        negativeCount++;
-      }
+    final positiveScore = scoreFor(positiveWeights);
+    final negativeScore = scoreFor(negativeWeights);
+    final neutralScore = scoreFor(neutralWeights);
+
+    final totalScore = positiveScore + negativeScore + neutralScore;
+
+    String? dominantNegative;
+    if (lowerText.contains('걱정') || lowerText.contains('불안')) {
+      dominantNegative = '걱정';
+    } else if (lowerText.contains('슬프') || lowerText.contains('슬픔')) {
+      dominantNegative = '슬픔';
+    } else if (lowerText.contains('우울')) {
+      dominantNegative = '우울';
+    } else if (lowerText.contains('화나') || lowerText.contains('분노')) {
+      dominantNegative = '분노';
+    } else if (lowerText.contains('외롭') || lowerText.contains('허전')) {
+      dominantNegative = '외로움';
     }
 
-    // 중립 키워드 카운트
-    for (final keyword in neutralKeywords) {
-      if (lowerText.contains(keyword.toLowerCase())) {
-        neutralCount++;
-      }
+    String? dominantPositive;
+    if (lowerText.contains('행복')) {
+      dominantPositive = '행복';
+    } else if (lowerText.contains('기쁘') || lowerText.contains('기쁜')) {
+      dominantPositive = '기쁨';
+    } else if (lowerText.contains('사랑')) {
+      dominantPositive = '사랑';
+    } else if (lowerText.contains('감사') || lowerText.contains('고마')) {
+      dominantPositive = '감사';
+    } else if (lowerText.contains('만족')) {
+      dominantPositive = '만족';
+    } else if (lowerText.contains('편안') || lowerText.contains('평온')) {
+      dominantPositive = '평온';
     }
 
-    // 감정 결정
-    String emotion;
-    double score;
+    final hasWorry = dominantNegative == '걱정';
 
-    if (positiveCount > negativeCount && positiveCount > neutralCount) {
-      emotion = '긍정';
-      score = (positiveCount / (positiveCount + negativeCount + neutralCount))
-          .clamp(0.0, 1.0);
-    } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
-      emotion = '부정';
-      score = (negativeCount / (positiveCount + negativeCount + neutralCount))
-          .clamp(0.0, 1.0);
-    } else {
-      emotion = '중립';
-      score = 0.5;
+    if (totalScore == 0) {
+      return {'emotion': '중립', 'score': 0.0, 'dominant': null};
     }
 
-    return {'emotion': emotion, 'score': score};
+    if (hasWorry && negativeScore > 0) {
+      return {
+        'emotion': '걱정',
+        'score': (negativeScore / totalScore).clamp(0.0, 1.0),
+        'dominant': '걱정',
+      };
+    }
+
+    if (negativeScore > 0 && negativeScore >= positiveScore * 0.8) {
+      return {
+        'emotion': dominantNegative ?? '우울',
+        'score': (negativeScore / totalScore).clamp(0.0, 1.0),
+        'dominant': dominantNegative,
+      };
+    }
+
+    if (positiveScore > 0 && positiveScore >= negativeScore * 1.2) {
+      return {
+        'emotion': dominantPositive ?? '기쁨',
+        'score': (positiveScore / totalScore).clamp(0.0, 1.0),
+        'dominant': dominantPositive,
+      };
+    }
+
+    if (positiveScore > 0 && negativeScore > 0) {
+      final dominant = dominantNegative ?? dominantPositive ?? '복합';
+      return {
+        'emotion': dominant,
+        'score': ((positiveScore + negativeScore) / totalScore).clamp(0.0, 1.0),
+        'dominant': dominantNegative ?? dominantPositive,
+      };
+    }
+
+    if (positiveScore > 0) {
+      return {
+        'emotion': dominantPositive ?? '기쁨',
+        'score': (positiveScore / totalScore).clamp(0.0, 1.0),
+        'dominant': dominantPositive,
+      };
+    }
+
+    if (negativeScore > 0) {
+      return {
+        'emotion': dominantNegative ?? '우울',
+        'score': (negativeScore / totalScore).clamp(0.0, 1.0),
+        'dominant': dominantNegative,
+      };
+    }
+
+    return {
+      'emotion': '평온',
+      'score': (neutralScore / totalScore).clamp(0.0, 1.0),
+      'dominant': null,
+    };
   }
 
   /// 키워드 추출
@@ -382,47 +405,75 @@ class TextAnalysisService {
   }
 
   /// 기분 분석
-  String _analyzeMood(String text, String emotion) {
+  String _analyzeMood(String text, String emotion, {String? dominantSignal}) {
     final lowerText = text.toLowerCase();
 
-    if (emotion == '긍정') {
-      if (lowerText.contains('사랑') || lowerText.contains('사랑')) {
-        return '사랑';
-      } else if (lowerText.contains('성공') || lowerText.contains('성공')) {
-        return '성취감';
-      } else if (lowerText.contains('웃음') || lowerText.contains('웃음')) {
-        return '유쾌함';
-      } else {
-        return '기쁨';
-      }
-    } else if (emotion == '부정') {
-      if (lowerText.contains('슬프') || lowerText.contains('슬프')) {
-        return '슬픔';
-      } else if (lowerText.contains('화나') || lowerText.contains('화나')) {
-        return '분노';
-      } else if (lowerText.contains('걱정') || lowerText.contains('걱정')) {
-        return '걱정';
-      } else {
-        return '우울';
-      }
-    } else {
-      return '평온';
+    String resolvedEmotion = emotion;
+    if (emotion == '복합' && dominantSignal != null) {
+      resolvedEmotion = dominantSignal;
     }
+
+    switch (resolvedEmotion) {
+      case '걱정':
+      case '불안':
+        return '걱정';
+      case '슬픔':
+        return '슬픔';
+      case '우울':
+      case '외로움':
+        return '우울';
+      case '분노':
+        return '분노';
+      case '사랑':
+        return '사랑';
+      case '감사':
+      case '만족':
+      case '행복':
+      case '기쁨':
+        return '기쁨';
+      case '평온':
+        return '평온';
+    }
+
+    if (lowerText.contains('걱정') || lowerText.contains('불안')) {
+      return '걱정';
+    }
+    if (lowerText.contains('슬프')) {
+      return '슬픔';
+    }
+    if (lowerText.contains('우울')) {
+      return '우울';
+    }
+    if (lowerText.contains('행복') || lowerText.contains('기쁘')) {
+      return '기쁨';
+    }
+    return '평온';
   }
 
   /// 요약 생성
   String _generateSummary(String text) {
-    if (text.length <= 50) {
-      return text;
+    final normalized = text.replaceAll('\n', ' ').trim();
+    if (normalized.isEmpty) {
+      return '';
     }
 
-    // 간단한 요약 (첫 50자)
-    return '${text.substring(0, 50)}...';
+    final sentenceRegex = RegExp(r'.*?(다\.|요\.|\. |\.|!|\?)');
+    final match = sentenceRegex.firstMatch(normalized);
+    if (match != null) {
+      final sentence = match.group(0)!.trim();
+      return sentence.endsWith('.') ? sentence : sentence;
+    }
+
+    if (normalized.length <= 80) {
+      return normalized;
+    }
+
+    return '${normalized.substring(0, 80)}...';
   }
 
   /// 캐시 키 생성
   String _generateCacheKey(String text) {
-    return text.hashCode.toString();
+    return '$_cacheVersion-${text.hashCode}';
   }
 
   /// 캐시 로드

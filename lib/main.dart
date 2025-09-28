@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,21 +9,34 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/admin_setup_service.dart';
 import 'core/services/android_native_service_manager.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
 import 'core/utils/logger.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
+    // Firebase 초기화 - 안전한 에러 처리
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      Logger.info('✅ Firebase 초기화 완료');
+    } catch (e) {
+      Logger.warning('⚠️ Firebase 초기화 실패, 오프라인 모드로 실행: $e');
+      // Firebase 실패해도 앱 실행 지속
+    }
+
     // 구성 시스템 초기화
     await ConfigService.instance.initialize(
       environment: Environment.development, // 환경에 따라 변경
       loadSecretsFromAssets: false, // Android에서 문제 발생 시 비활성화
-      loadSecretsFromEnvironment: false, // Android에서 문제 발생 시 비활성화
+      loadSecretsFromEnvironment: true,
     );
 
     // Supabase 초기화 - 안전한 에러 처리
@@ -61,6 +75,14 @@ void main() async {
       Logger.info('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
     }
 
+    // 기본 관리자 계정 생성
+    try {
+      await AdminSetupService.ensureAdminAccount();
+      Logger.info('✅ 관리자 계정 설정 완료');
+    } catch (e) {
+      Logger.warning('❌ 관리자 계정 설정 실패: $e');
+    }
+
     runApp(const ProviderScope(child: EveryDiaryApp()));
   } catch (e) {
     Logger.error('Failed to initialize app: $e');
@@ -80,6 +102,9 @@ class EveryDiaryApp extends StatelessWidget {
     return AnimatedBuilder(
       animation: themeManager,
       builder: (context, child) {
+        final container = ProviderScope.containerOf(context);
+        final router = AppRouter.buildRouter(container);
+
         return MaterialApp.router(
           title: config.appName,
           debugShowCheckedModeBanner: EnvironmentConfig.isDebug,
@@ -88,8 +113,7 @@ class EveryDiaryApp extends StatelessWidget {
           themeMode: ThemeMode.values.firstWhere(
             (mode) => mode.name == themeManager.materialThemeMode.name,
           ),
-          routerConfig: AppRouter.router,
-          // 한글 로케일 설정
+          routerConfig: router,
           locale: const Locale('ko', 'KR'),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
@@ -98,11 +122,10 @@ class EveryDiaryApp extends StatelessWidget {
             FlutterQuillLocalizations.delegate,
           ],
           supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
-          // 한글 입력을 위한 설정
           builder: (context, child) {
             return MediaQuery(
               data: MediaQuery.of(context).copyWith(
-                textScaler: const TextScaler.linear(1.0), // 텍스트 스케일링 고정
+                textScaler: const TextScaler.linear(1.0),
                 platformBrightness: MediaQuery.of(context).platformBrightness,
               ),
               child: child!,

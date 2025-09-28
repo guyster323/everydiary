@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:everydiary/core/config/api_keys.dart';
+import 'package:everydiary/core/constants/app_constants.dart';
 import 'package:everydiary/core/services/text_analysis_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -95,6 +96,8 @@ class ImageGenerationService {
       ImageGenerationService._internal();
   factory ImageGenerationService() => _instance;
   ImageGenerationService._internal();
+
+  static const String _cacheVersion = 'v2';
 
   static const int _dailyGenerationLimit = 50;
 
@@ -218,9 +221,16 @@ class ImageGenerationService {
         return null;
       }
 
-      final savedImagePath = await _saveBase64Image(
-        generationResult['image_base64'] as String,
-      );
+      final dynamic base64PayloadDynamic = generationResult['image_base64'];
+      final String? base64Payload = base64PayloadDynamic is String
+          ? base64PayloadDynamic
+          : null;
+      if (base64Payload == null || base64Payload.isEmpty) {
+        debugPrint('❌ 이미지 생성 결과에 Base64 데이터가 없습니다.');
+        return null;
+      }
+
+      final savedImagePath = await _saveBase64Image(base64Payload);
       final generationMetadata = <String, dynamic>{
         'analysis_result': analysisResult.toJson(),
         'original_text': text,
@@ -267,6 +277,8 @@ class ImageGenerationService {
       };
     }
 
+    debugPrint('ℹ️ Gemini 이미지 생성에 실패하여 Hugging Face로 폴백합니다.');
+
     final huggingFaceResult = await _generateImageWithHuggingFace(prompt);
     if (huggingFaceResult != null) {
       return {
@@ -280,14 +292,19 @@ class ImageGenerationService {
   }
 
   Future<String?> _generateImageWithGemini(String prompt) async {
-    if (ApiKeys.geminiApiKey.isEmpty) {
+    final apiKey = ApiKeys.geminiApiKey;
+    debugPrint(
+      '🔑 Gemini API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
+    );
+
+    if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
       debugPrint('⚠️ Gemini API 키가 설정되지 않았습니다.');
       return null;
     }
 
     try {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${ApiKeys.geminiApiKey}',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${ApiKeys.geminiApiKey}',
       );
 
       final response = await http.post(
@@ -306,6 +323,7 @@ class ImageGenerationService {
             'topK': 40,
             'topP': 0.95,
             'maxOutputTokens': 1024,
+            'responseModalities': ['TEXT', 'IMAGE'],
           },
           'safetySettings': [
             {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'},
@@ -334,11 +352,22 @@ class ImageGenerationService {
           if (content != null) {
             final parts = content['parts'] as List<dynamic>?;
             if (parts != null && parts.isNotEmpty) {
-              final firstPart = parts.first as Map<String, dynamic>;
-              final text = firstPart['text'] as String?;
-              if (text != null && text.isNotEmpty) {
-                debugPrint('✅ Gemini 이미지 생성 성공');
-                return text; // Gemini는 텍스트로 이미지 URL을 반환
+              for (final part in parts) {
+                final partMap = part as Map<String, dynamic>;
+                final inlineData =
+                    partMap['inlineData'] as Map<String, dynamic>?;
+                if (inlineData != null) {
+                  final data = inlineData['data'] as String?;
+                  if (data != null && data.isNotEmpty) {
+                    debugPrint('✅ Gemini 이미지 생성 성공');
+                    return data;
+                  }
+                }
+
+                final text = partMap['text'] as String?;
+                if (text != null && text.isNotEmpty) {
+                  debugPrint('ℹ️ Gemini가 텍스트 설명만 반환했습니다: $text');
+                }
               }
             }
           }
@@ -356,56 +385,98 @@ class ImageGenerationService {
   }
 
   Future<String?> _generateImageWithHuggingFace(String prompt) async {
-    if (ApiKeys.huggingFaceApiKey.isEmpty) {
+    final apiKey = ApiKeys.huggingFaceApiKey;
+    debugPrint(
+      '🔑 Hugging Face API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
+    );
+
+    if (apiKey.isEmpty || apiKey == 'YOUR_HUGGING_FACE_API_KEY_HERE') {
       debugPrint('⚠️ Hugging Face API 키가 설정되지 않았습니다.');
       return null;
     }
 
-    try {
-      final uri = Uri.parse(
-        'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5',
-      );
-
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
-        },
-        body: jsonEncode({
-          'inputs': prompt,
-          'parameters': {
-            'negative_prompt':
-                'blurry, low quality, distorted, disfigured, text, watermark',
-            'num_inference_steps': 25,
-            'guidance_scale': 7.5,
-          },
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final bytes = response.bodyBytes;
-        if (bytes.isNotEmpty) {
-          debugPrint('✅ Hugging Face 이미지 생성 성공');
-          return base64Encode(bytes);
-        }
-        debugPrint('❌ Hugging Face 응답에 이미지 데이터가 없습니다.');
-        return null;
-      }
-
-      debugPrint(
-        '❌ Hugging Face 이미지 생성 실패: ${response.statusCode} ${response.body}',
-      );
-      return null;
-    } catch (e) {
-      debugPrint('❌ Hugging Face 이미지 생성 중 예외 발생: $e');
+    // 엔드포인트 검증
+    const endpoint = AppConstants.huggingFaceEndpoint;
+    if (!endpoint.startsWith('https://api-inference.huggingface.co')) {
+      debugPrint('❌ 잘못된 Hugging Face 엔드포인트: $endpoint');
       return null;
     }
+
+    // 재시도 로직 (최대 3회)
+    for (int attempt = 1; attempt <= AppConstants.maxRetryAttempts; attempt++) {
+      try {
+        debugPrint(
+          '🎨 Hugging Face 이미지 생성 시도 $attempt/${AppConstants.maxRetryAttempts}: $prompt',
+        );
+
+        final uri = Uri.parse(endpoint);
+        final response = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
+          },
+          body: jsonEncode({
+            'inputs': prompt,
+            'parameters': {
+              'negative_prompt':
+                  'blurry, low quality, distorted, disfigured, text, watermark',
+              'num_inference_steps': 25,
+              'guidance_scale': 7.5,
+            },
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final bytes = response.bodyBytes;
+          if (bytes.isNotEmpty) {
+            debugPrint('✅ Hugging Face 이미지 생성 성공');
+            return base64Encode(bytes);
+          }
+          debugPrint('❌ Hugging Face 응답에 이미지 데이터가 없습니다.');
+          return null;
+        } else if (response.statusCode == 401) {
+          debugPrint('❌ Hugging Face 인증 실패: API 키를 확인해주세요');
+          return null;
+        } else if (response.statusCode == 429) {
+          // Rate limit - 지수 백오프로 재시도
+          final waitTime = Duration(seconds: attempt * 2);
+          debugPrint('⏳ Rate limit 도달, ${waitTime.inSeconds}초 후 재시도...');
+          await Future<void>.delayed(waitTime);
+          continue;
+        } else if (response.statusCode == 500) {
+          // 서버 오류 - 재시도
+          final waitTime = Duration(seconds: attempt);
+          debugPrint('⏳ 서버 오류, ${waitTime.inSeconds}초 후 재시도...');
+          await Future<void>.delayed(waitTime);
+          continue;
+        }
+
+        debugPrint(
+          '❌ Hugging Face 이미지 생성 실패: ${response.statusCode} ${response.body}',
+        );
+        return null;
+      } catch (e) {
+        debugPrint(
+          '❌ Hugging Face 이미지 생성 중 예외 발생 (시도 $attempt/${AppConstants.maxRetryAttempts}): $e',
+        );
+        if (attempt == AppConstants.maxRetryAttempts) {
+          return null;
+        }
+        // 네트워크 오류 시 재시도
+        await Future<void>.delayed(Duration(seconds: attempt));
+      }
+    }
+
+    return null;
   }
 
   Future<String?> _saveBase64Image(String base64Data) async {
     try {
-      final bytes = base64Decode(base64Data);
+      final normalized = base64.normalize(
+        base64Data.replaceAll(RegExp(r'\s+'), ''),
+      );
+      final bytes = base64Decode(normalized);
       final directory = await getApplicationDocumentsDirectory();
       final imagesDir = Directory(p.join(directory.path, 'generated_images'));
       if (!await imagesDir.exists()) {
@@ -431,16 +502,24 @@ class ImageGenerationService {
     String originalText,
   ) async {
     try {
+      final summarySentence = _buildOneSentenceSummary(analysis, originalText);
       final moodDescription = _getMoodDescription(analysis.mood);
       final topicDescription = _getTopicDescription(analysis.topic);
       final keywords = analysis.keywords.take(3).join(', ');
-      final summarySnippet = analysis.summary.isNotEmpty
-          ? analysis.summary
-          : (originalText.length > 120
-                ? '${originalText.substring(0, 120)}...'
-                : originalText);
 
-      return 'Watercolor illustration, soft dreamy colors, $moodDescription mood, $topicDescription, featuring $keywords. Diary context: $summarySnippet';
+      final buffer = StringBuffer()
+        ..write('$summarySentence ')
+        ..write('$moodDescription 분위기의 수채화 일러스트로 표현해 주세요.');
+
+      if (topicDescription.isNotEmpty) {
+        buffer.write(' 장면의 초점은 $topicDescription 입니다.');
+      }
+
+      if (keywords.isNotEmpty) {
+        buffer.write(' 참고 키워드: $keywords.');
+      }
+
+      return buffer.toString();
     } catch (e) {
       debugPrint('❌ 프롬프트 생성 실패: $e');
       return null;
@@ -450,48 +529,87 @@ class ImageGenerationService {
   String _getMoodDescription(String mood) {
     switch (mood) {
       case '사랑':
-        return 'warm and romantic';
+        return '따뜻하고 로맨틱한';
       case '성취감':
-        return 'triumphant and proud';
+        return '성취감이 느껴지는';
       case '유쾌함':
-        return 'cheerful and bright';
+        return '유쾌하고 밝은';
       case '기쁨':
-        return 'joyful and happy';
+        return '기쁨이 가득한';
       case '슬픔':
-        return 'melancholic and soft';
+        return '잔잔한 슬픔이 감도는';
       case '분노':
-        return 'intense and dramatic';
+        return '강렬하고 극적인';
       case '걱정':
-        return 'contemplative and gentle';
+        return '걱정이 묻어나는';
       case '우울':
-        return 'calm and introspective';
+        return '차분하고 사색적인';
       case '평온':
-        return 'peaceful and serene';
+        return '평온하고 편안한';
       default:
-        return 'balanced and reflective';
+        return '잔잔하고 성찰적인';
     }
   }
 
   String _getTopicDescription(String topic) {
     switch (topic) {
       case '여행':
-        return 'travel destination landscape';
+        return '여행지 풍경';
       case '음식':
-        return 'a delicious food scene';
+        return '맛있는 음식 장면';
       case '운동':
-        return 'dynamic lifestyle moment';
+        return '활기찬 운동 모습';
       case '감정':
-        return 'expressive emotional portrait';
+        return '감정을 표현한 인물';
       case '일상':
-        return 'cozy everyday scenery';
+        return '아늑한 일상 풍경';
       default:
-        return 'poetic diary imagery';
+        return '일기 속 장면';
     }
+  }
+
+  String _buildOneSentenceSummary(
+    TextAnalysisResult analysis,
+    String originalText,
+  ) {
+    final summaryCandidate = analysis.summary.trim();
+    if (summaryCandidate.isNotEmpty) {
+      return _ensureSentence(summaryCandidate);
+    }
+
+    final normalized = originalText.replaceAll('\n', ' ').trim();
+    if (normalized.isEmpty) {
+      return '오늘의 감정을 담은 순간입니다.';
+    }
+
+    final sentenceRegex = RegExp(r'.*?(다\.|요\.|\. |\.|!|\?)');
+    final match = sentenceRegex.firstMatch(normalized);
+    final candidate = match != null ? match.group(0)!.trim() : normalized;
+    return _ensureSentence(candidate);
+  }
+
+  String _ensureSentence(String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return '오늘의 감정을 담은 순간입니다.';
+    }
+
+    if (trimmed.endsWith('.') ||
+        trimmed.endsWith('!') ||
+        trimmed.endsWith('?') ||
+        trimmed.endsWith('다') ||
+        trimmed.endsWith('다.') ||
+        trimmed.endsWith('요') ||
+        trimmed.endsWith('요.')) {
+      return trimmed;
+    }
+
+    return '$trimmed.';
   }
 
   /// 캐시 키 생성
   String _generateCacheKey(String text) {
-    return text.hashCode.toString();
+    return '$_cacheVersion-${text.hashCode}';
   }
 
   /// 캐시 로드

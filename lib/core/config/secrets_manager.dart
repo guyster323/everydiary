@@ -120,21 +120,68 @@ class SecretsManager {
 
   /// 환경 변수에서 비밀 정보 로드
   Future<void> loadSecretsFromEnvironment() async {
-    final secretKeys = [
-      'API_KEY',
-      'DATABASE_URL',
-      'FIREBASE_API_KEY',
-      'GOOGLE_MAPS_API_KEY',
-      'ANALYTICS_KEY',
-      'CRASH_REPORTING_KEY',
-    ];
+    final secretMappings = {
+      'API_KEY': 'api_key',
+      'DATABASE_URL': 'database_url',
+      'FIREBASE_API_KEY': 'firebase_api_key',
+      'GOOGLE_MAPS_API_KEY': 'google_maps_api_key',
+      'ANALYTICS_KEY': 'analytics_key',
+      'CRASH_REPORTING_KEY': 'crash_reporting_key',
+      'GEMINI_API_KEY': 'gemini_api_key',
+      'HUGGING_FACE_API_KEY': 'hugging_face_api_key',
+      'SUPABASE_URL': 'supabase_url',
+      'SUPABASE_ANON_KEY': 'supabase_anon_key',
+    };
 
-    for (final key in secretKeys) {
-      final value = Platform.environment[key];
+    for (final entry in secretMappings.entries) {
+      final value = Platform.environment[entry.key];
       if (value != null && value.isNotEmpty) {
-        await setSecret(key.toLowerCase(), value);
+        await setSecret(entry.value, value);
+        continue;
+      }
+
+      final dartDefineValue = _readFromDartDefine(entry.key);
+      if (dartDefineValue != null && dartDefineValue.isNotEmpty) {
+        await setSecret(entry.value, dartDefineValue);
       }
     }
+  }
+
+  String? _readFromDartDefine(String key) {
+    switch (key) {
+      case 'API_KEY':
+        const apiKey = String.fromEnvironment('API_KEY');
+        return apiKey.isEmpty ? null : apiKey;
+      case 'DATABASE_URL':
+        const databaseUrl = String.fromEnvironment('DATABASE_URL');
+        return databaseUrl.isEmpty ? null : databaseUrl;
+      case 'FIREBASE_API_KEY':
+        const firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');
+        return firebaseApiKey.isEmpty ? null : firebaseApiKey;
+      case 'GOOGLE_MAPS_API_KEY':
+        const mapsApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+        return mapsApiKey.isEmpty ? null : mapsApiKey;
+      case 'ANALYTICS_KEY':
+        const analyticsKey = String.fromEnvironment('ANALYTICS_KEY');
+        return analyticsKey.isEmpty ? null : analyticsKey;
+      case 'CRASH_REPORTING_KEY':
+        const crashReportingKey = String.fromEnvironment('CRASH_REPORTING_KEY');
+        return crashReportingKey.isEmpty ? null : crashReportingKey;
+      case 'GEMINI_API_KEY':
+        const geminiKey = String.fromEnvironment('GEMINI_API_KEY');
+        return geminiKey.isEmpty ? null : geminiKey;
+      case 'HUGGING_FACE_API_KEY':
+        const huggingFaceKey = String.fromEnvironment('HUGGING_FACE_API_KEY');
+        return huggingFaceKey.isEmpty ? null : huggingFaceKey;
+      case 'SUPABASE_URL':
+        const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+        return supabaseUrl.isEmpty ? null : supabaseUrl;
+      case 'SUPABASE_ANON_KEY':
+        const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+        return supabaseAnonKey.isEmpty ? null : supabaseAnonKey;
+    }
+
+    return null;
   }
 
   /// assets에서 비밀 정보 로드 (개발용)
@@ -204,17 +251,19 @@ class SecretsManager {
 
   /// 비밀 정보 검증
   bool validateSecrets() {
-    final requiredSecrets = ['api_key', 'database_url'];
+    final requiredSecrets = <String>{'gemini_api_key', 'hugging_face_api_key'};
+
+    var isValid = true;
 
     for (final secret in requiredSecrets) {
       if (!hasSecret(secret) || getSecret(secret)?.isEmpty == true) {
         if (kDebugMode) {
           print('Missing required secret: $secret');
         }
-        return false;
+        isValid = false;
       }
     }
 
-    return true;
+    return isValid;
   }
 }

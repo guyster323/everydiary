@@ -1,6 +1,9 @@
+import 'package:everydiary/core/constants/app_constants.dart';
+import 'package:everydiary/core/providers/google_auth_provider.dart';
 import 'package:everydiary/shared/models/auth_token.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../providers/auth_providers.dart';
 import 'register_screen.dart';
@@ -18,7 +21,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _rememberMe = false;
+  bool _rememberMe = true;
   bool _isPasswordVisible = false;
 
   @override
@@ -31,6 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
+    final googleAuthState = ref.watch(googleAuthProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -192,15 +196,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {
-                          // Google 로그인 (향후 구현)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Google 로그인은 준비 중입니다'),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.g_mobiledata, size: 24),
+                        onPressed: googleAuthState.isLoading
+                            ? null
+                            : _handleGoogleSignIn,
+                        icon: googleAuthState.isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.g_mobiledata, size: 24),
                         label: const Text('Google'),
                       ),
                     ),
@@ -299,7 +306,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop();
+        context.go(AppConstants.homeRoute);
       }
     } catch (e) {
       if (mounted) {
@@ -312,6 +319,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  /// Google 로그인 처리
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      await ref.read(googleAuthProvider.notifier).signInWithGoogle();
+
+      if (mounted) {
+        final googleAuthState = ref.read(googleAuthProvider);
+        if (googleAuthState.isSignedIn) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Google 로그인 성공!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go(AppConstants.homeRoute);
+        } else if (googleAuthState.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(googleAuthState.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google 로그인 실패: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/providers/auth_providers.dart';
+import '../../features/auth/screens/login_screen.dart';
 import '../../features/diary/screens/calendar_view_screen.dart';
 import '../../features/diary/screens/diary_detail_screen.dart';
 import '../../features/diary/screens/diary_list_screen.dart';
@@ -10,114 +15,112 @@ import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../config/config.dart';
-import '../providers/pwa_provider.dart';
-import '../widgets/cache_info_widget.dart';
-import '../widgets/debug_log_widget.dart';
-import '../widgets/pwa_install_button.dart';
-import '../widgets/pwa_install_prompt.dart';
+import '../constants/app_constants.dart';
+import '../providers/google_auth_provider.dart';
 
-/// 앱 라우터 설정
 class AppRouter {
-  static final GoRouter _router = GoRouter(
-    initialLocation: '/',
-    routes: [
-      // 홈 화면
-      GoRoute(
-        path: '/',
-        name: 'home',
-        builder: (context, state) => const EveryDiaryHomePage(),
+  static GoRouter buildRouter(ProviderContainer container) {
+    final googleNotifier = container.read(googleAuthProvider.notifier);
+
+    return GoRouter(
+      initialLocation: AppConstants.loginRoute,
+      routes: _routes,
+      redirect: (context, state) {
+        final googleState = container.read(googleAuthProvider);
+        final authState = container.read(authStateProvider);
+        final isSignedIn = googleState.isSignedIn || authState.isAuthenticated;
+        final path = state.uri.path;
+
+        if (!isSignedIn && AppConstants.protectedPaths.contains(path)) {
+          return AppConstants.loginRoute;
+        }
+
+        if (isSignedIn && path == AppConstants.loginRoute) {
+          return AppConstants.homeRoute;
+        }
+
+        return null;
+      },
+      refreshListenable: AuthRefreshListenable(
+        googleNotifier.authEvents,
+        container,
       ),
+      errorBuilder: (context, state) => const ErrorPage(),
+    );
+  }
 
-      // /home 라우트 추가 (Back 키 문제 해결)
-      GoRoute(
-        path: '/home',
-        name: 'home-alt',
-        builder: (context, state) => const DiaryListScreen(),
-      ),
-
-      // 일기 관련 라우트
-      GoRoute(
-        path: '/diary',
-        name: 'diary',
-        builder: (context, state) => const DiaryListScreen(),
-        routes: [
-          // 일기 작성
-          GoRoute(
-            path: 'write',
-            name: 'diary-write',
-            builder: (context, state) {
-              // 쿼리 파라미터가 있으면 편집 모드로 처리
-              if (state.uri.queryParameters.isNotEmpty) {
-                return DiaryWriteScreen.fromQuery(state.uri.queryParameters);
-              }
-              return const DiaryWriteScreen();
-            },
-          ),
-
-          // 일기 상세 보기
-          GoRoute(
-            path: 'detail/:id',
-            name: 'diary-detail',
-            builder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '');
-              if (id == null) {
-                return const Scaffold(
-                  body: Center(child: Text('잘못된 일기 ID입니다')),
-                );
-              }
-              return DiaryDetailScreen(diaryId: id);
-            },
-          ),
-
-          // 일기 편집 (일기 작성 화면으로 리다이렉트)
-          GoRoute(
-            path: 'edit/:id',
-            name: 'diary-edit',
-            redirect: (context, state) {
-              final id = state.pathParameters['id'] ?? '';
-              return '/diary/write?editId=$id';
-            },
-          ),
-
-          // 캘린더 뷰
-          GoRoute(
-            path: 'calendar',
-            name: 'diary-calendar',
-            builder: (context, state) => const CalendarViewScreen(),
-          ),
-
-          // 통계 화면
-          GoRoute(
-            path: 'statistics',
-            name: 'diary-statistics',
-            builder: (context, state) => const StatisticsScreen(),
-          ),
-        ],
-      ),
-
-      // 회상 화면
-      GoRoute(
-        path: '/memory',
-        name: 'memory',
-        builder: (context, state) => const MemoryScreen(),
-        routes: [
-          // 회상 알림 설정
-          GoRoute(
-            path: 'notification-settings',
-            name: 'memory-notification-settings',
-            builder: (context, state) =>
-                const MemoryNotificationSettingsScreen(),
-          ),
-        ],
-      ),
-    ],
-    errorBuilder: (context, state) => const ErrorPage(),
-  );
-
-  static GoRouter get router => _router;
+  static List<RouteBase> get _routes => [
+    GoRoute(
+      path: '/',
+      name: 'home',
+      builder: (context, state) => const EveryDiaryHomePage(),
+    ),
+    GoRoute(
+      path: AppConstants.loginRoute,
+      name: 'login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: '/diary',
+      name: 'diary',
+      builder: (context, state) => const DiaryListScreen(),
+      routes: [
+        GoRoute(
+          path: 'write',
+          name: 'diary-write',
+          builder: (context, state) {
+            if (state.uri.queryParameters.isNotEmpty) {
+              return DiaryWriteScreen.fromQuery(state.uri.queryParameters);
+            }
+            return const DiaryWriteScreen();
+          },
+        ),
+        GoRoute(
+          path: 'detail/:id',
+          name: 'diary-detail',
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '');
+            if (id == null) {
+              return const Scaffold(body: Center(child: Text('잘못된 일기 ID입니다')));
+            }
+            return DiaryDetailScreen(diaryId: id);
+          },
+        ),
+        GoRoute(
+          path: 'edit/:id',
+          name: 'diary-edit',
+          redirect: (context, state) {
+            final id = state.pathParameters['id'] ?? '';
+            return '/diary/write?editId=$id';
+          },
+        ),
+        GoRoute(
+          path: 'calendar',
+          name: 'diary-calendar',
+          builder: (context, state) => const CalendarViewScreen(),
+        ),
+        GoRoute(
+          path: 'statistics',
+          name: 'diary-statistics',
+          builder: (context, state) => const StatisticsScreen(),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/memory',
+      name: 'memory',
+      builder: (context, state) => const MemoryScreen(),
+      routes: [
+        GoRoute(
+          path: 'notification-settings',
+          name: 'memory-notification-settings',
+          builder: (context, state) => const MemoryNotificationSettingsScreen(),
+        ),
+      ],
+    ),
+  ];
 }
 
-/// 404 오류 처리 및 안전한 Home 이동
 class ErrorPage extends StatelessWidget {
   const ErrorPage({super.key});
 
@@ -168,139 +171,257 @@ class ErrorPage extends StatelessWidget {
   }
 }
 
-/// 홈 페이지 (임시)
-class EveryDiaryHomePage extends ConsumerStatefulWidget {
+class AuthRefreshListenable extends ChangeNotifier {
+  AuthRefreshListenable(
+    Stream<User?> googleAuthStream,
+    ProviderContainer container,
+  ) {
+    _googleSubscription = googleAuthStream.listen((_) => notifyListeners());
+
+    _emailAuthSubscription = container.listen<AuthState>(authStateProvider, (
+      previous,
+      next,
+    ) {
+      if (previous?.isAuthenticated != next.isAuthenticated) {
+        notifyListeners();
+      }
+    }, fireImmediately: false);
+  }
+
+  late final StreamSubscription<User?> _googleSubscription;
+  late final ProviderSubscription<AuthState> _emailAuthSubscription;
+
+  @override
+  void dispose() {
+    _googleSubscription.cancel();
+    _emailAuthSubscription.close();
+    super.dispose();
+  }
+}
+
+class EveryDiaryHomePage extends ConsumerWidget {
   const EveryDiaryHomePage({super.key});
 
   @override
-  ConsumerState<EveryDiaryHomePage> createState() => _EveryDiaryHomePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final googleState = ref.watch(googleAuthProvider);
+    final authState = ref.watch(authStateProvider);
+    final displayName = googleState.user?.displayName?.trim();
+    final email = googleState.user?.email?.trim();
+    final fallbackName = authState.user?.name?.trim();
 
-class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
-  @override
-  void initState() {
-    super.initState();
-    // PWA 초기화
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(pwaProvider.notifier).initialize();
-    });
-  }
+    final greetingName = displayName?.isNotEmpty == true
+        ? displayName!
+        : (fallbackName?.isNotEmpty == true
+            ? fallbackName!
+            : (email?.split('@').first ?? '일기 작성자'));
 
-  @override
-  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(ConfigManager.instance.config.appName),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Center(
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            _HomeGreetingCard(greetingName: greetingName),
+            const SizedBox(height: 24),
+            _QuickActionsSection(),
+            const SizedBox(height: 24),
+            _HomeInfoSection(theme: theme),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeGreetingCard extends StatelessWidget {
+  const _HomeGreetingCard({required this.greetingName});
+
+  final String greetingName;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$greetingName님, 반가워요 👋',
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '오늘의 순간을 기록하고 AI 이미지로 감정을 남겨보세요.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickActionsSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '빠른 작업',
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _QuickActionButton(
+              icon: Icons.edit,
+              label: '새 일기 쓰기',
+              onTap: () => context.go('/diary/write'),
+            ),
+            _QuickActionButton(
+              icon: Icons.menu_book,
+              label: '내 일기 보기',
+              onTap: () => context.go('/diary'),
+            ),
+            _QuickActionButton(
+              icon: Icons.bar_chart,
+              label: '감정 통계',
+              onTap: () => context.go('/diary/statistics'),
+            ),
+            _QuickActionButton(
+              icon: Icons.notifications,
+              label: '추억 알림 설정',
+              onTap: () => context.go('/memory/notification-settings'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 160,
+      child: FilledButton.tonalIcon(
+        onPressed: onTap,
+        icon: Icon(icon),
+        label: Text(label, textAlign: TextAlign.center),
+      ),
+    );
+  }
+}
+
+class _HomeInfoSection extends StatelessWidget {
+  const _HomeInfoSection({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('도움말', style: theme.textTheme.titleMedium),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Icon(Icons.book, size: 100, color: Colors.deepPurple),
-                const SizedBox(height: 20),
-                Text(
-                  'Welcome to ${ConfigManager.instance.config.appName}!',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                _InfoRow(
+                  icon: Icons.palette,
+                  title: 'AI 이미지 생성',
+                  description: '일기를 저장하면 감정과 키워드를 분석해 수채화 느낌의 이미지를 만들어 드려요.',
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  'Environment: ${EnvironmentConfig.environmentName}',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
+                SizedBox(height: 12),
+                _InfoRow(
+                  icon: Icons.cloud_done,
+                  title: 'Firebase 백업',
+                  description: '작성한 일기는 Google 계정과 연동되어 안전하게 백업됩니다.',
                 ),
-                const SizedBox(height: 40),
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/diary'),
-                  icon: const Icon(Icons.list),
-                  label: const Text('일기 목록'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/diary/write'),
-                  icon: const Icon(Icons.edit),
-                  label: const Text('일기 작성하기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // PWA 설치 프롬프트
-                const PWAInstallPrompt(),
-                const SizedBox(height: 10),
-                // PWA 설치 버튼
-                const PWAInstallButton(),
-                const SizedBox(height: 20),
-                // 캐시 정보
-                const CacheInfoWidget(),
-                const SizedBox(height: 20),
-                // 디버그 로그
-                const DebugLogWidget(),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/diary/calendar'),
-                  icon: const Icon(Icons.calendar_month),
-                  label: const Text('캘린더 보기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/diary/statistics'),
-                  icon: const Icon(Icons.bar_chart),
-                  label: const Text('통계 보기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/memory'),
-                  icon: const Icon(Icons.memory),
-                  label: const Text('추억 리마인더'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                  ),
+                SizedBox(height: 12),
+                _InfoRow(
+                  icon: Icons.lock,
+                  title: '로그인 유지',
+                  description: '로그인 상태 유지 옵션을 선택하면 다음 방문 때 바로 홈에서 이어서 작성할 수 있어요.',
                 ),
               ],
             ),
           ),
         ),
-      ),
+      ],
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: theme.colorScheme.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
