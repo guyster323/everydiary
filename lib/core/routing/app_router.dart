@@ -23,26 +23,55 @@ import '../providers/google_auth_provider.dart';
 import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/repositories/diary_repository.dart';
+import '../../shared/services/safe_delta_converter.dart';
+import '../../core/services/image_generation_service.dart';
+
+Future<String?> _resolveDiaryImagePath(
+  DiaryEntry diary,
+  ImageGenerationService imageService,
+) async {
+  for (final attachment in diary.attachments) {
+    final candidate = attachment.thumbnailPath?.isNotEmpty == true
+        ? attachment.thumbnailPath!
+        : attachment.filePath;
+
+    if (candidate.isEmpty) {
+      continue;
+    }
+
+    final file = File(candidate);
+    if (await file.exists()) {
+      return candidate;
+    }
+  }
+
+  final plainText = SafeDeltaConverter.extractTextFromDelta(diary.content);
+  if (plainText.trim().isEmpty) {
+    return null;
+  }
+
+  final cached = imageService.getCachedResult(plainText.trim());
+  final path = cached?.localImagePath;
+  if (path == null || path.isEmpty) {
+    return null;
+  }
+
+  return await File(path).exists() ? path : null;
+}
 
 Future<String?> _loadLatestDiaryImagePath() async {
   final repository = DiaryRepository(DatabaseService());
+  final imageService = ImageGenerationService();
+  await imageService.initialize();
+
   final diaries = await repository.getDiaryEntriesWithFilter(
-    const DiaryEntryFilter(limit: 10),
+    const DiaryEntryFilter(limit: 15),
   );
 
   for (final diary in diaries) {
-    for (final attachment in diary.attachments) {
-      final candidate = attachment.thumbnailPath?.isNotEmpty == true
-          ? attachment.thumbnailPath!
-          : attachment.filePath;
-
-      if (candidate.isEmpty) {
-        continue;
-      }
-
-      if (await File(candidate).exists()) {
-        return candidate;
-      }
+    final resolvedPath = await _resolveDiaryImagePath(diary, imageService);
+    if (resolvedPath != null) {
+      return resolvedPath;
     }
   }
 

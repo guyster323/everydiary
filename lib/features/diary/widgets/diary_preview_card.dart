@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/widgets/custom_card.dart';
 import '../../../shared/models/diary_entry.dart';
+import '../../../shared/services/safe_delta_converter.dart';
 
 /// 일기 미리보기 카드
 /// 캘린더 뷰에서 특정 날짜의 일기를 미리보기로 보여주는 카드입니다.
@@ -101,11 +102,18 @@ class DiaryPreviewCard extends StatelessWidget {
     String content = '';
 
     if (diary.content.isNotEmpty) {
-      // HTML 태그 제거 및 텍스트만 추출
-      content = diary.content
-          .replaceAll(RegExp(r'<[^>]*>'), '')
-          .replaceAll('&nbsp;', ' ')
-          .trim();
+      final raw = diary.content.trim();
+      final isDeltaJson = raw.startsWith('[') && raw.contains('"insert"');
+
+      if (isDeltaJson) {
+        content = SafeDeltaConverter.extractTextFromDelta(raw).trim();
+      } else {
+        // HTML 태그 제거 및 텍스트만 추출
+        content = raw
+            .replaceAll(RegExp(r'<[^>]*>'), '')
+            .replaceAll('&nbsp;', ' ')
+            .trim();
+      }
     }
 
     if (content.isEmpty) {

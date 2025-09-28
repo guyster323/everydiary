@@ -1,7 +1,13 @@
-import 'package:flutter/foundation.dart';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+
+import '../../../core/services/image_generation_service.dart';
+import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
+import '../../../shared/services/safe_delta_converter.dart';
 
 /// 캘린더 서비스
 /// 캘린더 뷰에서 필요한 일기 데이터를 관리합니다.
@@ -34,6 +40,7 @@ class CalendarService extends ChangeNotifier {
         limit: 1000, // 충분히 큰 수로 설정
       );
       _allDiaries = await _diaryRepository.getDiaryEntriesWithFilter(filter);
+      await _hydrateDiaryImages(_allDiaries);
 
       // 날짜별로 그룹화
       _groupDiariesByDate();
@@ -59,6 +66,7 @@ class CalendarService extends ChangeNotifier {
         endDate: endOfDay.toIso8601String(),
       );
       final diaries = await _diaryRepository.getDiaryEntriesWithFilter(filter);
+      await _hydrateDiaryImages(diaries);
 
       // 해당 날짜의 이벤트 업데이트
       _events[startOfDay] = diaries;
@@ -440,6 +448,76 @@ class CalendarService extends ChangeNotifier {
     }
 
     return streak;
+  }
+
+  Future<void> _hydrateDiaryImages(List<DiaryEntry> diaries) async {
+    if (diaries.isEmpty) {
+      return;
+    }
+
+    final imageService = ImageGenerationService();
+    await imageService.initialize();
+
+    for (var index = 0; index < diaries.length; index++) {
+      final diary = diaries[index];
+
+      final filteredAttachments = diary.attachments.where((attachment) {
+        final path = attachment.thumbnailPath?.isNotEmpty == true
+            ? attachment.thumbnailPath!
+            : attachment.filePath;
+
+        if (path.isEmpty) {
+          return false;
+        }
+
+        final file = File(path);
+        return file.existsSync();
+      }).toList();
+
+      if (filteredAttachments.isNotEmpty) {
+        diaries[index] = diary.copyWith(attachments: filteredAttachments);
+        continue;
+      }
+
+      final plainTextContent = SafeDeltaConverter.extractTextFromDelta(
+        diary.content,
+      ).trim();
+
+      if (plainTextContent.isEmpty) {
+        continue;
+      }
+
+      final cachedResult = imageService.getCachedResult(plainTextContent);
+      final candidatePath = cachedResult?.localImagePath;
+
+      if (candidatePath == null || candidatePath.isEmpty) {
+        continue;
+      }
+
+      final file = File(candidatePath);
+      if (!file.existsSync()) {
+        continue;
+      }
+
+      final attachment = Attachment(
+        id: null,
+        diaryId: diary.id ?? 0,
+        filePath: candidatePath,
+        fileName: p.basename(candidatePath),
+        fileType: FileType.image.value,
+        fileSize: null,
+        mimeType: 'image/png',
+        thumbnailPath: null,
+        width: null,
+        height: null,
+        duration: null,
+        createdAt: diary.createdAt,
+        updatedAt: diary.updatedAt,
+        isDeleted: false,
+      );
+
+      diaries[index] = diary.copyWith(attachments: [attachment]);
+    }
   }
 
   /// 일기를 날짜별로 그룹화
