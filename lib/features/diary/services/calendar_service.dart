@@ -1,18 +1,21 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:path/path.dart' as p;
 
 import '../../../core/services/image_generation_service.dart';
 import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
-import '../../../shared/services/safe_delta_converter.dart';
+import '../../../shared/services/database_service.dart';
+import '../../../shared/services/diary_image_helper.dart';
 
 /// 캘린더 서비스
 /// 캘린더 뷰에서 필요한 일기 데이터를 관리합니다.
 class CalendarService extends ChangeNotifier {
   final DiaryRepository _diaryRepository;
+  final DatabaseService _databaseService;
+  final ImageGenerationService _imageService;
+  late final DiaryImageHelper _diaryImageHelper;
 
   // 상태 변수들
   bool _isLoading = false;
@@ -25,9 +28,25 @@ class CalendarService extends ChangeNotifier {
   String? get error => _error;
   Map<DateTime, List<DiaryEntry>> get events => _events;
   List<DiaryEntry> get allDiaries => _allDiaries;
+  int? _activeUserId;
 
-  CalendarService({required DiaryRepository diaryRepository})
-    : _diaryRepository = diaryRepository;
+  void setActiveUserId(int? userId) {
+    _activeUserId = userId;
+  }
+
+  CalendarService({
+    required DiaryRepository diaryRepository,
+    DatabaseService? databaseService,
+    ImageGenerationService? imageService,
+  })
+    : _diaryRepository = diaryRepository,
+      _databaseService = databaseService ?? DatabaseService(),
+      _imageService = imageService ?? ImageGenerationService() {
+    _diaryImageHelper = DiaryImageHelper(
+      databaseService: _databaseService,
+      imageGenerationService: _imageService,
+    );
+  }
 
   /// 모든 일기 로드
   Future<void> loadDiaries() async {
@@ -36,8 +55,9 @@ class CalendarService extends ChangeNotifier {
 
     try {
       // 모든 일기 로드 (삭제되지 않은 것만)
-      const filter = DiaryEntryFilter(
-        limit: 1000, // 충분히 큰 수로 설정
+      final filter = DiaryEntryFilter(
+        limit: 1000,
+        userId: _activeUserId,
       );
       _allDiaries = await _diaryRepository.getDiaryEntriesWithFilter(filter);
       await _hydrateDiaryImages(_allDiaries);
@@ -62,6 +82,7 @@ class CalendarService extends ChangeNotifier {
       final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
 
       final filter = DiaryEntryFilter(
+        userId: _activeUserId,
         startDate: startOfDay.toIso8601String(),
         endDate: endOfDay.toIso8601String(),
       );
@@ -102,6 +123,8 @@ class CalendarService extends ChangeNotifier {
     _allDiaries.add(diary);
 
     notifyListeners();
+
+    _applyEnrichmentAsync(diary);
   }
 
   /// 일기 업데이트
@@ -123,6 +146,8 @@ class CalendarService extends ChangeNotifier {
     }
 
     notifyListeners();
+
+    _applyEnrichmentAsync(updatedDiary);
   }
 
   /// 일기 삭제
@@ -455,69 +480,55 @@ class CalendarService extends ChangeNotifier {
       return;
     }
 
-    final imageService = ImageGenerationService();
-    await imageService.initialize();
-
     for (var index = 0; index < diaries.length; index++) {
-      final diary = diaries[index];
-
-      final filteredAttachments = diary.attachments.where((attachment) {
-        final path = attachment.thumbnailPath?.isNotEmpty == true
-            ? attachment.thumbnailPath!
-            : attachment.filePath;
-
-        if (path.isEmpty) {
-          return false;
-        }
-
-        final file = File(path);
-        return file.existsSync();
-      }).toList();
-
-      if (filteredAttachments.isNotEmpty) {
-        diaries[index] = diary.copyWith(attachments: filteredAttachments);
-        continue;
-      }
-
-      final plainTextContent = SafeDeltaConverter.extractTextFromDelta(
-        diary.content,
-      ).trim();
-
-      if (plainTextContent.isEmpty) {
-        continue;
-      }
-
-      final cachedResult = imageService.getCachedResult(plainTextContent);
-      final candidatePath = cachedResult?.localImagePath;
-
-      if (candidatePath == null || candidatePath.isEmpty) {
-        continue;
-      }
-
-      final file = File(candidatePath);
-      if (!file.existsSync()) {
-        continue;
-      }
-
-      final attachment = Attachment(
-        id: null,
-        diaryId: diary.id ?? 0,
-        filePath: candidatePath,
-        fileName: p.basename(candidatePath),
-        fileType: FileType.image.value,
-        fileSize: null,
-        mimeType: 'image/png',
-        thumbnailPath: null,
-        width: null,
-        height: null,
-        duration: null,
-        createdAt: diary.createdAt,
-        updatedAt: diary.updatedAt,
-        isDeleted: false,
-      );
-
-      diaries[index] = diary.copyWith(attachments: [attachment]);
+      final enriched = await _enrichDiary(diaries[index]);
+      diaries[index] = enriched;
     }
+  }
+
+  Future<DiaryEntry> _enrichDiary(DiaryEntry diary) async {
+    final attachment = await _diaryImageHelper.ensureAttachment(diary);
+
+    if (attachment == null) {
+      return diary;
+    }
+
+    final updatedAttachments = <Attachment>[attachment, ...diary.attachments]
+        .fold<Map<String, Attachment>>(<String, Attachment>{}, (map, att) {
+      map[att.filePath] = att;
+      return map;
+    }).values.toList();
+
+    return diary.copyWith(attachments: updatedAttachments);
+  }
+
+  void _applyEnrichmentAsync(DiaryEntry diary) {
+    unawaited(_enrichDiary(diary).then((enriched) {
+      if (identical(enriched, diary)) {
+        return;
+      }
+      _replaceDiaryReferences(enriched);
+    }));
+  }
+
+  void _replaceDiaryReferences(DiaryEntry diary) {
+    final diaryDate = DateTime.parse(diary.date);
+    final date = DateTime(diaryDate.year, diaryDate.month, diaryDate.day);
+
+    final dateEntries = _events[date];
+    if (dateEntries != null) {
+      final index = dateEntries.indexWhere((entry) => entry.id == diary.id);
+      if (index != -1) {
+        dateEntries[index] = diary;
+      }
+    }
+
+    final allIndex = _allDiaries.indexWhere((entry) => entry.id == diary.id);
+    if (allIndex != -1) {
+      _allDiaries[allIndex] = diary;
+    }
+
+    notifyListeners();
   }
 
   /// 일기를 날짜별로 그룹화

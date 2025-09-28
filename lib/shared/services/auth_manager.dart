@@ -120,7 +120,11 @@ class AuthManager {
       _updateAuthState(const AuthState.loading('로그인 중...'));
 
       final result = await _authService.login(
-        LoginRequest(email: email, password: password),
+        LoginRequest(
+          email: email,
+          password: password,
+          rememberMe: rememberMe,
+        ),
       );
 
       if (result.success) {

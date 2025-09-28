@@ -107,7 +107,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   /// 로그인
-  Future<void> login(LoginRequest request, {bool rememberMe = false}) async {
+  Future<void> login(LoginRequest request) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -124,7 +124,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // 자동 로그인 설정 저장
       await _autoLoginService.onLoginSuccess(
         user: user,
-        rememberMe: rememberMe,
+        rememberMe: request.rememberMe,
       );
 
       // 토큰 갱신 서비스 시작

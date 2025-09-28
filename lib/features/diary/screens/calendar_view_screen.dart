@@ -11,6 +11,8 @@ import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
+import '../../../features/auth/providers/auth_providers.dart';
+import '../../../core/services/image_generation_service.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
@@ -49,9 +51,25 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
   void initState() {
     super.initState();
 
+    final databaseService = DatabaseService();
+    final imageService = ImageGenerationService();
+
     // CalendarService 초기화
     _calendarService = CalendarService(
-      diaryRepository: DiaryRepository(DatabaseService()),
+      diaryRepository: DiaryRepository(databaseService),
+      databaseService: databaseService,
+      imageService: imageService,
+    );
+
+    final authState = ref.read(authStateProvider);
+    _calendarService.setActiveUserId(authState.user?.id);
+
+    ref.listen<AuthState>(
+      authStateProvider,
+      (previous, next) {
+        _calendarService.setActiveUserId(next.user?.id);
+        unawaited(_calendarService.loadDiaries());
+      },
     );
 
     _pageController = PageController();

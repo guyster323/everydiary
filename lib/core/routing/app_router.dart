@@ -23,55 +23,32 @@ import '../providers/google_auth_provider.dart';
 import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/repositories/diary_repository.dart';
-import '../../shared/services/safe_delta_converter.dart';
 import '../../core/services/image_generation_service.dart';
+import '../../shared/services/diary_image_helper.dart';
 
-Future<String?> _resolveDiaryImagePath(
-  DiaryEntry diary,
-  ImageGenerationService imageService,
-) async {
-  for (final attachment in diary.attachments) {
-    final candidate = attachment.thumbnailPath?.isNotEmpty == true
-        ? attachment.thumbnailPath!
-        : attachment.filePath;
-
-    if (candidate.isEmpty) {
-      continue;
-    }
-
-    final file = File(candidate);
-    if (await file.exists()) {
-      return candidate;
-    }
-  }
-
-  final plainText = SafeDeltaConverter.extractTextFromDelta(diary.content);
-  if (plainText.trim().isEmpty) {
-    return null;
-  }
-
-  final cached = imageService.getCachedResult(plainText.trim());
-  final path = cached?.localImagePath;
-  if (path == null || path.isEmpty) {
-    return null;
-  }
-
-  return await File(path).exists() ? path : null;
-}
-
-Future<String?> _loadLatestDiaryImagePath() async {
-  final repository = DiaryRepository(DatabaseService());
+Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
+  final databaseService = DatabaseService();
+  final repository = DiaryRepository(databaseService);
   final imageService = ImageGenerationService();
   await imageService.initialize();
-
-  final diaries = await repository.getDiaryEntriesWithFilter(
-    const DiaryEntryFilter(limit: 15),
+  final helper = DiaryImageHelper(
+    databaseService: databaseService,
+    imageGenerationService: imageService,
   );
 
+  final authState = ref.read(authStateProvider);
+  final int? userId = authState.user?.id;
+
+  final filter = userId != null
+      ? DiaryEntryFilter(userId: userId, limit: 20)
+      : const DiaryEntryFilter(limit: 20);
+
+  final diaries = await repository.getDiaryEntriesWithFilter(filter);
+
   for (final diary in diaries) {
-    final resolvedPath = await _resolveDiaryImagePath(diary, imageService);
-    if (resolvedPath != null) {
-      return resolvedPath;
+    final path = await helper.ensureImagePath(diary);
+    if (path != null && path.isNotEmpty && await File(path).exists()) {
+      return path;
     }
   }
 
@@ -87,7 +64,7 @@ final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((ref) async
   final controller = StreamController<String?>();
 
   Future<void> emitLatest() async {
-    final latestPath = await _loadLatestDiaryImagePath();
+    final latestPath = await _loadLatestDiaryImagePath(ref);
     if (!controller.isClosed) {
       controller.add(latestPath);
     }

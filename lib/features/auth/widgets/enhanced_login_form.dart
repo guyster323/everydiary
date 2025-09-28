@@ -69,11 +69,12 @@ class _EnhancedLoginFormState extends ConsumerState<EnhancedLoginForm> {
       final request = LoginRequest(
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        rememberMe: _rememberMe,
       );
 
       await ref
           .read(authStateProvider.notifier)
-          .login(request, rememberMe: _rememberMe);
+          .login(request);
 
       if (mounted) {
         widget.onLoginSuccess?.call();
