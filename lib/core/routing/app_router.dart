@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +19,34 @@ import '../../features/recommendations/screens/memory_screen.dart';
 import '../config/config.dart';
 import '../constants/app_constants.dart';
 import '../providers/google_auth_provider.dart';
+import '../../shared/models/diary_entry.dart';
+import '../../shared/services/database_service.dart';
+import '../../shared/services/repositories/diary_repository.dart';
+
+final latestDiaryImageProvider = FutureProvider<String?>((ref) async {
+  if (kIsWeb) {
+    return null;
+  }
+
+  final repository = DiaryRepository(DatabaseService());
+  final diaries = await repository.getDiaryEntriesWithFilter(
+    const DiaryEntryFilter(limit: 5),
+  );
+
+  for (final diary in diaries) {
+    for (final attachment in diary.attachments) {
+      final path = attachment.thumbnailPath?.isNotEmpty == true
+          ? attachment.thumbnailPath!
+          : attachment.filePath;
+
+      if (path.isNotEmpty && File(path).existsSync()) {
+        return path;
+      }
+    }
+  }
+
+  return null;
+});
 
 class AppRouter {
   static GoRouter buildRouter(ProviderContainer container) {
@@ -208,29 +238,77 @@ class EveryDiaryHomePage extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final displayName = googleState.user?.displayName?.trim();
     final email = googleState.user?.email?.trim();
-    final fallbackName = authState.user?.name?.trim();
+    final fallbackName = authState.user?.name.trim();
 
-    final greetingName = displayName?.isNotEmpty == true
-        ? displayName!
-        : (fallbackName?.isNotEmpty == true
-            ? fallbackName!
-            : (email?.split('@').first ?? '일기 작성자'));
+    String? resolvedName;
+    if (displayName?.isNotEmpty == true) {
+      resolvedName = displayName;
+    } else if (fallbackName?.isNotEmpty == true) {
+      resolvedName = fallbackName;
+    } else if (email?.contains('@') == true) {
+      resolvedName = email!.split('@').first;
+    }
+
+    final greetingName = resolvedName ?? '일기 작성자';
 
     final theme = Theme.of(context);
+    final latestImageAsync = ref.watch(latestDiaryImageProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(ConfigManager.instance.config.appName),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
+        child: Stack(
           children: [
-            _HomeGreetingCard(greetingName: greetingName),
-            const SizedBox(height: 24),
-            _QuickActionsSection(),
-            const SizedBox(height: 24),
-            _HomeInfoSection(theme: theme),
+            Positioned.fill(
+              child: latestImageAsync.when(
+                data: (path) {
+                  if (path == null || path.isEmpty) {
+                    return Container(color: theme.colorScheme.surface);
+                  }
+                  return Opacity(
+                    opacity: 0.4,
+                    child: Image.file(
+                      File(path),
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                      errorBuilder: (context, _, __) =>
+                          Container(color: theme.colorScheme.surface),
+                    ),
+                  );
+                },
+                loading: () => Container(color: theme.colorScheme.surface),
+                error: (_, __) => Container(color: theme.colorScheme.surface),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      theme.colorScheme.surface.withValues(alpha: 0.96),
+                      theme.colorScheme.surface.withValues(alpha: 0.98),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: ListView(
+                padding: const EdgeInsets.all(24),
+                children: [
+                  _HomeGreetingCard(greetingName: greetingName),
+                  const SizedBox(height: 24),
+                  _QuickActionsSection(),
+                  const SizedBox(height: 24),
+                  _HomeInfoSection(theme: theme),
+                  const SizedBox(height: 48),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -304,7 +382,7 @@ class _QuickActionsSection extends StatelessWidget {
             ),
             _QuickActionButton(
               icon: Icons.bar_chart,
-              label: '감정 통계',
+              label: '일기 통계',
               onTap: () => context.go('/diary/statistics'),
             ),
             _QuickActionButton(
@@ -355,12 +433,12 @@ class _HomeInfoSection extends StatelessWidget {
       children: [
         Text('도움말', style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
-        Card(
+        const Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 _InfoRow(
                   icon: Icons.palette,
                   title: 'AI 이미지 생성',

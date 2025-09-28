@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +28,7 @@ class CalendarViewScreen extends ConsumerStatefulWidget {
 
 class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     with TickerProviderStateMixin {
+  static const Color _eventDotColor = Color(0xFFFF8A3D);
   late CalendarService _calendarService;
   late PageController _pageController;
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -232,6 +235,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
             children: [
               // 캘린더
               _buildCalendar(),
+            _buildCalendarLegend(context),
 
               // 구분선
               const Divider(height: 1),
@@ -270,33 +274,15 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                     calendarFormat: _calendarFormat,
                     eventLoader: _calendarService.getEventsForDay,
                     startingDayOfWeek: StartingDayOfWeek.sunday,
-                    calendarStyle: CalendarStyle(
+                    calendarStyle: const CalendarStyle(
+                      cellMargin: EdgeInsets.zero,
+                      cellPadding: EdgeInsets.zero,
                       outsideDaysVisible: false,
-                      weekendTextStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      holidayTextStyle: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      selectedDecoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      markerDecoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondary,
-                        shape: BoxShape.circle,
-                      ),
-                      markersMaxCount: 3,
-                      markerSize: 6,
-                      markerMargin: const EdgeInsets.symmetric(horizontal: 1),
+                      selectedDecoration: BoxDecoration(),
+                      todayDecoration: BoxDecoration(),
+                      defaultDecoration: BoxDecoration(),
+                      weekendDecoration: BoxDecoration(),
+                      outsideDecoration: BoxDecoration(),
                     ),
                     headerStyle: HeaderStyle(
                       formatButtonVisible: true,
@@ -326,31 +312,41 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                       return isSameDay(_selectedDay, day);
                     },
                     calendarBuilders: CalendarBuilders(
-                      markerBuilder: (context, day, events) {
-                        if (events.isEmpty) return null;
-
-                        return Positioned(
-                          bottom: 1,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: events.take(3).map((event) {
-                              return Container(
-                                width: 6,
-                                height: 6,
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                  shape: BoxShape.circle,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        );
-                      },
+                      defaultBuilder: (context, day, focusedDay) =>
+                          _buildCalendarDayCell(
+                        context,
+                        day,
+                        _calendarService.getEventsForDay(day),
+                        isSelected: isSameDay(_selectedDay, day),
+                        isToday: isSameDay(DateTime.now(), day),
+                      ),
+                      selectedBuilder: (context, day, focusedDay) =>
+                          _buildCalendarDayCell(
+                        context,
+                        day,
+                        _calendarService.getEventsForDay(day),
+                        isSelected: true,
+                        isToday: isSameDay(DateTime.now(), day),
+                      ),
+                      todayBuilder: (context, day, focusedDay) =>
+                          _buildCalendarDayCell(
+                        context,
+                        day,
+                        _calendarService.getEventsForDay(day),
+                        isSelected: isSameDay(_selectedDay, day),
+                        isToday: true,
+                      ),
+                      outsideBuilder: (context, day, focusedDay) => Opacity(
+                        opacity: 0.4,
+                        child: _buildCalendarDayCell(
+                          context,
+                          day,
+                          _calendarService.getEventsForDay(day),
+                          isSelected: false,
+                          isToday: false,
+                          isOutside: true,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -360,6 +356,144 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
         );
       },
     );
+  }
+
+  Widget _buildCalendarLegend(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
+      child: Row(
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              color: Color(0xFFFF8A3D),
+              shape: BoxShape.circle,
+            ),
+            child: SizedBox.square(dimension: 10),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '주황색 점은 1개 이상의 일기가 있습니다.',
+              style: theme.textTheme.labelMedium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarDayCell(
+    BuildContext context,
+    DateTime day,
+    List<DiaryEntry> events, {
+    required bool isSelected,
+    required bool isToday,
+    bool isOutside = false,
+  }) {
+    final theme = Theme.of(context);
+    final imagePath = _getEventThumbnailPath(events);
+    final hasEvents = events.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.all(6),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.35),
+                ),
+                image: imagePath != null
+                    ? DecorationImage(
+                        image: FileImage(File(imagePath)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+            ),
+              if (imagePath != null)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.35),
+                ),
+              ),
+            if (isOutside)
+              Positioned.fill(
+                child: Container(
+                  color: theme.colorScheme.surface.withValues(alpha: 0.6),
+                ),
+              ),
+            Align(
+              alignment: Alignment.topLeft,
+              child: Container(
+                margin: const EdgeInsets.all(6),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.white.withValues(alpha: 0.92),
+                  border: isToday && !isSelected
+                      ? Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 2,
+                        )
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+            if (hasEvents)
+              Positioned(
+                right: 6,
+                bottom: 6,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: _eventDotColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _getEventThumbnailPath(List<DiaryEntry> events) {
+    if (kIsWeb) {
+      return null;
+    }
+
+    for (final diary in events) {
+      for (final attachment in diary.attachments) {
+        final path = attachment.thumbnailPath?.isNotEmpty == true
+            ? attachment.thumbnailPath!
+            : attachment.filePath;
+
+        if (path.isNotEmpty && File(path).existsSync()) {
+          return path;
+        }
+      }
+    }
+
+    return null;
   }
 
   /// 선택된 날짜의 일기 목록 빌드
