@@ -7,8 +7,10 @@ class AppConstants {
   static const String memoryRoute = '/memory';
 
   // API 엔드포인트
-  static const String huggingFaceEndpoint = 'https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5';
-  static const String geminiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+  static const String huggingFaceEndpoint =
+      'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0';
+  static const String geminiEndpoint =
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
   // 이미지 생성 설정
   static const int maxRetryAttempts = 3;
@@ -26,4 +28,3 @@ class AppConstants {
   static const String geminiApiKeyName = 'GEMINI_API_KEY';
   static const String huggingFaceApiKeyName = 'HUGGING_FACE_API_KEY';
 }
-
