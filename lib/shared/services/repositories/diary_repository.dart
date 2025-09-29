@@ -3,6 +3,7 @@ import '../../models/attachment.dart';
 import '../../models/diary_entry.dart';
 import '../../models/tag.dart';
 import '../database_service.dart';
+import '../thumbnail_cache_service.dart';
 
 /// 일기 리포지토리
 class DiaryRepository {
@@ -108,11 +109,11 @@ class DiaryRepository {
       final attachments = await _databaseService.getAttachmentsByDiaryId(
         diary.id!,
       );
-      return diary.copyWith(
-        attachments: attachments
-            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
-            .toList(),
+      final enrichedAttachments = await _buildAttachmentModels(
+        attachments,
+        diary,
       );
+      return diary.copyWith(attachments: enrichedAttachments);
     }
     return null;
   }
@@ -152,11 +153,11 @@ class DiaryRepository {
       final attachments = await _databaseService.getAttachmentsByDiaryId(
         diaries[i].id!,
       );
-      diaries[i] = diaries[i].copyWith(
-        attachments: attachments
-            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
-            .toList(),
+      final enrichedAttachments = await _buildAttachmentModels(
+        attachments,
+        diaries[i],
       );
+      diaries[i] = diaries[i].copyWith(attachments: enrichedAttachments);
     }
 
     return diaries;
@@ -224,11 +225,11 @@ class DiaryRepository {
       final attachments = await _databaseService.getAttachmentsByDiaryId(
         diaries[i].id!,
       );
-      diaries[i] = diaries[i].copyWith(
-        attachments: attachments
-            .map((map) => Attachment.fromJson(_convertAttachmentMap(map)))
-            .toList(),
+      final enrichedAttachments = await _buildAttachmentModels(
+        attachments,
+        diaries[i],
       );
+      diaries[i] = diaries[i].copyWith(attachments: enrichedAttachments);
     }
 
     return diaries;
@@ -363,6 +364,41 @@ class DiaryRepository {
     );
 
     return await getDiaryEntriesWithFilter(filter);
+  }
+
+  Future<List<Attachment>> _buildAttachmentModels(
+    List<Map<String, dynamic>> attachmentRecords,
+    DiaryEntry diary,
+  ) async {
+    if (attachmentRecords.isEmpty) {
+      return const [];
+    }
+
+    final cacheService = ThumbnailCacheService();
+    await cacheService.initialize();
+
+    final List<Attachment> result = [];
+    for (final record in attachmentRecords) {
+      final attachment = Attachment.fromJson(_convertAttachmentMap(record));
+
+      if (attachment.fileType != FileType.image.value) {
+        result.add(attachment);
+        continue;
+      }
+
+      final resolvedPath = await cacheService.resolveForAttachment(
+        attachment,
+        diary: diary,
+      );
+
+      if (resolvedPath != null) {
+        result.add(attachment.copyWith(thumbnailPath: resolvedPath));
+      } else {
+        result.add(attachment);
+      }
+    }
+
+    return result;
   }
 
   /// 데이터베이스 맵을 JSON으로 변환 (snake_case -> camelCase)

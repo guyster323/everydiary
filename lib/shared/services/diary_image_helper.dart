@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/services/image_generation_service.dart';
@@ -7,24 +8,40 @@ import '../models/attachment.dart';
 import '../models/diary_entry.dart';
 import 'database_service.dart';
 import 'safe_delta_converter.dart';
+import 'thumbnail_cache_service.dart';
 
 /// 일기와 연결된 AI 이미지 경로를 보장하는 헬퍼
 class DiaryImageHelper {
   DiaryImageHelper({
     DatabaseService? databaseService,
     ImageGenerationService? imageGenerationService,
+    ThumbnailCacheService? thumbnailCacheService,
+    Connectivity? connectivity,
   }) : _databaseService = databaseService ?? DatabaseService(),
-       _imageService = imageGenerationService ?? ImageGenerationService();
+       _imageService = imageGenerationService ?? ImageGenerationService(),
+       _thumbnailCacheService =
+           thumbnailCacheService ?? ThumbnailCacheService(),
+       _connectivity = connectivity ?? Connectivity();
 
   final DatabaseService _databaseService;
   final ImageGenerationService _imageService;
+  final ThumbnailCacheService _thumbnailCacheService;
+  final Connectivity _connectivity;
 
   /// 일기에 연결된 이미지 첨부를 확보하고 반환합니다.
   Future<Attachment?> ensureAttachment(DiaryEntry diary) async {
     await _imageService.initialize();
+    await _thumbnailCacheService.initialize();
 
     final Attachment? existingAttachment = _findExistingAttachment(diary);
     if (existingAttachment != null) {
+      final resolved = await _thumbnailCacheService.resolveForAttachment(
+        existingAttachment,
+        diary: diary,
+      );
+      if (resolved != null) {
+        return existingAttachment.copyWith(thumbnailPath: resolved);
+      }
       return existingAttachment;
     }
 
@@ -33,27 +50,37 @@ class DiaryImageHelper {
     ).trim();
 
     if (plainText.isEmpty) {
-      return null;
+      return _buildPlaceholderAttachment(diary);
     }
 
     final hints = _buildImageHints(diary);
 
-    String? imagePath = _resolveCachedImagePath(plainText, hints);
+    String? imagePath = await _resolveCachedImagePath(plainText, hints);
+
+    final cacheKey = _buildCacheKey(diary);
 
     final bool shouldAttemptGeneration =
         imagePath == null || !(await _pathExists(imagePath));
 
     if (shouldAttemptGeneration && await _imageService.canGenerateTodayAsync) {
-      final generated = await _imageService.generateImageFromText(
-        plainText,
-        hints: hints,
-      );
-      imagePath = generated?.localImagePath;
+      if (await _isNetworkAvailable()) {
+        final generated = await _imageService.generateImageFromText(
+          plainText,
+          hints: hints,
+        );
+        imagePath = generated?.localImagePath;
+      }
     }
 
     if (imagePath == null || !(await _pathExists(imagePath))) {
-      return null;
+      return _buildPlaceholderAttachment(diary, cacheKey: cacheKey);
     }
+
+    final thumbnailPath = await _thumbnailCacheService.ensureThumbnail(
+      cacheKey: cacheKey,
+      sourcePath: imagePath,
+      diary: diary,
+    );
 
     final attachment = Attachment(
       id: null,
@@ -63,7 +90,7 @@ class DiaryImageHelper {
       fileType: FileType.image.value,
       fileSize: await _getFileSize(imagePath),
       mimeType: 'image/png',
-      thumbnailPath: null,
+      thumbnailPath: thumbnailPath ?? imagePath,
       width: null,
       height: null,
       duration: null,
@@ -103,16 +130,16 @@ class DiaryImageHelper {
     return null;
   }
 
-  String? _resolveCachedImagePath(
+  Future<String?> _resolveCachedImagePath(
     String plainText,
     ImageGenerationHints hints,
-  ) {
+  ) async {
     final cached = _imageService.getCachedResult(plainText, hints: hints);
     final path = cached?.localImagePath;
     if (path == null) {
       return null;
     }
-    return path;
+    return await _pathExists(path) ? path : null;
   }
 
   Future<bool> _pathExists(String path) async {
@@ -160,6 +187,34 @@ class DiaryImageHelper {
     });
   }
 
+  Future<Attachment> _buildPlaceholderAttachment(
+    DiaryEntry diary, {
+    String? cacheKey,
+  }) async {
+    final resolvedKey = cacheKey ?? _buildCacheKey(diary);
+    final placeholderPath = await _thumbnailCacheService.getPlaceholder(
+      cacheKey: resolvedKey,
+      diary: diary,
+    );
+
+    return Attachment(
+      id: null,
+      diaryId: diary.id ?? 0,
+      filePath: placeholderPath,
+      fileName: p.basename(placeholderPath),
+      fileType: FileType.image.value,
+      fileSize: await _getFileSize(placeholderPath),
+      mimeType: 'image/png',
+      thumbnailPath: placeholderPath,
+      width: null,
+      height: null,
+      duration: null,
+      createdAt: diary.createdAt,
+      updatedAt: DateTime.now().toIso8601String(),
+      isDeleted: false,
+    );
+  }
+
   ImageGenerationHints _buildImageHints(DiaryEntry diary) {
     DateTime? diaryDate;
     try {
@@ -202,5 +257,23 @@ class DiaryImageHelper {
       return '저녁';
     }
     return '밤';
+  }
+
+  Future<bool> _isNetworkAvailable() async {
+    try {
+      final List<ConnectivityResult> results = await _connectivity
+          .checkConnectivity();
+      return results.any((result) => result != ConnectivityResult.none);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  String _buildCacheKey(DiaryEntry diary) {
+    if (diary.id != null) {
+      return 'diary_${diary.id}';
+    }
+    final base = '${diary.date}_${diary.title}_${diary.createdAt}';
+    return 'temp_${base.hashCode.abs()}';
   }
 }
