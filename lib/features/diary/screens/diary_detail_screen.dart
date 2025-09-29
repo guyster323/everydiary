@@ -133,7 +133,40 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
       await _imageGenerationService.initialize();
 
-      final cachedImage = _imageGenerationService.getCachedResult(text);
+      ImageGenerationHints? hints;
+      if (_diary != null) {
+        DateTime? diaryDate;
+        try {
+          diaryDate = DateTime.tryParse(_diary!.date);
+        } catch (_) {
+          diaryDate = null;
+        }
+
+        DateTime? createdAt;
+        try {
+          createdAt = DateTime.tryParse(_diary!.createdAt);
+        } catch (_) {
+          createdAt = null;
+        }
+
+        hints = ImageGenerationHints(
+          title: _diary!.title,
+          mood: _diary!.mood,
+          weather: _diary!.weather,
+          location: _diary!.location,
+          date: diaryDate ?? createdAt,
+          timeOfDay: createdAt != null ? _timeOfDayLabel(createdAt) : null,
+          tags: _diary!.tags
+              .map((tag) => tag.name.trim())
+              .where((name) => name.isNotEmpty)
+              .toList(),
+        );
+      }
+
+      final cachedImage = _imageGenerationService.getCachedResult(
+        text,
+        hints: hints,
+      );
 
       if (cachedImage != null) {
         setState(() {
@@ -145,7 +178,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       }
 
       final generatedImage = await _imageGenerationService
-          .generateImageFromText(text);
+          .generateImageFromText(text, hints: hints);
 
       if (generatedImage != null) {
         setState(() {
@@ -242,6 +275,20 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           .replaceAll(RegExp(r'\s+'), ' ')
           .trim();
     }
+  }
+
+  String? _timeOfDayLabel(DateTime dateTime) {
+    final hour = dateTime.hour;
+    if (hour >= 5 && hour < 11) {
+      return '아침';
+    }
+    if (hour >= 11 && hour < 15) {
+      return '낮';
+    }
+    if (hour >= 15 && hour < 19) {
+      return '저녁';
+    }
+    return '밤';
   }
 
   /// 단어 수 계산

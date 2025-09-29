@@ -13,8 +13,8 @@ class DiaryImageHelper {
   DiaryImageHelper({
     DatabaseService? databaseService,
     ImageGenerationService? imageGenerationService,
-  })  : _databaseService = databaseService ?? DatabaseService(),
-        _imageService = imageGenerationService ?? ImageGenerationService();
+  }) : _databaseService = databaseService ?? DatabaseService(),
+       _imageService = imageGenerationService ?? ImageGenerationService();
 
   final DatabaseService _databaseService;
   final ImageGenerationService _imageService;
@@ -36,13 +36,18 @@ class DiaryImageHelper {
       return null;
     }
 
-    String? imagePath = await _resolveCachedImagePath(plainText);
+    final hints = _buildImageHints(diary);
+
+    String? imagePath = _resolveCachedImagePath(plainText, hints);
 
     final bool shouldAttemptGeneration =
         imagePath == null || !(await _pathExists(imagePath));
 
     if (shouldAttemptGeneration && await _imageService.canGenerateTodayAsync) {
-      final generated = await _imageService.generateImageFromText(plainText);
+      final generated = await _imageService.generateImageFromText(
+        plainText,
+        hints: hints,
+      );
       imagePath = generated?.localImagePath;
     }
 
@@ -98,8 +103,11 @@ class DiaryImageHelper {
     return null;
   }
 
-  Future<String?> _resolveCachedImagePath(String plainText) async {
-    final cached = _imageService.getCachedResult(plainText);
+  String? _resolveCachedImagePath(
+    String plainText,
+    ImageGenerationHints hints,
+  ) {
+    final cached = _imageService.getCachedResult(plainText, hints: hints);
     final path = cached?.localImagePath;
     if (path == null) {
       return null;
@@ -123,7 +131,10 @@ class DiaryImageHelper {
     }
   }
 
-  Future<void> _upsertAttachmentRecord(int diaryId, Attachment attachment) async {
+  Future<void> _upsertAttachmentRecord(
+    int diaryId,
+    Attachment attachment,
+  ) async {
     final db = await _databaseService.database;
     final existing = await db.query(
       'attachments',
@@ -141,17 +152,55 @@ class DiaryImageHelper {
     await db.insert('attachments', {
       'diary_id': diaryId,
       'file_path': attachment.filePath,
-      'file_name': attachment.fileName,
       'file_type': attachment.fileType,
       'file_size': attachment.fileSize,
-      'mime_type': attachment.mimeType,
-      'thumbnail_path': attachment.thumbnailPath,
-      'width': attachment.width,
-      'height': attachment.height,
       'created_at': now,
       'updated_at': now,
       'is_deleted': 0,
     });
   }
-}
 
+  ImageGenerationHints _buildImageHints(DiaryEntry diary) {
+    DateTime? diaryDate;
+    try {
+      diaryDate = DateTime.tryParse(diary.date);
+    } catch (_) {
+      diaryDate = null;
+    }
+
+    DateTime? creationDate;
+    try {
+      creationDate = DateTime.tryParse(diary.createdAt);
+    } catch (_) {
+      creationDate = null;
+    }
+
+    final tags = diary.tags.map((tag) => tag.name).where((name) {
+      return name.trim().isNotEmpty;
+    }).toList();
+
+    return ImageGenerationHints(
+      title: diary.title,
+      mood: diary.mood,
+      weather: diary.weather,
+      location: diary.location,
+      date: diaryDate ?? creationDate,
+      timeOfDay: creationDate != null ? _timeOfDayLabel(creationDate) : null,
+      tags: tags,
+    );
+  }
+
+  String? _timeOfDayLabel(DateTime dateTime) {
+    final hour = dateTime.hour;
+    if (hour >= 5 && hour < 11) {
+      return '아침';
+    }
+    if (hour >= 11 && hour < 15) {
+      return '낮';
+    }
+    if (hour >= 15 && hour < 19) {
+      return '저녁';
+    }
+    return '밤';
+  }
+}

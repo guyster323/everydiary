@@ -5,8 +5,10 @@ import 'dart:io';
 import 'package:everydiary/core/config/api_keys.dart';
 import 'package:everydiary/core/constants/app_constants.dart';
 import 'package:everydiary/core/services/text_analysis_service.dart';
+import 'package:everydiary/core/services/user_customization_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,6 +78,78 @@ class ImageGenerationResult {
   }
 }
 
+class ImageGenerationHints {
+  const ImageGenerationHints({
+    this.title,
+    this.mood,
+    this.weather,
+    this.location,
+    this.date,
+    this.timeOfDay,
+    this.tags = const <String>[],
+  });
+
+  final String? title;
+  final String? mood;
+  final String? weather;
+  final String? location;
+  final DateTime? date;
+  final String? timeOfDay;
+  final List<String> tags;
+
+  bool get hasContext {
+    return (title != null && title!.trim().isNotEmpty) ||
+        (mood != null && mood!.trim().isNotEmpty) ||
+        (weather != null && weather!.trim().isNotEmpty) ||
+        (location != null && location!.trim().isNotEmpty) ||
+        date != null ||
+        (timeOfDay != null && timeOfDay!.trim().isNotEmpty) ||
+        tags.isNotEmpty;
+  }
+
+  Map<String, dynamic> toJson() => {
+    if (title != null) 'title': title,
+    if (mood != null) 'mood': mood,
+    if (weather != null) 'weather': weather,
+    if (location != null) 'location': location,
+    if (date != null) 'date': date!.toIso8601String(),
+    if (timeOfDay != null) 'timeOfDay': timeOfDay,
+    if (tags.isNotEmpty) 'tags': tags,
+  };
+
+  String signature() {
+    final buffer = StringBuffer();
+    if (title != null && title!.trim().isNotEmpty) {
+      buffer.write(title!.trim());
+      buffer.write('|');
+    }
+    if (mood != null && mood!.trim().isNotEmpty) {
+      buffer.write(mood!.trim());
+      buffer.write('|');
+    }
+    if (weather != null && weather!.trim().isNotEmpty) {
+      buffer.write(weather!.trim());
+      buffer.write('|');
+    }
+    if (location != null && location!.trim().isNotEmpty) {
+      buffer.write(location!.trim());
+      buffer.write('|');
+    }
+    if (date != null) {
+      buffer.write(date!.toIso8601String());
+      buffer.write('|');
+    }
+    if (timeOfDay != null && timeOfDay!.trim().isNotEmpty) {
+      buffer.write(timeOfDay!.trim());
+      buffer.write('|');
+    }
+    if (tags.isNotEmpty) {
+      buffer.write(tags.join(','));
+    }
+    return buffer.toString();
+  }
+}
+
 Map<String, dynamic> _parseMetadataString(String raw) {
   try {
     final decoded = jsonDecode(raw);
@@ -107,6 +181,7 @@ class ImageGenerationService {
 
   // 의존성 서비스들
   late TextAnalysisService _textAnalysisService;
+  late UserCustomizationService _userCustomizationService;
 
   Future<bool> get canGenerateTodayAsync => _canGenerateToday();
 
@@ -120,6 +195,9 @@ class ImageGenerationService {
       // 의존성 서비스 초기화
       _textAnalysisService = TextAnalysisService();
       await _textAnalysisService.initialize();
+
+      _userCustomizationService = UserCustomizationService();
+      await _userCustomizationService.initialize();
 
       // 캐시된 생성 결과 로드
       await _loadCache();
@@ -174,7 +252,10 @@ class ImageGenerationService {
   }
 
   /// 텍스트에서 이미지 생성
-  Future<ImageGenerationResult?> generateImageFromText(String text) async {
+  Future<ImageGenerationResult?> generateImageFromText(
+    String text, {
+    ImageGenerationHints? hints,
+  }) async {
     if (!_isInitialized) {
       debugPrint('❌ 이미지 생성 서비스가 초기화되지 않았습니다.');
       return null;
@@ -201,15 +282,17 @@ class ImageGenerationService {
         return null;
       }
 
-      final cacheKey = _generateCacheKey(
-        '$text|${analysisResult.topic}|${analysisResult.mood}',
-      );
+      final cacheKey = _generateCacheKey(text, analysisResult, hints);
       if (_cache.containsKey(cacheKey)) {
         debugPrint('📋 캐시된 이미지 생성 결과 사용');
         return _cache[cacheKey];
       }
 
-      final prompt = await _generateOptimizedPrompt(analysisResult, text);
+      final prompt = await _generateOptimizedPrompt(
+        analysisResult,
+        text,
+        hints,
+      );
       if (prompt == null) {
         debugPrint('❌ 프롬프트 생성 실패');
         return null;
@@ -236,6 +319,7 @@ class ImageGenerationService {
         'original_text': text,
         'generation_service': generationResult['service'],
         'generation_time': DateTime.now().toIso8601String(),
+        if (hints != null && hints.hasContext) 'context': hints.toJson(),
       };
       final result = ImageGenerationResult(
         imageUrl: savedImagePath ?? generationResult['image_url'] as String,
@@ -410,22 +494,27 @@ class ImageGenerationService {
         );
 
         final uri = Uri.parse(endpoint);
-        final response = await http.post(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
-          },
-          body: jsonEncode({
-            'inputs': prompt,
-            'parameters': {
-              'negative_prompt':
-                  'blurry, low quality, distorted, disfigured, text, watermark',
-              'num_inference_steps': 25,
-              'guidance_scale': 7.5,
-            },
-          }),
-        );
+        final response = await http
+            .post(
+              uri,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
+                'x-wait-for-model': 'true',
+              },
+              body: jsonEncode({
+                'inputs': prompt,
+                'parameters': {
+                  'negative_prompt':
+                      'blurry, low quality, distorted, disfigured, text, '
+                      'watermark',
+                  'num_inference_steps': 25,
+                  'guidance_scale': 7.5,
+                },
+                'options': {'use_cache': true, 'wait_for_model': true},
+              }),
+            )
+            .timeout(const Duration(seconds: 60));
 
         if (response.statusCode == 200) {
           final bytes = response.bodyBytes;
@@ -450,6 +539,18 @@ class ImageGenerationService {
           debugPrint('⏳ 서버 오류, ${waitTime.inSeconds}초 후 재시도...');
           await Future<void>.delayed(waitTime);
           continue;
+        } else if (response.statusCode == 503) {
+          final errorInfo = _parseHuggingFaceError(response.bodyBytes);
+          final estimated = errorInfo['estimated_time'] as num?;
+          final waitSeconds = estimated != null
+              ? estimated.clamp(2, 30).round()
+              : attempt * 3;
+          debugPrint(
+            '⏳ Hugging Face 모델 로딩 중, $waitSeconds초 후 재시도... '
+            '(${errorInfo['error'] ?? 'loading'})',
+          );
+          await Future<void>.delayed(Duration(seconds: waitSeconds));
+          continue;
         }
 
         debugPrint(
@@ -469,6 +570,25 @@ class ImageGenerationService {
     }
 
     return null;
+  }
+
+  Map<String, dynamic> _parseHuggingFaceError(List<int> bodyBytes) {
+    try {
+      final decoded = utf8.decode(bodyBytes);
+      if (decoded.isEmpty) {
+        return <String, dynamic>{};
+      }
+      final dynamic data = jsonDecode(decoded);
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      if (data is Map) {
+        return data.map((key, value) => MapEntry('$key', value));
+      }
+    } catch (_) {
+      // 파싱 실패는 무시하고 빈 맵 반환
+    }
+    return <String, dynamic>{};
   }
 
   Future<String?> _saveBase64Image(String base64Data) async {
@@ -500,6 +620,7 @@ class ImageGenerationService {
   Future<String?> _generateOptimizedPrompt(
     TextAnalysisResult analysis,
     String originalText,
+    ImageGenerationHints? hints,
   ) async {
     try {
       final summarySentence = _buildOneSentenceSummary(analysis, originalText);
@@ -507,9 +628,55 @@ class ImageGenerationService {
       final topicDescription = _getTopicDescription(analysis.topic);
       final keywords = analysis.keywords.take(3).join(', ');
 
+      final preferredStyle =
+          _userCustomizationService.currentSettings.preferredStyle;
+      final styleDescription = _getStyleDescription(preferredStyle);
+      final stylePrompt = preferredStyle.promptSuffix;
+
       final buffer = StringBuffer()
         ..write('$summarySentence ')
-        ..write('$moodDescription 분위기의 수채화 일러스트로 표현해 주세요.');
+        ..write('$moodDescription 분위기의 $styleDescription로 표현해 주세요. ')
+        ..write('스타일 가이드: $stylePrompt.');
+
+      final detailSegments = <String>[];
+
+      if (hints != null) {
+        if (hints.title != null && hints.title!.trim().isNotEmpty) {
+          detailSegments.add('일기 제목은 "${hints.title!.trim()}"');
+        }
+
+        if (hints.date != null) {
+          final formattedDate = DateFormat(
+            'yyyy년 M월 d일 (E)',
+            'ko_KR',
+          ).format(hints.date!);
+          detailSegments.add('$formattedDate의 기억');
+
+          if (hints.timeOfDay == null || hints.timeOfDay!.trim().isEmpty) {
+            detailSegments.add('${_describeTimeOfDay(hints.date!)} 분위기');
+          }
+        }
+
+        if (hints.timeOfDay != null && hints.timeOfDay!.trim().isNotEmpty) {
+          detailSegments.add('${hints.timeOfDay!.trim()}의 분위기');
+        }
+
+        if (hints.location != null && hints.location!.trim().isNotEmpty) {
+          detailSegments.add('장소는 ${hints.location!.trim()}');
+        }
+
+        if (hints.weather != null && hints.weather!.trim().isNotEmpty) {
+          detailSegments.add('날씨는 ${hints.weather!.trim()}');
+        }
+
+        if (hints.mood != null && hints.mood!.trim().isNotEmpty) {
+          detailSegments.add('감정은 ${hints.mood!.trim()}');
+        }
+
+        if (hints.tags.isNotEmpty) {
+          detailSegments.add('관련 태그: ${hints.tags.join(', ')}');
+        }
+      }
 
       if (topicDescription.isNotEmpty) {
         buffer.write(' 장면의 초점은 $topicDescription 입니다.');
@@ -517,6 +684,10 @@ class ImageGenerationService {
 
       if (keywords.isNotEmpty) {
         buffer.write(' 참고 키워드: $keywords.');
+      }
+
+      if (detailSegments.isNotEmpty) {
+        buffer.write(' 추가 정보: ${detailSegments.join(', ')}.');
       }
 
       return buffer.toString();
@@ -549,6 +720,58 @@ class ImageGenerationService {
       default:
         return '잔잔하고 성찰적인';
     }
+  }
+
+  String _getStyleDescription(ImageStyle style) {
+    switch (style) {
+      case ImageStyle.chibi:
+        return '3등신 만화 캐릭터 일러스트';
+      case ImageStyle.cute:
+        return '귀엽고 사랑스러운 일러스트';
+      case ImageStyle.realistic:
+        return '사실적 일러스트';
+      case ImageStyle.cartoon:
+        return '만화풍 일러스트';
+      case ImageStyle.watercolor:
+        return '수채화 질감의 일러스트';
+      case ImageStyle.oil:
+        return '유화 질감의 일러스트';
+      case ImageStyle.sketch:
+        return '연필 스케치 스타일 일러스트';
+      case ImageStyle.digital:
+        return '디지털 아트 스타일 일러스트';
+      case ImageStyle.vintage:
+        return '빈티지 톤 일러스트';
+      case ImageStyle.modern:
+        return '모던 미니멀리즘 일러스트';
+    }
+  }
+
+  String _describeTimeOfDay(DateTime dateTime) {
+    final hour = dateTime.hour;
+    if (hour >= 5 && hour < 11) {
+      return '아침';
+    }
+    if (hour >= 11 && hour < 15) {
+      return '낮';
+    }
+    if (hour >= 15 && hour < 19) {
+      return '저녁';
+    }
+    return '밤';
+  }
+
+  bool _listsShareElement(List<String> a, List<String> b) {
+    if (a.isEmpty || b.isEmpty) {
+      return true;
+    }
+    final setB = b.map((item) => item.toLowerCase()).toSet();
+    for (final element in a) {
+      if (setB.contains(element.toLowerCase())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   String _getTopicDescription(String topic) {
@@ -608,8 +831,23 @@ class ImageGenerationService {
   }
 
   /// 캐시 키 생성
-  String _generateCacheKey(String text) {
-    return '$_cacheVersion-${text.hashCode}';
+  String _generateCacheKey(
+    String originalText,
+    TextAnalysisResult analysis,
+    ImageGenerationHints? hints,
+  ) {
+    final components = <String>[
+      _cacheVersion,
+      originalText.hashCode.toString(),
+      analysis.topic.hashCode.toString(),
+      analysis.mood.hashCode.toString(),
+    ];
+
+    if (hints != null && hints.hasContext) {
+      components.add(hints.signature().hashCode.toString());
+    }
+
+    return components.join('-');
   }
 
   /// 캐시 로드
@@ -692,9 +930,56 @@ class ImageGenerationService {
   }
 
   /// 캐시된 생성 결과 가져오기
-  ImageGenerationResult? getCachedResult(String text) {
-    final cacheKey = _generateCacheKey(text);
-    return _cache[cacheKey];
+  ImageGenerationResult? getCachedResult(
+    String text, {
+    ImageGenerationHints? hints,
+  }) {
+    if (hints != null && hints.hasContext) {
+      final cachedAnalysis = _textAnalysisService.getCachedResult(text);
+      if (cachedAnalysis != null) {
+        final key = _generateCacheKey(text, cachedAnalysis, hints);
+        final cached = _cache[key];
+        if (cached != null) {
+          return cached;
+        }
+      }
+    }
+
+    for (final result in _cache.values) {
+      final meta = result.metadata;
+      final originalText = meta['original_text'];
+      if (originalText == text) {
+        if (hints == null || !hints.hasContext) {
+          return result;
+        }
+
+        final Object? storedContext = meta['context'];
+        if (storedContext is Map<String, dynamic>) {
+          final storedTags = storedContext['tags'];
+          final storedMood = storedContext['mood'];
+          final storedWeather = storedContext['weather'];
+          final storedLocation = storedContext['location'];
+
+          final matchesMood = storedMood == null || storedMood == hints.mood;
+          final matchesWeather =
+              storedWeather == null || storedWeather == hints.weather;
+          final matchesLocation =
+              storedLocation == null || storedLocation == hints.location;
+          final matchesTags = storedTags is List
+              ? _listsShareElement(
+                  storedTags.map((e) => e.toString()).toList(),
+                  hints.tags,
+                )
+              : true;
+
+          if (matchesMood && matchesWeather && matchesLocation && matchesTags) {
+            return result;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 
   /// 생성 이력 가져오기

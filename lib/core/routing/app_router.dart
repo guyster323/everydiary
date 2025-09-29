@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/services/image_generation_service.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/diary/screens/calendar_view_screen.dart';
@@ -17,45 +18,67 @@ import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/diary/services/diary_list_service.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
+import '../../shared/models/diary_entry.dart';
+import '../../shared/services/database_service.dart';
+import '../../shared/services/diary_image_helper.dart';
+import '../../shared/services/repositories/diary_repository.dart';
 import '../config/config.dart';
 import '../constants/app_constants.dart';
 import '../providers/google_auth_provider.dart';
-import '../../shared/models/diary_entry.dart';
-import '../../shared/services/database_service.dart';
-import '../../shared/services/repositories/diary_repository.dart';
-import '../../core/services/image_generation_service.dart';
-import '../../shared/services/diary_image_helper.dart';
 
 Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
-  final databaseService = DatabaseService();
-  final repository = DiaryRepository(databaseService);
-  final imageService = ImageGenerationService();
-  await imageService.initialize();
-  final helper = DiaryImageHelper(
-    databaseService: databaseService,
-    imageGenerationService: imageService,
-  );
+  try {
+    final databaseService = DatabaseService();
+    final repository = DiaryRepository(databaseService);
+    final imageService = ImageGenerationService();
+    await imageService.initialize();
+    final helper = DiaryImageHelper(
+      databaseService: databaseService,
+      imageGenerationService: imageService,
+    );
 
-  final authState = ref.read(authStateProvider);
-  final int? userId = authState.user?.id;
+    final authState = ref.read(authStateProvider);
+    final int? userId = authState.user?.id;
 
-  final filter = userId != null
-      ? DiaryEntryFilter(userId: userId, limit: 20)
-      : const DiaryEntryFilter(limit: 20);
+    final primaryFilter = userId != null
+        ? DiaryEntryFilter(userId: userId, limit: 20)
+        : const DiaryEntryFilter(limit: 20);
 
-  final diaries = await repository.getDiaryEntriesWithFilter(filter);
+    List<DiaryEntry> diaries = await repository.getDiaryEntriesWithFilter(
+      primaryFilter,
+    );
 
-  for (final diary in diaries) {
-    final path = await helper.ensureImagePath(diary);
-    if (path != null && path.isNotEmpty && await File(path).exists()) {
-      return path;
+    if (diaries.isEmpty && userId != null) {
+      diaries = await repository.getDiaryEntriesWithFilter(
+        primaryFilter.copyWith(userId: null),
+      );
     }
+
+    for (final diary in diaries) {
+      final path = await helper.ensureImagePath(diary);
+      if (path != null && path.isNotEmpty && await File(path).exists()) {
+        return path;
+      }
+    }
+
+    final history = imageService.getGenerationHistory();
+    for (final entry in history.reversed) {
+      final result = entry['result'] as Map<String, dynamic>?;
+      final localPath = result?['local_image_path'] as String?;
+      if (localPath != null && await File(localPath).exists()) {
+        return localPath;
+      }
+    }
+  } catch (e, stackTrace) {
+    debugPrint('❌ 최신 일기 이미지 로딩 실패: $e\n$stackTrace');
   }
 
   return null;
 }
 
-final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((ref) async* {
+final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((
+  ref,
+) async* {
   if (kIsWeb) {
     yield null;
     return;
@@ -64,9 +87,16 @@ final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((ref) async
   final controller = StreamController<String?>();
 
   Future<void> emitLatest() async {
-    final latestPath = await _loadLatestDiaryImagePath(ref);
-    if (!controller.isClosed) {
-      controller.add(latestPath);
+    try {
+      final latestPath = await _loadLatestDiaryImagePath(ref);
+      if (!controller.isClosed) {
+        controller.add(latestPath);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ 홈 배경 이미지 스트림 갱신 실패: $e\n$stackTrace');
+      if (!controller.isClosed) {
+        controller.add(null);
+      }
     }
   }
 
@@ -305,9 +335,7 @@ class EveryDiaryHomePage extends ConsumerWidget {
     final latestImageAsync = ref.watch(latestDiaryImageProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(ConfigManager.instance.config.appName),
-      ),
+      appBar: AppBar(title: Text(ConfigManager.instance.config.appName)),
       body: SafeArea(
         child: Stack(
           children: [
@@ -317,14 +345,25 @@ class EveryDiaryHomePage extends ConsumerWidget {
                   if (path == null || path.isEmpty) {
                     return Container(color: theme.colorScheme.surface);
                   }
-                  return Opacity(
-                    opacity: 0.4,
-                    child: Image.file(
-                      File(path),
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                      errorBuilder: (context, _, __) =>
-                          Container(color: theme.colorScheme.surface),
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 400),
+                    child: Stack(
+                      key: ValueKey(path),
+                      fit: StackFit.expand,
+                      children: [
+                        Image.file(
+                          File(path),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          errorBuilder: (context, _, __) =>
+                              Container(color: theme.colorScheme.surface),
+                        ),
+                        Container(
+                          color: theme.colorScheme.surface.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -339,8 +378,8 @@ class EveryDiaryHomePage extends ConsumerWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      theme.colorScheme.surface.withValues(alpha: 0.96),
-                      theme.colorScheme.surface.withValues(alpha: 0.98),
+                      theme.colorScheme.surface.withValues(alpha: 0.1),
+                      theme.colorScheme.surface.withValues(alpha: 0.4),
                     ],
                   ),
                 ),
@@ -393,7 +432,9 @@ class _HomeGreetingCard extends StatelessWidget {
             Text(
               '오늘의 순간을 기록하고 AI 이미지로 감정을 남겨보세요.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.8),
+                color: theme.colorScheme.onPrimaryContainer.withValues(
+                  alpha: 0.8,
+                ),
               ),
             ),
           ],
@@ -411,10 +452,7 @@ class _QuickActionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '빠른 작업',
-          style: theme.textTheme.titleMedium,
-        ),
+        Text('빠른 작업', style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
@@ -504,7 +542,8 @@ class _HomeInfoSection extends StatelessWidget {
                 _InfoRow(
                   icon: Icons.lock,
                   title: '로그인 유지',
-                  description: '로그인 상태 유지 옵션을 선택하면 다음 방문 때 바로 홈에서 이어서 작성할 수 있어요.',
+                  description:
+                      '로그인 상태 유지 옵션을 선택하면 다음 방문 때 바로 홈에서 이어서 작성할 수 있어요.',
                 ),
               ],
             ),

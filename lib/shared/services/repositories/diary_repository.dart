@@ -392,11 +392,12 @@ class DiaryRepository {
 
   /// 첨부파일 맵을 JSON으로 변환 (snake_case -> camelCase)
   Map<String, dynamic> _convertAttachmentMap(Map<String, dynamic> dbMap) {
+    final filePath = dbMap['file_path'] as String? ?? '';
     return {
       'id': dbMap['id'],
       'diaryId': dbMap['diary_id'],
-      'filePath': dbMap['file_path'],
-      'fileName': dbMap['file_name'],
+      'filePath': filePath,
+      'fileName': _safeFileName(filePath),
       'fileType': dbMap['file_type'],
       'fileSize': dbMap['file_size'],
       'mimeType': dbMap['mime_type'],
@@ -408,5 +409,14 @@ class DiaryRepository {
       'updatedAt': dbMap['updated_at'],
       'isDeleted': dbMap['is_deleted'] == 1,
     };
+  }
+
+  String _safeFileName(String path) {
+    if (path.trim().isEmpty) {
+      return 'attachment';
+    }
+    final segments = path.split('/');
+    final name = segments.isNotEmpty ? segments.last : path;
+    return name.isEmpty ? 'attachment' : name;
   }
 }

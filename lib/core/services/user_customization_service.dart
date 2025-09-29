@@ -6,14 +6,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// 이미지 스타일 열거형
 enum ImageStyle {
-  realistic('사실적', 'photorealistic'),
-  cartoon('만화', 'cartoon style'),
-  watercolor('수채화', 'watercolor painting'),
-  oil('유화', 'oil painting'),
-  sketch('스케치', 'pencil sketch'),
-  digital('디지털 아트', 'digital art'),
-  vintage('빈티지', 'vintage style'),
-  modern('모던', 'modern minimalist');
+  chibi(
+    '3등신 만화',
+    'chibi 3-head cartoon character, cute proportions, expressive eyes, soft shading',
+  ),
+  cute(
+    '귀여운',
+    'adorable kawaii illustration, pastel palette, rounded shapes, gentle lighting',
+  ),
+  realistic('사실적', 'photorealistic lighting and details'),
+  cartoon('만화', 'bold cartoon illustration with clean lines'),
+  watercolor('수채화', 'watercolor painting with soft edges'),
+  oil('유화', 'oil painting with rich textures'),
+  sketch('스케치', 'pencil sketch style with fine lines'),
+  digital('디지털 아트', 'digital art with smooth gradients'),
+  vintage('빈티지', 'vintage style with muted colors'),
+  modern('모던', 'modern minimalist composition');
 
   const ImageStyle(this.displayName, this.promptSuffix);
   final String displayName;
@@ -35,7 +43,7 @@ class UserCustomizationSettings {
   final Map<String, dynamic> customPresets;
 
   const UserCustomizationSettings({
-    this.preferredStyle = ImageStyle.realistic,
+    this.preferredStyle = ImageStyle.chibi,
     this.brightness = 0.0,
     this.contrast = 1.0,
     this.saturation = 1.0,
@@ -66,7 +74,7 @@ class UserCustomizationSettings {
     return UserCustomizationSettings(
       preferredStyle: ImageStyle.values.firstWhere(
         (style) => style.name == json['preferred_style'],
-        orElse: () => ImageStyle.realistic,
+        orElse: () => ImageStyle.chibi,
       ),
       brightness: (json['brightness'] as num).toDouble(),
       contrast: (json['contrast'] as num).toDouble(),
@@ -346,12 +354,21 @@ class UserCustomizationService {
   List<Map<String, dynamic>> getDefaultPresets() {
     return [
       {
-        'name': '자연스러운',
-        'style': ImageStyle.realistic,
-        'brightness': 0.0,
-        'contrast': 1.0,
-        'saturation': 1.0,
-        'blur_radius': 8.0,
+        'name': '포근한 캐릭터',
+        'style': ImageStyle.chibi,
+        'brightness': 0.05,
+        'contrast': 1.05,
+        'saturation': 1.1,
+        'blur_radius': 6.0,
+        'overlay_opacity': 0.25,
+      },
+      {
+        'name': '밝은 귀여움',
+        'style': ImageStyle.cute,
+        'brightness': 0.12,
+        'contrast': 0.95,
+        'saturation': 1.15,
+        'blur_radius': 5.0,
         'overlay_opacity': 0.2,
       },
       {

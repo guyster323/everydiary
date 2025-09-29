@@ -9,10 +9,10 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
+import '../../../core/services/image_generation_service.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../../../features/auth/providers/auth_providers.dart';
-import '../../../core/services/image_generation_service.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
@@ -36,6 +36,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  ProviderSubscription<AuthState>? _authStateSubscription;
 
   // 애니메이션 컨트롤러들
   late AnimationController _calendarTransitionController;
@@ -64,13 +65,13 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     final authState = ref.read(authStateProvider);
     _calendarService.setActiveUserId(authState.user?.id);
 
-    ref.listen<AuthState>(
-      authStateProvider,
-      (previous, next) {
-        _calendarService.setActiveUserId(next.user?.id);
-        unawaited(_calendarService.loadDiaries());
-      },
-    );
+    _authStateSubscription = ref.listenManual<AuthState>(authStateProvider, (
+      previous,
+      next,
+    ) {
+      _calendarService.setActiveUserId(next.user?.id);
+      unawaited(_calendarService.loadDiaries());
+    });
 
     _pageController = PageController();
     _selectedDay = DateTime.now();
@@ -122,6 +123,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     _calendarTransitionController.dispose();
     _diaryListController.dispose();
     _refreshSubscription?.cancel();
+    _authStateSubscription?.close();
     super.dispose();
   }
 
@@ -253,7 +255,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
             children: [
               // 캘린더
               _buildCalendar(),
-            _buildCalendarLegend(context),
+              _buildCalendarLegend(context),
 
               // 구분선
               const Divider(height: 1),
@@ -293,8 +295,10 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                     eventLoader: _calendarService.getEventsForDay,
                     startingDayOfWeek: StartingDayOfWeek.sunday,
                     calendarStyle: const CalendarStyle(
-                      cellMargin:
-                          EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                      cellMargin: EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
+                      ),
                       cellPadding: EdgeInsets.zero,
                       outsideDaysVisible: false,
                       selectedDecoration: BoxDecoration(),
@@ -333,28 +337,28 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, focusedDay) =>
                           _buildCalendarDayCell(
-                        context,
-                        day,
-                        _calendarService.getEventsForDay(day),
-                        isSelected: isSameDay(_selectedDay, day),
-                        isToday: isSameDay(DateTime.now(), day),
-                      ),
+                            context,
+                            day,
+                            _calendarService.getEventsForDay(day),
+                            isSelected: isSameDay(_selectedDay, day),
+                            isToday: isSameDay(DateTime.now(), day),
+                          ),
                       selectedBuilder: (context, day, focusedDay) =>
                           _buildCalendarDayCell(
-                        context,
-                        day,
-                        _calendarService.getEventsForDay(day),
-                        isSelected: true,
-                        isToday: isSameDay(DateTime.now(), day),
-                      ),
+                            context,
+                            day,
+                            _calendarService.getEventsForDay(day),
+                            isSelected: true,
+                            isToday: isSameDay(DateTime.now(), day),
+                          ),
                       todayBuilder: (context, day, focusedDay) =>
                           _buildCalendarDayCell(
-                        context,
-                        day,
-                        _calendarService.getEventsForDay(day),
-                        isSelected: isSameDay(_selectedDay, day),
-                        isToday: true,
-                      ),
+                            context,
+                            day,
+                            _calendarService.getEventsForDay(day),
+                            isSelected: isSameDay(_selectedDay, day),
+                            isToday: true,
+                          ),
                       outsideBuilder: (context, day, focusedDay) => Opacity(
                         opacity: 0.4,
                         child: _buildCalendarDayCell(
@@ -433,7 +437,9 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
             if (imagePath != null)
               Container(color: Colors.black.withValues(alpha: 0.3)),
             if (isOutside)
-              Container(color: theme.colorScheme.surface.withValues(alpha: 0.6)),
+              Container(
+                color: theme.colorScheme.surface.withValues(alpha: 0.6),
+              ),
             Positioned(
               top: 6,
               left: 6,
@@ -446,10 +452,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                       ? theme.colorScheme.primary
                       : Colors.white.withValues(alpha: 0.92),
                   border: isToday && !isSelected
-                      ? Border.all(
-                          color: theme.colorScheme.primary,
-                          width: 2,
-                        )
+                      ? Border.all(color: theme.colorScheme.primary, width: 2)
                       : null,
                 ),
                 alignment: Alignment.center,

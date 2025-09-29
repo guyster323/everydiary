@@ -5,9 +5,9 @@ import 'package:flutter/foundation.dart';
 import '../../../core/services/image_generation_service.dart';
 import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
-import '../../../shared/services/repositories/diary_repository.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/diary_image_helper.dart';
+import '../../../shared/services/repositories/diary_repository.dart';
 
 /// 캘린더 서비스
 /// 캘린더 뷰에서 필요한 일기 데이터를 관리합니다.
@@ -38,10 +38,9 @@ class CalendarService extends ChangeNotifier {
     required DiaryRepository diaryRepository,
     DatabaseService? databaseService,
     ImageGenerationService? imageService,
-  })
-    : _diaryRepository = diaryRepository,
-      _databaseService = databaseService ?? DatabaseService(),
-      _imageService = imageService ?? ImageGenerationService() {
+  }) : _diaryRepository = diaryRepository,
+       _databaseService = databaseService ?? DatabaseService(),
+       _imageService = imageService ?? ImageGenerationService() {
     _diaryImageHelper = DiaryImageHelper(
       databaseService: _databaseService,
       imageGenerationService: _imageService,
@@ -55,12 +54,18 @@ class CalendarService extends ChangeNotifier {
 
     try {
       // 모든 일기 로드 (삭제되지 않은 것만)
-      final filter = DiaryEntryFilter(
-        limit: 1000,
-        userId: _activeUserId,
-      );
+      final filter = DiaryEntryFilter(limit: 1000, userId: _activeUserId);
       _allDiaries = await _diaryRepository.getDiaryEntriesWithFilter(filter);
-      await _hydrateDiaryImages(_allDiaries);
+
+      if (_allDiaries.isEmpty && _activeUserId != null) {
+        _allDiaries = await _diaryRepository.getDiaryEntriesWithFilter(
+          filter.copyWith(userId: null),
+        );
+      }
+
+      if (_allDiaries.isNotEmpty) {
+        await _hydrateDiaryImages(_allDiaries);
+      }
 
       // 날짜별로 그룹화
       _groupDiariesByDate();
@@ -86,8 +91,18 @@ class CalendarService extends ChangeNotifier {
         startDate: startOfDay.toIso8601String(),
         endDate: endOfDay.toIso8601String(),
       );
-      final diaries = await _diaryRepository.getDiaryEntriesWithFilter(filter);
-      await _hydrateDiaryImages(diaries);
+      List<DiaryEntry> diaries = await _diaryRepository
+          .getDiaryEntriesWithFilter(filter);
+
+      if (diaries.isEmpty && _activeUserId != null) {
+        diaries = await _diaryRepository.getDiaryEntriesWithFilter(
+          filter.copyWith(userId: null),
+        );
+      }
+
+      if (diaries.isNotEmpty) {
+        await _hydrateDiaryImages(diaries);
+      }
 
       // 해당 날짜의 이벤트 업데이트
       _events[startOfDay] = diaries;
@@ -495,20 +510,24 @@ class CalendarService extends ChangeNotifier {
 
     final updatedAttachments = <Attachment>[attachment, ...diary.attachments]
         .fold<Map<String, Attachment>>(<String, Attachment>{}, (map, att) {
-      map[att.filePath] = att;
-      return map;
-    }).values.toList();
+          map[att.filePath] = att;
+          return map;
+        })
+        .values
+        .toList();
 
     return diary.copyWith(attachments: updatedAttachments);
   }
 
   void _applyEnrichmentAsync(DiaryEntry diary) {
-    unawaited(_enrichDiary(diary).then((enriched) {
-      if (identical(enriched, diary)) {
-        return;
-      }
-      _replaceDiaryReferences(enriched);
-    }));
+    unawaited(
+      _enrichDiary(diary).then((enriched) {
+        if (identical(enriched, diary)) {
+          return;
+        }
+        _replaceDiaryReferences(enriched);
+      }),
+    );
   }
 
   void _replaceDiaryReferences(DiaryEntry diary) {

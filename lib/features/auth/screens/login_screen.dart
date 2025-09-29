@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:everydiary/core/constants/app_constants.dart';
 import 'package:everydiary/core/providers/google_auth_provider.dart';
 import 'package:everydiary/shared/models/auth_token.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/auth_providers.dart';
 import 'register_screen.dart';
@@ -23,6 +26,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   bool _rememberMe = true;
   bool _isPasswordVisible = false;
+
+  static const String _rememberedEmailKey = 'remembered_email';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRememberedEmail();
+  }
 
   @override
   void dispose() {
@@ -138,9 +149,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         setState(() {
                           _rememberMe = value ?? false;
                         });
+                        if (!(value ?? false)) {
+                          unawaited(_clearRememberedEmail());
+                        }
                       },
                     ),
-                    const Text('로그인 상태 유지'),
+                    const Text('ID 기억하기'),
                     const Spacer(),
                     TextButton(
                       onPressed: () {
@@ -299,6 +313,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       await ref.read(authStateProvider.notifier).login(request);
 
+      if (_rememberMe) {
+        await _persistRememberedEmail(_emailController.text.trim());
+      } else {
+        await _clearRememberedEmail();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -321,6 +341,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedEmail = prefs.getString(_rememberedEmailKey);
+    if (savedEmail != null && savedEmail.isNotEmpty) {
+      _emailController.text = savedEmail;
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _rememberMe = true;
+      });
+    }
+  }
+
+  Future<void> _persistRememberedEmail(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_rememberedEmailKey, email);
+  }
+
+  Future<void> _clearRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_rememberedEmailKey);
   }
 
   /// Google 로그인 처리

@@ -97,7 +97,7 @@ class DiarySaveService extends ChangeNotifier {
       if (_imageService.imageCount > 0) {
         Logger.info('이미 첨부된 이미지가 있어 AI 자동 생성을 건너뜁니다', tag: 'DiarySaveService');
       } else {
-        await _generateAndAttachAIImage(diaryEntry.id!, contentPlainText);
+        await _generateAndAttachAIImage(diaryEntry, contentPlainText);
       }
 
       // 3. 이미지 첨부파일 저장
@@ -450,7 +450,10 @@ class DiarySaveService extends ChangeNotifier {
     return minutes.clamp(1, 60);
   }
 
-  Future<void> _generateAndAttachAIImage(int diaryId, String plainText) async {
+  Future<void> _generateAndAttachAIImage(
+    DiaryEntry diary,
+    String plainText,
+  ) async {
     try {
       if (plainText.trim().isEmpty) {
         Logger.info('일기 내용이 비어 AI 이미지 생성을 건너뜁니다', tag: 'DiarySaveService');
@@ -460,7 +463,24 @@ class DiarySaveService extends ChangeNotifier {
       final imageService = ImageGenerationService();
       await imageService.initialize();
 
-      final result = await imageService.generateImageFromText(plainText);
+      final hints = ImageGenerationHints(
+        title: diary.title,
+        mood: diary.mood,
+        weather: diary.weather,
+        location: diary.location,
+        date:
+            DateTime.tryParse(diary.date) ?? DateTime.tryParse(diary.createdAt),
+        timeOfDay: _timeOfDayLabel(DateTime.tryParse(diary.createdAt)),
+        tags: diary.tags
+            .map((tag) => tag.name.trim())
+            .where((name) => name.isNotEmpty)
+            .toList(),
+      );
+
+      final result = await imageService.generateImageFromText(
+        plainText,
+        hints: hints,
+      );
 
       if (result == null || result.localImagePath == null) {
         Logger.info('AI 이미지 생성 실패 또는 저장 경로 없음', tag: 'DiarySaveService');
@@ -483,42 +503,39 @@ class DiarySaveService extends ChangeNotifier {
         fileSize: fileSize,
         mimeType: 'image/png',
       );
-
-      final attachmentData = {
-        'filePath': file.path,
-        'fileName': fileName,
-        'fileType': FileType.image.value,
-        'fileSize': fileSize,
-        'mimeType': 'image/png',
-        'thumbnailPath': null,
-        'width': null,
-        'height': null,
-      };
-
       final db = await _databaseService.database;
       final now = DateTime.now().toIso8601String();
 
       await db.insert('attachments', {
-        'diary_id': diaryId,
-        'file_path': attachmentData['filePath'],
-        'file_name': attachmentData['fileName'],
-        'file_type': attachmentData['fileType'],
-        'file_size': attachmentData['fileSize'],
-        'mime_type': attachmentData['mimeType'],
-        'thumbnail_path': attachmentData['thumbnailPath'],
-        'width': attachmentData['width'],
-        'height': attachmentData['height'],
+        'diary_id': diary.id!,
+        'file_path': file.path,
+        'file_type': FileType.image.value,
+        'file_size': fileSize,
         'created_at': now,
         'updated_at': now,
         'is_deleted': 0,
       });
 
-      Logger.info(
-        'AI 이미지 첨부 저장 완료: ${attachmentData['fileName']}',
-        tag: 'DiarySaveService',
-      );
+      Logger.info('AI 이미지 첨부 저장 완료: $fileName', tag: 'DiarySaveService');
     } catch (e) {
       Logger.warning('AI 이미지 생성/저장 중 오류: $e', tag: 'DiarySaveService');
     }
+  }
+
+  String? _timeOfDayLabel(DateTime? dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+    final hour = dateTime.hour;
+    if (hour >= 5 && hour < 11) {
+      return '아침';
+    }
+    if (hour >= 11 && hour < 15) {
+      return '낮';
+    }
+    if (hour >= 15 && hour < 19) {
+      return '저녁';
+    }
+    return '밤';
   }
 }
