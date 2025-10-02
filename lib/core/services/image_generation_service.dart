@@ -13,6 +13,27 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+const List<String> _baseNegativePromptTokens = <String>[
+  'blurry',
+  'low quality',
+  'distorted',
+  'disfigured',
+  'grainy',
+  'text',
+  'words',
+  'letters',
+  'typography',
+  'captions',
+  'subtitles',
+  'logos',
+  'watermark',
+  'signature',
+  'overlay text',
+  'poster text',
+  'korean text',
+  'english text',
+];
+
 /// 이미지 생성 결과 모델
 class ImageGenerationResult {
   final String imageUrl;
@@ -23,6 +44,7 @@ class ImageGenerationResult {
   final DateTime generatedAt;
   final Map<String, dynamic> metadata;
   final String? localImagePath;
+  final String? negativePrompt;
 
   ImageGenerationResult({
     required this.imageUrl,
@@ -33,6 +55,7 @@ class ImageGenerationResult {
     required this.generatedAt,
     Map<String, dynamic>? metadata,
     this.localImagePath,
+    this.negativePrompt,
   }) : metadata = Map<String, dynamic>.unmodifiable(
          metadata ?? <String, dynamic>{},
        );
@@ -49,6 +72,9 @@ class ImageGenerationResult {
     };
     if (localImagePath != null) {
       data['local_image_path'] = localImagePath!;
+    }
+    if (negativePrompt != null) {
+      data['negative_prompt'] = negativePrompt!;
     }
     return data;
   }
@@ -74,8 +100,61 @@ class ImageGenerationResult {
       generatedAt: DateTime.parse(json['generated_at'] as String),
       metadata: metadataMap,
       localImagePath: json['local_image_path'] as String?,
+      negativePrompt: json['negative_prompt'] as String?,
     );
   }
+}
+
+class ImagePromptPayload {
+  const ImagePromptPayload({
+    required this.positivePrompt,
+    required this.guidelines,
+    required this.negativePrompt,
+  });
+
+  final String positivePrompt;
+  final List<String> guidelines;
+  final String negativePrompt;
+
+  String get huggingFacePrompt {
+    if (guidelines.isEmpty) {
+      return positivePrompt.trim();
+    }
+    final buffer = StringBuffer(positivePrompt.trim());
+    for (final guideline in guidelines) {
+      buffer
+        ..write(' ')
+        ..write(guideline.trim());
+    }
+    return buffer.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String get geminiPrompt {
+    final buffer = StringBuffer()
+      ..writeln('일기 전체 맥락을 반영하여 다음 지침을 따른 이미지를 생성하세요.')
+      ..writeln(positivePrompt.trim());
+
+    if (guidelines.isNotEmpty) {
+      buffer.writeln();
+      for (final guideline in guidelines) {
+        buffer.writeln('- ${guideline.trim()}');
+      }
+    }
+
+    if (negativePrompt.trim().isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('제외해야 할 요소: ${negativePrompt.trim()}');
+    }
+
+    return buffer.toString().trim();
+  }
+
+  Map<String, dynamic> toMetadata() => {
+    'positive_prompt': positivePrompt,
+    if (guidelines.isNotEmpty) 'guidelines': guidelines,
+    'negative_prompt': negativePrompt,
+  };
 }
 
 class ImageGenerationHints {
@@ -288,17 +367,17 @@ class ImageGenerationService {
         return _cache[cacheKey];
       }
 
-      final prompt = await _generateOptimizedPrompt(
+      final promptPayload = await _buildPromptPayload(
         analysisResult,
         text,
         hints,
       );
-      if (prompt == null) {
+      if (promptPayload == null) {
         debugPrint('❌ 프롬프트 생성 실패');
         return null;
       }
 
-      final generationResult = await _generateImageWithFallback(prompt);
+      final generationResult = await _generateImageWithFallback(promptPayload);
       if (generationResult == null) {
         debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
         return null;
@@ -320,16 +399,18 @@ class ImageGenerationService {
         'generation_service': generationResult['service'],
         'generation_time': DateTime.now().toIso8601String(),
         if (hints != null && hints.hasContext) 'context': hints.toJson(),
+        'prompt_payload': promptPayload.toMetadata(),
       };
       final result = ImageGenerationResult(
         imageUrl: savedImagePath ?? generationResult['image_url'] as String,
-        prompt: prompt,
+        prompt: promptPayload.huggingFacePrompt,
         style: analysisResult.mood,
         topic: analysisResult.topic,
         emotion: analysisResult.emotion,
         generatedAt: DateTime.now(),
         metadata: generationMetadata,
         localImagePath: savedImagePath,
+        negativePrompt: promptPayload.negativePrompt,
       );
 
       _cache[cacheKey] = result;
@@ -351,7 +432,9 @@ class ImageGenerationService {
     }
   }
 
-  Future<Map<String, String>?> _generateImageWithFallback(String prompt) async {
+  Future<Map<String, String>?> _generateImageWithFallback(
+    ImagePromptPayload prompt,
+  ) async {
     final geminiResult = await _generateImageWithGemini(prompt);
     if (geminiResult != null) {
       return {
@@ -375,7 +458,7 @@ class ImageGenerationService {
     return null;
   }
 
-  Future<String?> _generateImageWithGemini(String prompt) async {
+  Future<String?> _generateImageWithGemini(ImagePromptPayload prompt) async {
     final apiKey = ApiKeys.geminiApiKey;
     debugPrint(
       '🔑 Gemini API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
@@ -398,7 +481,7 @@ class ImageGenerationService {
           'contents': [
             {
               'parts': [
-                {'text': '이미지를 생성해주세요: $prompt'},
+                {'text': prompt.geminiPrompt},
               ],
             },
           ],
@@ -468,7 +551,9 @@ class ImageGenerationService {
     }
   }
 
-  Future<String?> _generateImageWithHuggingFace(String prompt) async {
+  Future<String?> _generateImageWithHuggingFace(
+    ImagePromptPayload prompt,
+  ) async {
     final apiKey = ApiKeys.huggingFaceApiKey;
     debugPrint(
       '🔑 Hugging Face API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
@@ -490,7 +575,9 @@ class ImageGenerationService {
     for (int attempt = 1; attempt <= AppConstants.maxRetryAttempts; attempt++) {
       try {
         debugPrint(
-          '🎨 Hugging Face 이미지 생성 시도 $attempt/${AppConstants.maxRetryAttempts}: $prompt',
+          '🎨 Hugging Face 이미지 생성 시도 '
+          '$attempt/${AppConstants.maxRetryAttempts}: '
+          '${prompt.huggingFacePrompt}',
         );
 
         final uri = Uri.parse(endpoint);
@@ -503,11 +590,9 @@ class ImageGenerationService {
                 'x-wait-for-model': 'true',
               },
               body: jsonEncode({
-                'inputs': prompt,
+                'inputs': prompt.huggingFacePrompt,
                 'parameters': {
-                  'negative_prompt':
-                      'blurry, low quality, distorted, disfigured, text, '
-                      'watermark',
+                  'negative_prompt': prompt.negativePrompt,
                   'num_inference_steps': 25,
                   'guidance_scale': 7.5,
                 },
@@ -617,7 +702,7 @@ class ImageGenerationService {
     }
   }
 
-  Future<String?> _generateOptimizedPrompt(
+  Future<ImagePromptPayload?> _buildPromptPayload(
     TextAnalysisResult analysis,
     String originalText,
     ImageGenerationHints? hints,
@@ -690,7 +775,44 @@ class ImageGenerationService {
         buffer.write(' 추가 정보: ${detailSegments.join(', ')}.');
       }
 
-      return buffer.toString();
+      final guidelineSentences = <String>[
+        '전체 장면에서 텍스트나 문자를 포함하지 마세요.',
+        '사람의 얼굴이나 신체는 자연스럽고 왜곡 없이 표현하세요.',
+        '일기의 감정과 분위기에 맞는 배경을 충분히 묘사하세요.',
+        '전경과 배경의 조화로운 구성을 유지하세요.',
+      ];
+
+      if (analysis.topic == '일상') {
+        guidelineSentences.add('평범한 일상 공간의 디테일을 담아주세요.');
+      }
+
+      if (analysis.emotion.toLowerCase().contains('슬픔')) {
+        guidelineSentences.add('차분하고 위로가 느껴지는 분위기로 구성하세요.');
+      }
+
+      final negativeTokens = <String>{
+        ..._baseNegativePromptTokens,
+        'low resolution',
+        'nsfw',
+        'nudity',
+        'gore',
+        'extra limbs',
+        'floating text',
+        'handwriting',
+        'poster design',
+      };
+
+      if (preferredStyle == ImageStyle.realistic) {
+        negativeTokens.addAll(<String>{'cartoon', 'anime', 'cel shaded'});
+      }
+
+      final negativePrompt = negativeTokens.join(', ');
+
+      return ImagePromptPayload(
+        positivePrompt: buffer.toString(),
+        guidelines: guidelineSentences,
+        negativePrompt: negativePrompt,
+      );
     } catch (e) {
       debugPrint('❌ 프롬프트 생성 실패: $e');
       return null;

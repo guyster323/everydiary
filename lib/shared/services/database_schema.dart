@@ -89,6 +89,68 @@ class DatabaseSchema {
     )
   ''';
 
+  /// 썸네일 배치 작업 테이블
+  static const String createThumbnailJobsTable = '''
+    CREATE TABLE thumbnail_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      diary_id INTEGER NOT NULL,
+      job_type TEXT NOT NULL,
+      status TEXT NOT NULL,
+      payload TEXT,
+      retry_count INTEGER DEFAULT 0,
+      last_error TEXT,
+      scheduled_at TEXT NOT NULL,
+      started_at TEXT,
+      completed_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      is_deleted INTEGER DEFAULT 0,
+      FOREIGN KEY (diary_id) REFERENCES diary_entries (id)
+    )
+  ''';
+
+  static const String createThumbnailGenerationLogsTable = '''
+    CREATE TABLE thumbnail_generation_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      diary_id INTEGER NOT NULL,
+      job_id INTEGER,
+      engine TEXT NOT NULL,
+      status TEXT NOT NULL,
+      duration_ms INTEGER,
+      retry_count INTEGER DEFAULT 0,
+      prompt_signature TEXT,
+      negative_hit INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      metadata TEXT,
+      FOREIGN KEY (diary_id) REFERENCES diary_entries (id)
+    )
+  ''';
+
+  static const String createThumbnailQualityMetricsTable = '''
+    CREATE TABLE thumbnail_quality_metrics (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      log_id INTEGER NOT NULL,
+      metric_type TEXT NOT NULL,
+      value REAL,
+      details TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (log_id) REFERENCES thumbnail_generation_logs (id)
+    )
+  ''';
+
+  static const String createRegressionSamplesTable = '''
+    CREATE TABLE regression_samples (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      diary_id INTEGER NOT NULL,
+      sample_group TEXT,
+      priority INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (diary_id) REFERENCES diary_entries (id)
+    )
+  ''';
+
   /// 기분 통계 테이블
   static const String createMoodStatsTable = '''
     CREATE TABLE mood_stats (
@@ -194,6 +256,21 @@ class DatabaseSchema {
     'CREATE INDEX idx_attachments_diary_id ON attachments(diary_id)',
     'CREATE INDEX idx_attachments_is_deleted ON attachments(is_deleted)',
 
+    // 썸네일 작업 테이블 인덱스
+    'CREATE INDEX idx_thumbnail_jobs_status ON thumbnail_jobs(status)',
+    'CREATE INDEX idx_thumbnail_jobs_scheduled_at ON thumbnail_jobs(scheduled_at)',
+    'CREATE INDEX idx_thumbnail_jobs_diary_id ON thumbnail_jobs(diary_id)',
+
+    'CREATE INDEX idx_thumbnail_logs_diary ON thumbnail_generation_logs(diary_id)',
+    'CREATE INDEX idx_thumbnail_logs_status ON thumbnail_generation_logs(status)',
+    'CREATE INDEX idx_thumbnail_logs_engine ON thumbnail_generation_logs(engine)',
+
+    'CREATE INDEX idx_quality_metrics_log ON thumbnail_quality_metrics(log_id)',
+    'CREATE INDEX idx_quality_metrics_type ON thumbnail_quality_metrics(metric_type)',
+
+    'CREATE INDEX idx_regression_samples_diary ON regression_samples(diary_id)',
+    'CREATE INDEX idx_regression_samples_group ON regression_samples(sample_group)',
+
     // 통계 테이블 인덱스
     'CREATE INDEX idx_mood_stats_user_date ON mood_stats(user_id, date)',
     'CREATE INDEX idx_diary_stats_user_date ON diary_stats(user_id, date)',
@@ -237,6 +314,10 @@ class DatabaseSchema {
     createTagsTable,
     createDiaryTagsTable,
     createAttachmentsTable,
+    createThumbnailJobsTable,
+    createThumbnailGenerationLogsTable,
+    createThumbnailQualityMetricsTable,
+    createRegressionSamplesTable,
     createMoodStatsTable,
     createDiaryStatsTable,
     createNotificationSettingsTable,

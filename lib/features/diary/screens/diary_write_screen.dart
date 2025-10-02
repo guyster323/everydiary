@@ -9,10 +9,14 @@ import 'package:intl/intl.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_input_field.dart';
 import '../../../shared/models/diary_entry.dart';
+import '../../../shared/models/thumbnail_batch_job.dart';
 import '../../../shared/services/database_service.dart';
+import '../../../shared/services/diary_image_helper.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
 import '../../../shared/services/safe_delta_converter.dart';
+import '../../../shared/services/thumbnail_batch_service.dart';
 import '../../ocr/screens/simple_camera_screen.dart';
+import '../../settings/widgets/thumbnail_style_selector.dart';
 import '../services/diary_list_service.dart';
 import '../services/diary_save_service.dart';
 import '../services/dual_emotion_analysis_service.dart';
@@ -68,6 +72,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   List<String> _detectedKeywords = [];
   bool _isLoading = false;
   bool _isDirty = false;
+  bool _isThumbnailRegenerating = false;
 
   // 일기 저장 서비스
   late DiarySaveService _diarySaveService;
@@ -106,6 +111,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       diaryRepository: diaryRepository,
       imageService: imageService,
       tagService: tagService,
+      thumbnailBatchService: ThumbnailBatchService(
+        databaseService: databaseService,
+        diaryRepository: diaryRepository,
+        diaryImageHelper: DiaryImageHelper(databaseService: databaseService),
+      ),
     );
 
     // 편집 모드인지 확인하고 데이터 로드
@@ -378,6 +388,66 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     setState(() {
       _isDirty = true;
     });
+  }
+
+  Future<void> _openThumbnailStyleDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => const ThumbnailStyleSelector(),
+    );
+
+    await _regenerateThumbnail();
+  }
+
+  Future<void> _regenerateThumbnail() async {
+    if (_isThumbnailRegenerating) {
+      return;
+    }
+
+    setState(() {
+      _isThumbnailRegenerating = true;
+    });
+
+    try {
+      final plainText = SafeDeltaConverter.extractTextFromDelta(_contentDelta);
+      if (plainText.trim().isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('내용이 비어 있어 썸네일을 생성할 수 없습니다.')),
+          );
+        }
+        return;
+      }
+
+      final diaryId = widget.diaryId;
+      if (diaryId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('편집 중인 일기가 없어 재생성을 건너뜁니다.')),
+          );
+        }
+        return;
+      }
+
+      final batchService = ThumbnailBatchService();
+      await batchService.enqueueForDiary(
+        diaryId,
+        jobType: ThumbnailBatchJobType.regenerate,
+      );
+      await batchService.processPendingJobs();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('썸네일을 재생성 중입니다. 잠시만 기다려주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isThumbnailRegenerating = false;
+        });
+      }
+    }
   }
 
   /// 콘텐츠 변경 감지 (debounced)
@@ -822,6 +892,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                   backgroundColor: Colors.transparent,
                   actions: [
                     IconButton(
+                      icon: const Icon(Icons.style_outlined),
+                      tooltip: '썸네일 스타일 설정',
+                      onPressed: _openThumbnailStyleDialog,
+                    ),
+                    IconButton(
                       icon: _isLoading
                           ? const SizedBox(
                               width: 20,
@@ -847,6 +922,24 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
               appBar: CustomAppBar(
                 title: '일기 작성',
                 actions: [
+                  IconButton(
+                    icon: const Icon(Icons.style_outlined),
+                    tooltip: '썸네일 스타일 설정',
+                    onPressed: _openThumbnailStyleDialog,
+                  ),
+                  IconButton(
+                    icon: _isThumbnailRegenerating
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.style_outlined),
+                    tooltip: '썸네일 스타일 설정',
+                    onPressed: _isThumbnailRegenerating
+                        ? null
+                        : _openThumbnailStyleDialog,
+                  ),
                   IconButton(
                     icon: _isLoading
                         ? const SizedBox(
@@ -1145,11 +1238,6 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
 
   @override
   void dispose() {
-    _titleController.dispose();
-    _dateController.dispose();
-    _debounceTimer?.cancel();
-    _emotionAnalysisTimer?.cancel();
-    _diarySaveService.dispose();
     super.dispose();
   }
 }

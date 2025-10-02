@@ -397,7 +397,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '주황색 점은 1개 이상의 일기가 있습니다.',
+              '주황색 점은 2개 이상의 일기가 있습니다.',
               style: theme.textTheme.labelMedium,
             ),
           ),
@@ -416,7 +416,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
   }) {
     final theme = Theme.of(context);
     final imagePath = _getEventThumbnailPath(events);
-    final hasEvents = events.isNotEmpty;
+    final hasMultipleEvents = events.length >= 2;
 
     return Padding(
       padding: const EdgeInsets.all(2),
@@ -467,7 +467,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 ),
               ),
             ),
-            if (hasEvents)
+            if (hasMultipleEvents)
               Positioned(
                 right: 6,
                 bottom: 6,

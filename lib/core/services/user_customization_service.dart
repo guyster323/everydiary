@@ -131,6 +131,8 @@ class UserCustomizationService {
   UserCustomizationSettings _settings = const UserCustomizationSettings();
   final List<Map<String, dynamic>> _customizationHistory = [];
 
+  UserCustomizationSettings get currentSettings => _settings;
+
   /// 서비스 초기화
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -409,9 +411,6 @@ class UserCustomizationService {
       },
     ];
   }
-
-  /// 현재 설정 가져오기
-  UserCustomizationSettings get currentSettings => _settings;
 
   /// 커스터마이징 이력 가져오기
   List<Map<String, dynamic>> getCustomizationHistory() {

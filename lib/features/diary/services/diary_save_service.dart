@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,8 +10,10 @@ import '../../../core/services/image_generation_service.dart';
 import '../../../core/utils/logger.dart';
 import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
+import '../../../shared/models/thumbnail_batch_job.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
+import '../../../shared/services/thumbnail_batch_service.dart';
 import 'image_attachment_service.dart';
 import 'tag_service.dart';
 
@@ -31,6 +34,7 @@ class DiarySaveService extends ChangeNotifier {
   final DiaryRepository _diaryRepository;
   final ImageAttachmentService _imageService;
   final TagService _tagService;
+  final ThumbnailBatchService _thumbnailBatchService;
 
   bool _isSaving = false;
   String? _lastError;
@@ -41,10 +45,12 @@ class DiarySaveService extends ChangeNotifier {
     required DiaryRepository diaryRepository,
     required ImageAttachmentService imageService,
     required TagService tagService,
+    required ThumbnailBatchService thumbnailBatchService,
   }) : _databaseService = databaseService,
        _diaryRepository = diaryRepository,
        _imageService = imageService,
-       _tagService = tagService;
+       _tagService = tagService,
+       _thumbnailBatchService = thumbnailBatchService;
 
   bool get isSaving => _isSaving;
   String? get lastError => _lastError;
@@ -116,7 +122,19 @@ class DiarySaveService extends ChangeNotifier {
       }
       Logger.info('태그 연결 저장 완료', tag: 'DiarySaveService');
 
-      // 5. 백업 생성 (선택적) - 웹 환경에서는 건너뜀
+      // 5. 썸네일 배치 작업 큐 등록
+      try {
+        await _thumbnailBatchService.enqueueForDiary(
+          diaryEntry.id!,
+          jobType: ThumbnailBatchJobType.initial,
+        );
+        debugPrint('🌀 배치 큐 등록: diaryId=${diaryEntry.id}');
+        Future.microtask(() => _thumbnailBatchService.processPendingJobs());
+      } catch (e) {
+        Logger.warning('썸네일 배치 작업 등록 실패: $e', tag: 'DiarySaveService');
+      }
+
+      // 6. 백업 생성 (선택적) - 웹 환경에서는 건너뜀
       if (!kIsWeb) {
         Logger.info('백업 생성 시작', tag: 'DiarySaveService');
         try {

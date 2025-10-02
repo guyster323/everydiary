@@ -13,6 +13,7 @@ import '../widgets/language_selector.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 import '../widgets/theme_selector.dart';
+import '../widgets/thumbnail_style_selector.dart';
 
 /// 설정 화면
 /// 사용자가 앱의 다양한 설정을 관리할 수 있는 화면입니다.
@@ -48,6 +49,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               SettingsSection(
                 title: '앱 설정',
                 children: [
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.image_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: '썸네일 스타일',
+                    subtitle: 'AI 썸네일 스타일과 키워드를 설정합니다',
+                    onTap: () => _showThumbnailStyleSelector(),
+                  ),
                   SettingsTile(
                     leading: Icon(
                       Icons.palette_outlined,
@@ -199,6 +209,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showThumbnailStyleSelector() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => const ThumbnailStyleSelector(),
     );
   }
 

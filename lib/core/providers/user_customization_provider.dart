@@ -47,14 +47,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateStyle(ImageStyle style) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateStyle(style);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(preferredStyle: style);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 이미지 스타일 업데이트: ${style.displayName}');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -64,14 +60,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateBrightness(double brightness) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateBrightness(brightness);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(brightness: brightness);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 밝기 업데이트: $brightness');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -81,14 +73,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateContrast(double contrast) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateContrast(contrast);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(contrast: contrast);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 대비 업데이트: $contrast');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -98,14 +86,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateSaturation(double saturation) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateSaturation(saturation);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(saturation: saturation);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 포화도 업데이트: $saturation');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -115,14 +99,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateBlurRadius(double blurRadius) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateBlurRadius(blurRadius);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(blurRadius: blurRadius);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 블러 반경 업데이트: $blurRadius');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -132,14 +112,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateOverlayColor(Color overlayColor) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateOverlayColor(overlayColor);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(overlayColor: overlayColor);
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 오버레이 색상 업데이트: ${overlayColor.toARGB32()}');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -149,16 +125,10 @@ class UserCustomizationSettingsNotifier
 
   Future<void> updateOverlayOpacity(double overlayOpacity) async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.updateOverlayOpacity(overlayOpacity);
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(
-        overlayOpacity: overlayOpacity,
-      );
-      state = AsyncValue.data(newSettings);
+      state = AsyncValue.data(service.currentSettings);
       debugPrint('✅ 오버레이 투명도 업데이트: $overlayOpacity');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
@@ -168,17 +138,13 @@ class UserCustomizationSettingsNotifier
 
   Future<void> toggleAutoOptimization() async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.toggleAutoOptimization();
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(
-        enableAutoOptimization: !currentSettings.enableAutoOptimization,
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint(
+        '✅ 자동 최적화 토글: ${service.currentSettings.enableAutoOptimization}',
       );
-      state = AsyncValue.data(newSettings);
-      debugPrint('✅ 자동 최적화 토글: ${newSettings.enableAutoOptimization}');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
       debugPrint('❌ 자동 최적화 토글 실패: $e');
@@ -187,17 +153,11 @@ class UserCustomizationSettingsNotifier
 
   Future<void> toggleStylePresets() async {
     try {
-      state = const AsyncValue.loading();
-
       final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
       await service.toggleStylePresets();
-
-      final currentSettings = await future;
-      final newSettings = currentSettings.copyWith(
-        enableStylePresets: !currentSettings.enableStylePresets,
-      );
-      state = AsyncValue.data(newSettings);
-      debugPrint('✅ 스타일 프리셋 토글: ${newSettings.enableStylePresets}');
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint('✅ 스타일 프리셋 토글: ${service.currentSettings.enableStylePresets}');
     } catch (e, stackTrace) {
       state = AsyncValue.error(e, stackTrace);
       debugPrint('❌ 스타일 프리셋 토글 실패: $e');
