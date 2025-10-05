@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -8,8 +11,10 @@ class GoogleAuthService {
   factory GoogleAuthService() => _instance;
   GoogleAuthService._internal();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  GoogleSignIn get _googleSignIn => _googleSignInInstance ??= GoogleSignIn();
+
+  GoogleSignIn? _googleSignInInstance;
 
   /// Google 로그인
   Future<User?> signInWithGoogle() async {
@@ -68,9 +73,14 @@ class GoogleAuthService {
   User? get currentUser => _auth.currentUser;
 
   /// 로그인 상태 스트림
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
+  Stream<User?> get authStateChanges {
+    if (Firebase.apps.isEmpty) {
+      debugPrint('⚠️ Firebase 미초기화 상태 - 빈 authStateChanges 스트림 반환');
+      return const Stream<User?>.empty();
+    }
+    return _auth.authStateChanges();
+  }
 
   /// 로그인 상태 확인
   bool get isSignedIn => _auth.currentUser != null;
 }
-

@@ -25,6 +25,8 @@ class DiaryRichTextEditor extends StatefulWidget {
 class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
   late QuillController _controller;
   bool _isInitialized = false;
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -211,6 +213,8 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
       _controller.removeListener(_onContentChanged);
       _controller.dispose();
     }
+    _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -318,7 +322,32 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
           Expanded(
             child: Container(
               padding: const EdgeInsets.all(16),
-              child: QuillEditor.basic(controller: _controller),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  textTheme: Theme.of(context).textTheme.apply(
+                    bodyColor: Colors.black87,
+                    displayColor: Colors.black87,
+                  ),
+                ),
+                child: DefaultTextStyle.merge(
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    height: 1.6,
+                  ),
+                  child: QuillEditor.basic(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    scrollController: _scrollController,
+                    config: const QuillEditorConfig(
+                      autoFocus: false,
+                      expands: true,
+                      padding: EdgeInsets.zero,
+                      placeholder: '오늘의 이야기를 기록해 보세요...',
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],

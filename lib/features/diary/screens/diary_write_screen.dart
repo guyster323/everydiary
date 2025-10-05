@@ -812,6 +812,21 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   /// 음성 텍스트를 일기 내용에 추가
   void _addVoiceTextToContent(String voiceText) {
     try {
+      final editorState = _editorKey.currentState;
+      if (editorState != null) {
+        editorState.insertSpeechText(voiceText);
+        final updatedDelta = editorState.getCurrentDeltaJson();
+        setState(() {
+          _contentDelta = updatedDelta;
+          _isDirty = true;
+        });
+        _analyzeEmotionDebounced();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('음성 텍스트가 추가되었습니다.')));
+        return;
+      }
+
       // 기존 방식 사용 (Delta JSON 직접 업데이트)
       _addVoiceTextToContentFallback(voiceText);
     } catch (e) {
@@ -845,6 +860,9 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         _contentDelta = newDeltaJson;
         _isDirty = true;
       });
+
+      // 에디터 상태와 동기화
+      _editorKey.currentState?.loadContent(newDeltaJson);
 
       // 감정 분석 수행
       _analyzeEmotionDebounced();

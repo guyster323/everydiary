@@ -60,6 +60,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                   SettingsTile(
                     leading: Icon(
+                      Icons.analytics_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: '썸네일 품질 리포트',
+                    subtitle: 'AI 생성 품질 지표와 회귀 테스트를 확인합니다',
+                    onTap: _openThumbnailMonitoring,
+                  ),
+                  SettingsTile(
+                    leading: Icon(
                       Icons.palette_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
@@ -217,6 +226,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => const ThumbnailStyleSelector(),
     );
+  }
+
+  void _openThumbnailMonitoring() {
+    context.push('/settings/thumbnail-monitoring');
   }
 
   String _getThemeDisplayName(ThemeMode themeMode) {

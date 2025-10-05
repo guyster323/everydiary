@@ -18,6 +18,9 @@ import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/diary/services/diary_list_service.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
+import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/subscription_screen.dart';
+import '../../features/settings/screens/thumbnail_monitoring_screen.dart';
 import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/diary_image_helper.dart';
@@ -213,6 +216,35 @@ class AppRouter {
           path: 'statistics',
           name: 'diary-statistics',
           builder: (context, state) => const StatisticsScreen(),
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/settings',
+      name: 'settings',
+      builder: (context, state) => const SettingsScreen(),
+      routes: [
+        GoRoute(
+          path: 'thumbnail-monitoring',
+          name: 'settings-thumbnail-monitoring',
+          builder: (context, state) => const ThumbnailMonitoringScreen(),
+        ),
+        GoRoute(
+          path: 'subscription',
+          name: 'settings-subscription',
+          builder: (context, state) => const SubscriptionScreen(),
+        ),
+        GoRoute(
+          path: 'privacy-policy',
+          name: 'settings-privacy-policy',
+          builder: (context, state) =>
+              const _SettingsDocumentPlaceholder(title: '개인정보 처리방침'),
+        ),
+        GoRoute(
+          path: 'terms-of-service',
+          name: 'settings-terms-of-service',
+          builder: (context, state) =>
+              const _SettingsDocumentPlaceholder(title: '이용약관'),
         ),
       ],
     ),
@@ -589,6 +621,39 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SettingsDocumentPlaceholder extends StatelessWidget {
+  const _SettingsDocumentPlaceholder({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: SelectableText.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: '$title\n',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextSpan(
+                text: '콘텐츠가 준비되는 대로 업데이트될 예정입니다.',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }

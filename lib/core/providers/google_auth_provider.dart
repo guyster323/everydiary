@@ -92,7 +92,6 @@ final googleAuthProvider =
     StateNotifierProvider<GoogleAuthNotifier, GoogleAuthState>((ref) {
       final service = GoogleAuthService();
       final notifier = GoogleAuthNotifier(service);
-      ref.onDispose(notifier.dispose);
       return notifier;
     });
 
