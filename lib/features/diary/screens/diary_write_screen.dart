@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/user_customization_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_input_field.dart';
 import '../../../shared/models/diary_entry.dart';
@@ -124,6 +125,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     } else {
       // 기본 감정을 기분 좋음으로 설정
       _setDefaultEmotion();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(userCustomizationSettingsNotifierProvider.notifier)
+            .resetToDefaults();
+      });
 
       // OCR에서 전달된 내용 처리
       if (widget.initialContent != null && widget.initialContent!.isNotEmpty) {
@@ -435,6 +441,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         jobType: ThumbnailBatchJobType.regenerate,
       );
       await batchService.processPendingJobs();
+      DiaryListRefreshNotifier().notifyRefresh();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

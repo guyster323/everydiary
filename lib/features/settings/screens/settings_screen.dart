@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/widgets/custom_app_bar.dart';
+import '../../../core/providers/app_profile_provider.dart';
+import '../../../core/providers/pin_lock_provider.dart';
 import '../models/settings_enums.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/backup_restore_widget.dart';
@@ -25,9 +27,13 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  bool _pinActionInProgress = false;
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final profileState = ref.watch(appProfileProvider);
+    final pinState = ref.watch(pinLockProvider);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -94,6 +100,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     subtitle: _getLanguageDisplayName(settings.language),
                     onTap: () => _showLanguageSelector(),
                   ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              SettingsSection(
+                title: 'EveryDiary 보안 및 관리',
+                children: [
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.person_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: '사용자 이름',
+                    subtitle: profileState.userName?.isNotEmpty == true
+                        ? profileState.userName
+                        : '설정되지 않음',
+                    onTap: () => _editUserName(context, profileState),
+                  ),
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.lock_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: 'PIN 잠금',
+                    subtitle:
+                        pinState.isPinEnabled ? '앱 실행 시 PIN 요구' : '사용 안 함',
+                    trailing: Switch.adaptive(
+                      value: pinState.isPinEnabled,
+                      onChanged: _pinActionInProgress
+                          ? null
+                          : (value) => _handlePinToggle(
+                                context,
+                                value,
+                              ),
+                    ),
+                    onTap: () => _handlePinToggle(
+                      context,
+                      !pinState.isPinEnabled,
+                    ),
+                  ),
+                  if (pinState.isPinEnabled)
+                    SettingsTile(
+                      leading: Icon(
+                        Icons.password,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: 'PIN 변경',
+                      subtitle: '현재 PIN을 입력하고 새 PIN으로 변경합니다',
+                      onTap: () => _changePin(context),
+                    ),
                 ],
               ),
 
@@ -219,6 +276,325 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _editUserName(
+    BuildContext context,
+    AppProfileState profileState,
+  ) async {
+    final controller = TextEditingController(text: profileState.userName ?? '');
+    String? error;
+    final messenger = ScaffoldMessenger.of(context);
+
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('사용자 이름 변경'),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 24,
+                decoration: InputDecoration(
+                  labelText: '이름',
+                  hintText: '예: 홍길동',
+                  errorText: error,
+                ),
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => Navigator.of(context).pop(controller.text),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final trimmed = controller.text.trim();
+                    if (trimmed.isEmpty) {
+                      setState(() => error = '이름을 입력해 주세요');
+                      return;
+                    }
+                    Navigator.of(context).pop(trimmed);
+                  },
+                  child: const Text('저장'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (newName != null) {
+      await ref.read(appProfileProvider.notifier).updateUserName(newName);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('사용자 이름이 업데이트되었습니다.')),
+      );
+    }
+  }
+
+  Future<void> _handlePinToggle(
+    BuildContext context,
+    bool enable,
+  ) async {
+    if (_pinActionInProgress) return;
+    setState(() => _pinActionInProgress = true);
+
+    final pinNotifier = ref.read(pinLockProvider.notifier);
+    final profileNotifier = ref.read(appProfileProvider.notifier);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      if (enable) {
+        final newPin = await _promptForNewPin(context);
+        if (newPin == null) {
+          return;
+        }
+        await pinNotifier.enablePin(newPin);
+        await profileNotifier.setPinEnabled(true);
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('PIN 잠금이 활성화되었습니다.')),
+        );
+      } else {
+        final confirmed = await _confirmDisablePin(context);
+        if (!confirmed) {
+          return;
+        }
+        await pinNotifier.disablePin();
+        await profileNotifier.setPinEnabled(false);
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(content: Text('PIN 잠금이 비활성화되었습니다.')),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('PIN 설정 중 오류가 발생했습니다: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _pinActionInProgress = false);
+      }
+    }
+  }
+
+  Future<void> _changePin(BuildContext context) async {
+    if (_pinActionInProgress) return;
+    setState(() => _pinActionInProgress = true);
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final result = await _promptForPinChange(context);
+      if (result == null) {
+        return;
+      }
+      await ref
+          .read(pinLockProvider.notifier)
+          .changePin(currentPin: result.currentPin, newPin: result.newPin);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(content: Text('PIN이 변경되었습니다.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('PIN 변경에 실패했습니다: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _pinActionInProgress = false);
+      }
+    }
+  }
+
+  Future<String?> _promptForNewPin(BuildContext context) async {
+    final pinController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? error;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('PIN 잠금 설정'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: pinController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    decoration: const InputDecoration(
+                      labelText: '새 PIN (4자리 숫자)',
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      labelText: 'PIN 확인',
+                      counterText: '',
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final pin = pinController.text.trim();
+                    final confirm = confirmController.text.trim();
+                    if (pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
+                      setState(() => error = '4자리 숫자를 입력해 주세요');
+                      return;
+                    }
+                    if (pin != confirm) {
+                      setState(() => error = 'PIN이 일치하지 않습니다');
+                      return;
+                    }
+                    Navigator.of(context).pop(pin);
+                  },
+                  child: const Text('저장'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    return result;
+  }
+
+  Future<bool> _confirmDisablePin(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('PIN 잠금 해제'),
+        content:
+            const Text('PIN 잠금을 비활성화하면 앱 실행 시 인증이 필요하지 않습니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('비활성화'),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
+  }
+
+  Future<({String currentPin, String newPin})?> _promptForPinChange(
+    BuildContext context,
+  ) async {
+    final currentController = TextEditingController();
+    final newController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? error;
+
+    final result = await showDialog<({String currentPin, String newPin})?>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('PIN 변경'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: currentController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    decoration: const InputDecoration(
+                      labelText: '현재 PIN',
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: newController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    decoration: const InputDecoration(
+                      labelText: '새 PIN',
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      labelText: '새 PIN 확인',
+                      counterText: '',
+                      errorText: error,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('취소'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final current = currentController.text.trim();
+                    final newPin = newController.text.trim();
+                    final confirm = confirmController.text.trim();
+                    if (current.length != 4 || newPin.length != 4) {
+                      setState(() => error = '4자리 PIN을 입력해 주세요');
+                      return;
+                    }
+                    if (!RegExp(r'^\d{4}$').hasMatch(newPin) ||
+                        !RegExp(r'^\d{4}$').hasMatch(current)) {
+                      setState(() => error = '숫자만 입력해 주세요');
+                      return;
+                    }
+                    if (newPin != confirm) {
+                      setState(() => error = '새 PIN이 일치하지 않습니다');
+                      return;
+                    }
+                    Navigator.of(context).pop((currentPin: current, newPin: newPin));
+                  },
+                  child: const Text('변경'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    return result;
   }
 
   void _showThumbnailStyleSelector() {

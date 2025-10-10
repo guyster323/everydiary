@@ -1,10 +1,11 @@
 /// 앱 전역 상수 정의
 class AppConstants {
   // 라우트 경로
-  static const String loginRoute = '/login';
   static const String homeRoute = '/';
   static const String diaryRoute = '/diary';
   static const String memoryRoute = '/memory';
+  static const String introRoute = '/intro';
+  static const String pinRoute = '/pin';
 
   // API 엔드포인트
   static const String huggingFaceEndpoint =
@@ -22,6 +23,8 @@ class AppConstants {
     homeRoute,
     diaryRoute,
     memoryRoute,
+    introRoute,
+    pinRoute,
   ];
 
   // API 키 이름

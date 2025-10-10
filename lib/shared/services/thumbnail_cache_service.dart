@@ -317,6 +317,18 @@ class ThumbnailCacheService {
     return placeholderPath;
   }
 
+  Future<void> invalidate(String cacheKey) async {
+    await initialize();
+    final entry = _entries.remove(cacheKey);
+    if (entry != null) {
+      final file = File(entry.filePath);
+      if (await file.exists()) {
+        await file.delete();
+      }
+      await _saveIndex();
+    }
+  }
+
   ({int r, int g, int b}) _colorFromDiary(DiaryEntry? diary) {
     final baseString = [
       diary?.mood,

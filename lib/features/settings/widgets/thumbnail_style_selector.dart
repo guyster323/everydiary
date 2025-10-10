@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/providers/user_customization_provider.dart';
@@ -320,6 +323,8 @@ class _AdjustmentControls extends StatelessWidget {
               subtitle: const Text('분석 결과 기반으로 프롬프트를 자동 보정합니다'),
               onChanged: (_) => notifier.toggleAutoOptimization(),
             ),
+            const SizedBox(height: 16),
+            _ManualKeywordEditor(settings: settings, notifier: notifier),
           ],
         ),
       ),
@@ -368,3 +373,156 @@ const _overlayColors = <Color>[
   Color(0xFF66BB6A),
   Color(0xFFAB47BC),
 ];
+
+class _ManualKeywordEditor extends HookWidget {
+  const _ManualKeywordEditor({required this.settings, required this.notifier});
+
+  final UserCustomizationSettings settings;
+  final UserCustomizationSettingsNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final keywordController = useTextEditingController();
+    final keywordError = useState<String?>(null);
+    final isSubmitting = useState<bool>(false);
+
+    Future<void> addKeyword() async {
+      final rawValue = keywordController.text.trim();
+      final normalized = rawValue.replaceAll(RegExp(r'\s+'), ' ');
+
+      if (normalized.isEmpty) {
+        keywordError.value = '키워드를 입력해 주세요.';
+        return;
+      }
+
+      if (normalized.length > 24) {
+        keywordError.value = '키워드는 24자 이내로 입력해 주세요.';
+        return;
+      }
+
+      if (settings.manualKeywords.contains(normalized)) {
+        keywordError.value = '이미 추가된 키워드입니다.';
+        return;
+      }
+
+      if (settings.manualKeywords.length >= 5) {
+        keywordError.value = '키워드는 최대 5개까지 등록할 수 있습니다.';
+        return;
+      }
+
+      keywordError.value = null;
+      isSubmitting.value = true;
+
+      try {
+        await notifier.addManualKeyword(normalized);
+        if (!context.mounted) {
+          return;
+        }
+        keywordController.clear();
+      } on StateError catch (_) {
+        if (context.mounted) {
+          keywordError.value = '키워드는 최대 5개까지 등록할 수 있습니다.';
+        }
+      } catch (_) {
+        if (context.mounted) {
+          keywordError.value = '키워드를 저장하지 못했습니다. 다시 시도해 주세요.';
+        }
+      } finally {
+        if (context.mounted) {
+          isSubmitting.value = false;
+        }
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '사용자 지정 키워드',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'AI 프롬프트에 항상 포함될 키워드를 최대 5개까지 추가할 수 있습니다.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: keywordController,
+                enabled: !isSubmitting.value,
+                decoration: const InputDecoration(
+                  labelText: '수동 키워드',
+                  hintText: '예: 파스텔 톤, 야경',
+                  counterText: '',
+                ),
+                maxLength: 24,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => addKeyword(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.icon(
+              onPressed: isSubmitting.value ? null : addKeyword,
+              icon: const Icon(Icons.add),
+              label: const Text('추가'),
+            ),
+          ],
+        ),
+        if (keywordError.value != null) ...[
+          const SizedBox(height: 8),
+          SelectableText.rich(
+            TextSpan(
+              text: keywordError.value,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (settings.manualKeywords.isEmpty)
+          Text(
+            '등록된 키워드가 없습니다.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: settings.manualKeywords
+                .map(
+                  (String keyword) => InputChip(
+                    label: Text(keyword),
+                    onDeleted: () =>
+                        unawaited(notifier.removeManualKeyword(keyword)),
+                  ),
+                )
+                .toList(),
+          ),
+        if (settings.manualKeywords.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => unawaited(notifier.clearManualKeywords()),
+                icon: const Icon(Icons.clear_all),
+                label: const Text('모두 삭제'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}

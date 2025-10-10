@@ -119,10 +119,24 @@ class DiaryCard extends StatelessWidget {
 
   Widget _buildThumbnail(BuildContext context, Attachment attachment) {
     final filePath = attachment.thumbnailPath ?? attachment.filePath;
+    final file = File(filePath);
+    final imageProvider = FileImage(file);
+    PaintingBinding.instance.imageCache.evict(imageProvider);
+    int? modifiedTimestamp;
+    try {
+      modifiedTimestamp = file.statSync().modified.millisecondsSinceEpoch;
+    } catch (_) {
+      modifiedTimestamp = null;
+    }
+    final cacheKey =
+        '${attachment.id ?? attachment.filePath}_'
+        '${attachment.updatedAt}_'
+        '${modifiedTimestamp ?? ''}';
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Image.file(
-        File(filePath),
+      child: Image(
+        key: ValueKey(cacheKey),
+        image: imageProvider,
         width: 72,
         height: 72,
         fit: BoxFit.cover,

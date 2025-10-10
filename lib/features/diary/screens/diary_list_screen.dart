@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +28,7 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   late DiaryListService _diaryListService;
   final ScrollController _scrollController = ScrollController();
+  late final StreamSubscription<void> _refreshSubscription;
 
   // 애니메이션 컨트롤러들
   late AnimationController _listAnimationController;
@@ -63,6 +66,13 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
     // 초기 데이터 로드
     _diaryListService.loadDiaries();
 
+    _refreshSubscription = DiaryListRefreshNotifier().refreshStream.listen((_) {
+      if (!mounted) {
+        return;
+      }
+      _loadDiaries();
+    });
+
     // 애니메이션 시작
     _listAnimationController.forward();
 
@@ -91,6 +101,7 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
     _scrollController.dispose();
     _diaryListService.dispose();
     _listAnimationController.dispose();
+    _refreshSubscription.cancel();
     // 앱 생명주기 관찰자 해제
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();

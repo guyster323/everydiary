@@ -12,7 +12,6 @@ import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/services/image_generation_service.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
-import '../../../features/auth/providers/auth_providers.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
@@ -36,7 +35,6 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
-  ProviderSubscription<AuthState>? _authStateSubscription;
 
   // 애니메이션 컨트롤러들
   late AnimationController _calendarTransitionController;
@@ -62,16 +60,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
       imageService: imageService,
     );
 
-    final authState = ref.read(authStateProvider);
-    _calendarService.setActiveUserId(authState.user?.id);
-
-    _authStateSubscription = ref.listenManual<AuthState>(authStateProvider, (
-      previous,
-      next,
-    ) {
-      _calendarService.setActiveUserId(next.user?.id);
-      unawaited(_calendarService.loadDiaries());
-    });
+    _calendarService.setActiveUserId(null);
 
     _pageController = PageController();
     _selectedDay = DateTime.now();
@@ -123,7 +112,6 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     _calendarTransitionController.dispose();
     _diaryListController.dispose();
     _refreshSubscription?.cancel();
-    _authStateSubscription?.close();
     super.dispose();
   }
 
@@ -418,6 +406,26 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
     final imagePath = _getEventThumbnailPath(events);
     final hasMultipleEvents = events.length >= 2;
 
+    Image? backgroundImage;
+    if (imagePath != null) {
+      final file = File(imagePath);
+      final provider = FileImage(file);
+      PaintingBinding.instance.imageCache.evict(provider);
+      int? modifiedTimestamp;
+      try {
+        modifiedTimestamp = file.statSync().modified.millisecondsSinceEpoch;
+      } catch (_) {
+        modifiedTimestamp = null;
+      }
+      backgroundImage = Image(
+        key: ValueKey('calendar_${imagePath}_${modifiedTimestamp ?? ''}'),
+        image: provider,
+        fit: BoxFit.cover,
+        errorBuilder: (context, _, __) =>
+            Container(color: theme.colorScheme.surfaceContainerHighest),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(2),
       child: ClipRRect(
@@ -425,13 +433,8 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (imagePath != null)
-              Image.file(
-                File(imagePath),
-                fit: BoxFit.cover,
-                errorBuilder: (context, _, __) =>
-                    Container(color: theme.colorScheme.surfaceContainerHighest),
-              )
+            if (backgroundImage != null)
+              backgroundImage
             else
               Container(color: theme.colorScheme.surfaceContainerHighest),
             if (imagePath != null)

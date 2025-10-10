@@ -29,12 +29,16 @@ class DiaryImageHelper {
   final Connectivity _connectivity;
 
   /// 일기에 연결된 이미지 첨부를 확보하고 반환합니다.
-  Future<Attachment?> ensureAttachment(DiaryEntry diary) async {
+  Future<Attachment?> ensureAttachment(
+    DiaryEntry diary, {
+    bool forceRegenerate = false,
+  }) async {
     await _imageService.initialize();
     await _thumbnailCacheService.initialize();
 
     final Attachment? existingAttachment = _findExistingAttachment(diary);
-    if (existingAttachment != null) {
+
+    if (existingAttachment != null && !forceRegenerate) {
       final resolved = await _thumbnailCacheService.resolveForAttachment(
         existingAttachment,
         diary: diary,
@@ -76,21 +80,39 @@ class DiaryImageHelper {
       return _buildPlaceholderAttachment(diary, cacheKey: cacheKey);
     }
 
+    final String resolvedImagePath = imagePath;
+
+    if (forceRegenerate && existingAttachment != null) {
+      await _thumbnailCacheService.invalidate(cacheKey);
+      if (existingAttachment.id != null) {
+        await _thumbnailCacheService.invalidate(
+          'attachment_${existingAttachment.id}',
+        );
+      }
+      if (existingAttachment.filePath != resolvedImagePath) {
+        await _deleteFileIfExists(existingAttachment.filePath);
+      }
+      if (existingAttachment.thumbnailPath != null &&
+          existingAttachment.thumbnailPath != resolvedImagePath) {
+        await _deleteFileIfExists(existingAttachment.thumbnailPath!);
+      }
+    }
+
     final thumbnailPath = await _thumbnailCacheService.ensureThumbnail(
       cacheKey: cacheKey,
-      sourcePath: imagePath,
+      sourcePath: resolvedImagePath,
       diary: diary,
     );
 
     final attachment = Attachment(
-      id: null,
+      id: existingAttachment?.id,
       diaryId: diary.id ?? 0,
-      filePath: imagePath,
-      fileName: p.basename(imagePath),
+      filePath: resolvedImagePath,
+      fileName: p.basename(resolvedImagePath),
       fileType: FileType.image.value,
-      fileSize: await _getFileSize(imagePath),
+      fileSize: await _getFileSize(resolvedImagePath),
       mimeType: 'image/png',
-      thumbnailPath: thumbnailPath ?? imagePath,
+      thumbnailPath: thumbnailPath ?? resolvedImagePath,
       width: null,
       height: null,
       duration: null,
@@ -100,7 +122,15 @@ class DiaryImageHelper {
     );
 
     if (diary.id != null) {
-      await _upsertAttachmentRecord(diary.id!, attachment);
+      if (forceRegenerate && existingAttachment != null) {
+        await _updateAttachmentRecord(existingAttachment, attachment);
+      } else {
+        await _upsertAttachmentRecord(
+          diary.id!,
+          attachment,
+          replaceExisting: forceRegenerate,
+        );
+      }
     }
 
     return attachment;
@@ -160,18 +190,26 @@ class DiaryImageHelper {
 
   Future<void> _upsertAttachmentRecord(
     int diaryId,
-    Attachment attachment,
-  ) async {
+    Attachment attachment, {
+    bool replaceExisting = false,
+  }) async {
     final db = await _databaseService.database;
-    final existing = await db.query(
-      'attachments',
-      where: 'diary_id = ? AND file_path = ?',
-      whereArgs: [diaryId, attachment.filePath],
-      limit: 1,
-    );
-
-    if (existing.isNotEmpty) {
-      return;
+    if (replaceExisting) {
+      await db.delete(
+        'attachments',
+        where: 'diary_id = ?',
+        whereArgs: [diaryId],
+      );
+    } else {
+      final existing = await db.query(
+        'attachments',
+        where: 'diary_id = ? AND file_path = ?',
+        whereArgs: [diaryId, attachment.filePath],
+        limit: 1,
+      );
+      if (existing.isNotEmpty) {
+        return;
+      }
     }
 
     final now = DateTime.now().toIso8601String();
@@ -185,6 +223,47 @@ class DiaryImageHelper {
       'updated_at': now,
       'is_deleted': 0,
     });
+  }
+
+  Future<void> _updateAttachmentRecord(
+    Attachment existing,
+    Attachment updated,
+  ) async {
+    if (existing.id == null) {
+      await _upsertAttachmentRecord(
+        existing.diaryId,
+        updated,
+        replaceExisting: true,
+      );
+      return;
+    }
+
+    final db = await _databaseService.database;
+    final now = DateTime.now().toIso8601String();
+
+    await db.update(
+      'attachments',
+      {
+        'file_path': updated.filePath,
+        'file_type': updated.fileType,
+        'file_size': updated.fileSize,
+        'updated_at': now,
+        'is_deleted': 0,
+      },
+      where: 'id = ?',
+      whereArgs: [existing.id],
+    );
+  }
+
+  Future<void> _deleteFileIfExists(String path) async {
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // ignore file deletion errors
+    }
   }
 
   Future<Attachment> _buildPlaceholderAttachment(

@@ -250,7 +250,7 @@ class ImageGenerationService {
   factory ImageGenerationService() => _instance;
   ImageGenerationService._internal();
 
-  static const String _cacheVersion = 'v2';
+  static const String _cacheVersion = 'v3';
 
   static const int _dailyGenerationLimit = 50;
 
@@ -375,6 +375,19 @@ class ImageGenerationService {
       if (promptPayload == null) {
         debugPrint('❌ 프롬프트 생성 실패');
         return null;
+      }
+
+      final manualKeywords =
+          _userCustomizationService.currentSettings.manualKeywords;
+      debugPrint('🎯 Positive Prompt: ${promptPayload.positivePrompt}');
+      if (promptPayload.guidelines.isNotEmpty) {
+        debugPrint('📐 Guidelines: ${promptPayload.guidelines.join(' / ')}');
+      }
+      if (manualKeywords.isNotEmpty) {
+        debugPrint('🔑 사용자 키워드: ${manualKeywords.join(', ')}');
+      }
+      if (promptPayload.negativePrompt.trim().isNotEmpty) {
+        debugPrint('🚫 Negative Prompt: ${promptPayload.negativePrompt}');
       }
 
       final generationResult = await _generateImageWithFallback(promptPayload);
@@ -771,6 +784,13 @@ class ImageGenerationService {
         buffer.write(' 참고 키워드: $keywords.');
       }
 
+      final manualKeywords =
+          _userCustomizationService.currentSettings.manualKeywords;
+      if (manualKeywords.isNotEmpty) {
+        final keywordStatement = manualKeywords.join(', ');
+        buffer.write(' 사용자 지정 키워드: $keywordStatement.');
+      }
+
       if (detailSegments.isNotEmpty) {
         buffer.write(' 추가 정보: ${detailSegments.join(', ')}.');
       }
@@ -958,12 +978,29 @@ class ImageGenerationService {
     TextAnalysisResult analysis,
     ImageGenerationHints? hints,
   ) {
+    final customization = _userCustomizationService.currentSettings;
+    final manualKeywords = List<String>.from(customization.manualKeywords)
+      ..sort();
+
     final components = <String>[
       _cacheVersion,
       originalText.hashCode.toString(),
       analysis.topic.hashCode.toString(),
       analysis.mood.hashCode.toString(),
+      customization.preferredStyle.name,
+      customization.enableAutoOptimization.toString(),
+      customization.enableStylePresets.toString(),
+      _formatDouble(customization.brightness),
+      _formatDouble(customization.contrast),
+      _formatDouble(customization.saturation),
+      _formatDouble(customization.blurRadius),
+      customization.overlayColor.toARGB32().toString(),
+      _formatDouble(customization.overlayOpacity),
     ];
+
+    if (manualKeywords.isNotEmpty) {
+      components.add(manualKeywords.join('|').hashCode.toString());
+    }
 
     if (hints != null && hints.hasContext) {
       components.add(hints.signature().hashCode.toString());
@@ -971,6 +1008,8 @@ class ImageGenerationService {
 
     return components.join('-');
   }
+
+  String _formatDouble(num value) => value.toStringAsFixed(3);
 
   /// 캐시 로드
   Future<void> _loadCache() async {

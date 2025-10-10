@@ -163,6 +163,59 @@ class UserCustomizationSettingsNotifier
       debugPrint('❌ 스타일 프리셋 토글 실패: $e');
     }
   }
+
+  Future<void> resetToDefaults() async {
+    try {
+      final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
+      await service.resetToDefaults();
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint('✅ 사용자 커스터마이징 설정 기본값으로 초기화');
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      debugPrint('❌ 사용자 커스터마이징 기본값 초기화 실패: $e');
+    }
+  }
+
+  Future<void> addManualKeyword(String keyword) async {
+    try {
+      final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
+      await service.addManualKeyword(keyword);
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint('✅ 수동 키워드 추가: $keyword');
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      debugPrint('❌ 수동 키워드 추가 실패: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeManualKeyword(String keyword) async {
+    try {
+      final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
+      await service.removeManualKeyword(keyword);
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint('✅ 수동 키워드 제거: $keyword');
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      debugPrint('❌ 수동 키워드 제거 실패: $e');
+    }
+  }
+
+  Future<void> clearManualKeywords() async {
+    try {
+      final service = ref.read(userCustomizationServiceProvider);
+      state = const AsyncValue.loading();
+      await service.clearManualKeywords();
+      state = AsyncValue.data(service.currentSettings);
+      debugPrint('✅ 수동 키워드 초기화 완료');
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e, stackTrace);
+      debugPrint('❌ 수동 키워드 초기화 실패: $e');
+    }
+  }
 }
 
 final userCustomizationSettingsNotifierProvider =

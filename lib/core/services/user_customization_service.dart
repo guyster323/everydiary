@@ -41,6 +41,7 @@ class UserCustomizationSettings {
   final bool enableStylePresets;
   final List<String> favoriteStyles;
   final Map<String, dynamic> customPresets;
+  final List<String> manualKeywords;
 
   const UserCustomizationSettings({
     this.preferredStyle = ImageStyle.chibi,
@@ -54,6 +55,7 @@ class UserCustomizationSettings {
     this.enableStylePresets = true,
     this.favoriteStyles = const [],
     this.customPresets = const {},
+    this.manualKeywords = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -68,6 +70,7 @@ class UserCustomizationSettings {
     'enable_style_presets': enableStylePresets,
     'favorite_styles': favoriteStyles,
     'custom_presets': customPresets,
+    'manual_keywords': manualKeywords,
   };
 
   factory UserCustomizationSettings.fromJson(Map<String, dynamic> json) {
@@ -86,6 +89,11 @@ class UserCustomizationSettings {
       enableStylePresets: json['enable_style_presets'] as bool,
       favoriteStyles: List<String>.from(json['favorite_styles'] as List),
       customPresets: Map<String, dynamic>.from(json['custom_presets'] as Map),
+      manualKeywords:
+          (json['manual_keywords'] as List<dynamic>?)
+              ?.map((dynamic keyword) => keyword.toString())
+              .toList() ??
+          const <String>[],
     );
   }
 
@@ -101,6 +109,7 @@ class UserCustomizationSettings {
     bool? enableStylePresets,
     List<String>? favoriteStyles,
     Map<String, dynamic>? customPresets,
+    List<String>? manualKeywords,
   }) {
     return UserCustomizationSettings(
       preferredStyle: preferredStyle ?? this.preferredStyle,
@@ -115,6 +124,7 @@ class UserCustomizationSettings {
       enableStylePresets: enableStylePresets ?? this.enableStylePresets,
       favoriteStyles: favoriteStyles ?? this.favoriteStyles,
       customPresets: customPresets ?? this.customPresets,
+      manualKeywords: manualKeywords ?? this.manualKeywords,
     );
   }
 }
@@ -130,6 +140,8 @@ class UserCustomizationService {
   bool _isInitialized = false;
   UserCustomizationSettings _settings = const UserCustomizationSettings();
   final List<Map<String, dynamic>> _customizationHistory = [];
+
+  static const int _manualKeywordLimit = 5;
 
   UserCustomizationSettings get currentSettings => _settings;
 
@@ -169,6 +181,16 @@ class UserCustomizationService {
       debugPrint('✅ 사용자 커스터마이징 설정 업데이트 완료');
     } catch (e) {
       debugPrint('❌ 설정 업데이트 실패: $e');
+    }
+  }
+
+  /// 기본값으로 초기화
+  Future<void> resetToDefaults() async {
+    try {
+      await updateSettings(const UserCustomizationSettings());
+      debugPrint('✅ 사용자 커스터마이징 설정 기본값으로 초기화');
+    } catch (e) {
+      debugPrint('❌ 사용자 커스터마이징 기본값 초기화 실패: $e');
     }
   }
 
@@ -273,6 +295,67 @@ class UserCustomizationService {
     } catch (e) {
       debugPrint('❌ 스타일 프리셋 토글 실패: $e');
     }
+  }
+
+  /// 수동 키워드 전체 설정
+  Future<void> setManualKeywords(List<String> keywords) async {
+    try {
+      final normalized = keywords
+          .map((String keyword) => keyword.trim())
+          .where((String keyword) => keyword.isNotEmpty)
+          .map((String keyword) => keyword.replaceAll(RegExp(r'\s+'), ' '))
+          .toSet()
+          .take(_manualKeywordLimit)
+          .toList(growable: false);
+
+      final newSettings = _settings.copyWith(manualKeywords: normalized);
+      await updateSettings(newSettings);
+      debugPrint('✅ 사용자 지정 키워드 설정: ${normalized.join(', ')}');
+    } on Object catch (error, stackTrace) {
+      debugPrint('❌ 사용자 지정 키워드 설정 실패: $error');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  /// 수동 키워드 추가
+  Future<void> addManualKeyword(String keyword) async {
+    final sanitized = keyword.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (sanitized.isEmpty) {
+      return;
+    }
+
+    if (_settings.manualKeywords.contains(sanitized)) {
+      return;
+    }
+
+    if (_settings.manualKeywords.length >= _manualKeywordLimit) {
+      throw StateError('manual keyword limit exceeded');
+    }
+
+    final updatedKeywords = <String>[..._settings.manualKeywords, sanitized];
+    await setManualKeywords(updatedKeywords);
+  }
+
+  /// 수동 키워드 제거
+  Future<void> removeManualKeyword(String keyword) async {
+    final sanitized = keyword.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (!_settings.manualKeywords.contains(sanitized)) {
+      return;
+    }
+
+    final updatedKeywords = List<String>.from(_settings.manualKeywords)
+      ..remove(sanitized);
+    await setManualKeywords(updatedKeywords);
+  }
+
+  /// 수동 키워드 초기화
+  Future<void> clearManualKeywords() async {
+    if (_settings.manualKeywords.isEmpty) {
+      return;
+    }
+
+    await setManualKeywords(const <String>[]);
   }
 
   /// 즐겨찾기 스타일 추가

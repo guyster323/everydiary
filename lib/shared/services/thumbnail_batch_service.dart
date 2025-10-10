@@ -181,7 +181,10 @@ class ThumbnailBatchService {
         jobType: job.jobType,
       );
 
-      await _refreshAttachment(diary);
+      await _refreshAttachment(
+        diary,
+        forceRegenerate: job.jobType != ThumbnailBatchJobType.initial,
+      );
       await _repository.markSucceeded(job);
       await _monitoringService.logGenerationSuccess(
         diaryId: job.diaryId,
@@ -229,8 +232,14 @@ class ThumbnailBatchService {
     }
   }
 
-  Future<void> _refreshAttachment(DiaryEntry diary) async {
-    await _diaryImageHelper.ensureAttachment(diary);
+  Future<void> _refreshAttachment(
+    DiaryEntry diary, {
+    bool forceRegenerate = false,
+  }) async {
+    await _diaryImageHelper.ensureAttachment(
+      diary,
+      forceRegenerate: forceRegenerate,
+    );
   }
 
   void _ensureWorker({Duration interval = const Duration(seconds: 30)}) {

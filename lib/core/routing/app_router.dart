@@ -1,23 +1,24 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/image_generation_service.dart';
-import '../../features/auth/providers/auth_providers.dart';
-import '../../features/auth/screens/login_screen.dart';
+import '../../core/providers/app_profile_provider.dart';
+import '../../core/providers/pin_lock_provider.dart';
 import '../../features/diary/screens/calendar_view_screen.dart';
 import '../../features/diary/screens/diary_detail_screen.dart';
 import '../../features/diary/screens/diary_list_screen.dart';
 import '../../features/diary/screens/diary_write_screen.dart';
 import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/diary/services/diary_list_service.dart';
+import '../../features/onboarding/screens/app_setup_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
+import '../../features/security/screens/pin_unlock_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/subscription_screen.dart';
 import '../../features/settings/screens/thumbnail_monitoring_screen.dart';
@@ -27,7 +28,6 @@ import '../../shared/services/diary_image_helper.dart';
 import '../../shared/services/repositories/diary_repository.dart';
 import '../config/config.dart';
 import '../constants/app_constants.dart';
-import '../providers/google_auth_provider.dart';
 
 Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
   try {
@@ -40,22 +40,11 @@ Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
       imageGenerationService: imageService,
     );
 
-    final authState = ref.read(authStateProvider);
-    final int? userId = authState.user?.id;
+    const primaryFilter = DiaryEntryFilter(limit: 20);
 
-    final primaryFilter = userId != null
-        ? DiaryEntryFilter(userId: userId, limit: 20)
-        : const DiaryEntryFilter(limit: 20);
-
-    List<DiaryEntry> diaries = await repository.getDiaryEntriesWithFilter(
+    final diaries = await repository.getDiaryEntriesWithFilter(
       primaryFilter,
     );
-
-    if (diaries.isEmpty && userId != null) {
-      diaries = await repository.getDiaryEntriesWithFilter(
-        primaryFilter.copyWith(userId: null),
-      );
-    }
 
     for (final diary in diaries) {
       final path = await helper.ensureImagePath(diary);
@@ -110,19 +99,8 @@ final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((
     unawaited(emitLatest());
   });
 
-  final authSubscription = ref.listen<AuthState>(authStateProvider, (_, __) {
-    unawaited(emitLatest());
-  });
-
-  final googleSubscription = ref.listen<GoogleAuthState>(
-    googleAuthProvider,
-    (_, __) => unawaited(emitLatest()),
-  );
-
   ref.onDispose(() {
     refreshSubscription.cancel();
-    authSubscription.close();
-    googleSubscription.close();
     if (!controller.isClosed) {
       controller.close();
     }
@@ -133,31 +111,44 @@ final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((
 
 class AppRouter {
   static GoRouter buildRouter(ProviderContainer container) {
-    final googleNotifier = container.read(googleAuthProvider.notifier);
-
     return GoRouter(
-      initialLocation: AppConstants.loginRoute,
+      initialLocation: AppConstants.homeRoute,
       routes: _routes,
-      redirect: (context, state) {
-        final googleState = container.read(googleAuthProvider);
-        final authState = container.read(authStateProvider);
-        final isSignedIn = googleState.isSignedIn || authState.isAuthenticated;
+      redirect: (context, state) async {
+        await container.read(appProfileProvider.notifier).initialize();
+        await container.read(pinLockProvider.notifier).initialize();
+
+        final profile = container.read(appProfileProvider);
+        final pinState = container.read(pinLockProvider);
         final path = state.uri.path;
 
-        if (!isSignedIn && AppConstants.protectedPaths.contains(path)) {
-          return AppConstants.loginRoute;
+        if (!profile.isInitialized || !pinState.isInitialized) {
+          return null;
         }
 
-        if (isSignedIn && path == AppConstants.loginRoute) {
+        if (!profile.onboardingComplete && path != AppConstants.introRoute) {
+          return AppConstants.introRoute;
+        }
+
+        if (profile.onboardingComplete && path == AppConstants.introRoute) {
+          if (pinState.isPinEnabled && !pinState.isUnlocked) {
+            return AppConstants.pinRoute;
+          }
+          return AppConstants.homeRoute;
+        }
+
+        if (pinState.isPinEnabled && !pinState.isUnlocked) {
+          if (path != AppConstants.pinRoute) {
+            final redirectTarget = state.uri.toString();
+            return '${AppConstants.pinRoute}?from=${Uri.encodeComponent(redirectTarget)}';
+          }
+        } else if (path == AppConstants.pinRoute) {
           return AppConstants.homeRoute;
         }
 
         return null;
       },
-      refreshListenable: AuthRefreshListenable(
-        googleNotifier.authEvents,
-        container,
-      ),
+      refreshListenable: AppStateRefreshListenable(container),
       errorBuilder: (context, state) => const ErrorPage(),
     );
   }
@@ -169,9 +160,16 @@ class AppRouter {
       builder: (context, state) => const EveryDiaryHomePage(),
     ),
     GoRoute(
-      path: AppConstants.loginRoute,
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
+      path: AppConstants.introRoute,
+      name: 'intro',
+      builder: (context, state) => const AppSetupScreen(),
+    ),
+    GoRoute(
+      path: AppConstants.pinRoute,
+      name: 'pin-unlock',
+      builder: (context, state) => PinUnlockScreen(
+        redirectPath: state.uri.queryParameters['from'],
+      ),
     ),
     GoRoute(
       path: '/diary',
@@ -313,30 +311,45 @@ class ErrorPage extends StatelessWidget {
   }
 }
 
-class AuthRefreshListenable extends ChangeNotifier {
-  AuthRefreshListenable(
-    Stream<User?> googleAuthStream,
-    ProviderContainer container,
-  ) {
-    _googleSubscription = googleAuthStream.listen((_) => notifyListeners());
+class AppStateRefreshListenable extends ChangeNotifier {
+  AppStateRefreshListenable(this._container) {
+    _profileSubscription = _container.listen<AppProfileState>(
+      appProfileProvider,
+      (previous, next) {
+        if (previous == null ||
+            previous.onboardingComplete != next.onboardingComplete ||
+            previous.pinEnabled != next.pinEnabled ||
+            previous.isInitialized != next.isInitialized ||
+            previous.userName != next.userName) {
+          notifyListeners();
+        }
+      },
+      fireImmediately: false,
+    );
 
-    _emailAuthSubscription = container.listen<AuthState>(authStateProvider, (
-      previous,
-      next,
-    ) {
-      if (previous?.isAuthenticated != next.isAuthenticated) {
-        notifyListeners();
-      }
-    }, fireImmediately: false);
+    _pinSubscription = _container.listen<PinLockState>(
+      pinLockProvider,
+      (previous, next) {
+        if (previous == null ||
+            previous.isUnlocked != next.isUnlocked ||
+            previous.isPinEnabled != next.isPinEnabled ||
+            previous.lockExpiresAt != next.lockExpiresAt ||
+            previous.isInitialized != next.isInitialized) {
+          notifyListeners();
+        }
+      },
+      fireImmediately: false,
+    );
   }
 
-  late final StreamSubscription<User?> _googleSubscription;
-  late final ProviderSubscription<AuthState> _emailAuthSubscription;
+  final ProviderContainer _container;
+  late final ProviderSubscription<AppProfileState> _profileSubscription;
+  late final ProviderSubscription<PinLockState> _pinSubscription;
 
   @override
   void dispose() {
-    _googleSubscription.cancel();
-    _emailAuthSubscription.close();
+    _profileSubscription.close();
+    _pinSubscription.close();
     super.dispose();
   }
 }
@@ -346,22 +359,19 @@ class EveryDiaryHomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final googleState = ref.watch(googleAuthProvider);
-    final authState = ref.watch(authStateProvider);
-    final displayName = googleState.user?.displayName?.trim();
-    final email = googleState.user?.email?.trim();
-    final fallbackName = authState.user?.name.trim();
+    final profileState = ref.watch(appProfileProvider);
 
-    String? resolvedName;
-    if (displayName?.isNotEmpty == true) {
-      resolvedName = displayName;
-    } else if (fallbackName?.isNotEmpty == true) {
-      resolvedName = fallbackName;
-    } else if (email?.contains('@') == true) {
-      resolvedName = email!.split('@').first;
+    if (!profileState.isInitialized) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
-    final greetingName = resolvedName ?? '일기 작성자';
+    final resolvedName = profileState.userName?.trim();
+    final greetingName =
+        (resolvedName != null && resolvedName.isNotEmpty)
+            ? resolvedName
+            : '일기 작성자';
 
     final theme = Theme.of(context);
     final latestImageAsync = ref.watch(latestDiaryImageProvider);
