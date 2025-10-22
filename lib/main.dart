@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
 import 'core/routing/app_router.dart';
+import 'core/security/screen_security_guard.dart';
 import 'core/services/android_native_service_manager.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
@@ -114,13 +115,14 @@ class EveryDiaryApp extends StatelessWidget {
           ],
           supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
           builder: (context, child) {
-            return MediaQuery(
+            final mediaChild = MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: const TextScaler.linear(1.0),
                 platformBrightness: MediaQuery.of(context).platformBrightness,
               ),
               child: child!,
             );
+            return ScreenSecurityGuard(child: mediaChild);
           },
         );
       },

@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/services/image_generation_service.dart';
 import '../../core/providers/app_profile_provider.dart';
 import '../../core/providers/pin_lock_provider.dart';
+import '../../core/services/image_generation_service.dart';
 import '../../features/diary/screens/calendar_view_screen.dart';
 import '../../features/diary/screens/diary_detail_screen.dart';
 import '../../features/diary/screens/diary_list_screen.dart';
@@ -42,9 +42,7 @@ Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
 
     const primaryFilter = DiaryEntryFilter(limit: 20);
 
-    final diaries = await repository.getDiaryEntriesWithFilter(
-      primaryFilter,
-    );
+    final diaries = await repository.getDiaryEntriesWithFilter(primaryFilter);
 
     for (final diary in diaries) {
       final path = await helper.ensureImagePath(diary);
@@ -110,8 +108,18 @@ final latestDiaryImageProvider = StreamProvider.autoDispose<String?>((
 });
 
 class AppRouter {
+  static GoRouter? _router;
+
+  static GoRouter get instance {
+    final router = _router;
+    if (router == null) {
+      throw StateError('GoRouter has not been initialized yet');
+    }
+    return router;
+  }
+
   static GoRouter buildRouter(ProviderContainer container) {
-    return GoRouter(
+    final router = GoRouter(
       initialLocation: AppConstants.homeRoute,
       routes: _routes,
       redirect: (context, state) async {
@@ -151,6 +159,8 @@ class AppRouter {
       refreshListenable: AppStateRefreshListenable(container),
       errorBuilder: (context, state) => const ErrorPage(),
     );
+    _router = router;
+    return router;
   }
 
   static List<RouteBase> get _routes => [
@@ -167,9 +177,8 @@ class AppRouter {
     GoRoute(
       path: AppConstants.pinRoute,
       name: 'pin-unlock',
-      builder: (context, state) => PinUnlockScreen(
-        redirectPath: state.uri.queryParameters['from'],
-      ),
+      builder: (context, state) =>
+          PinUnlockScreen(redirectPath: state.uri.queryParameters['from']),
     ),
     GoRoute(
       path: '/diary',
@@ -327,19 +336,18 @@ class AppStateRefreshListenable extends ChangeNotifier {
       fireImmediately: false,
     );
 
-    _pinSubscription = _container.listen<PinLockState>(
-      pinLockProvider,
-      (previous, next) {
-        if (previous == null ||
-            previous.isUnlocked != next.isUnlocked ||
-            previous.isPinEnabled != next.isPinEnabled ||
-            previous.lockExpiresAt != next.lockExpiresAt ||
-            previous.isInitialized != next.isInitialized) {
-          notifyListeners();
-        }
-      },
-      fireImmediately: false,
-    );
+    _pinSubscription = _container.listen<PinLockState>(pinLockProvider, (
+      previous,
+      next,
+    ) {
+      if (previous == null ||
+          previous.isUnlocked != next.isUnlocked ||
+          previous.isPinEnabled != next.isPinEnabled ||
+          previous.lockExpiresAt != next.lockExpiresAt ||
+          previous.isInitialized != next.isInitialized) {
+        notifyListeners();
+      }
+    }, fireImmediately: false);
   }
 
   final ProviderContainer _container;
@@ -362,16 +370,13 @@ class EveryDiaryHomePage extends ConsumerWidget {
     final profileState = ref.watch(appProfileProvider);
 
     if (!profileState.isInitialized) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final resolvedName = profileState.userName?.trim();
-    final greetingName =
-        (resolvedName != null && resolvedName.isNotEmpty)
-            ? resolvedName
-            : '일기 작성자';
+    final greetingName = (resolvedName != null && resolvedName.isNotEmpty)
+        ? resolvedName
+        : '일기 작성자';
 
     final theme = Theme.of(context);
     final latestImageAsync = ref.watch(latestDiaryImageProvider);
@@ -519,6 +524,11 @@ class _QuickActionsSection extends StatelessWidget {
               icon: Icons.notifications,
               label: '추억 알림 설정',
               onTap: () => context.go('/memory/notification-settings'),
+            ),
+            _QuickActionButton(
+              icon: Icons.settings,
+              label: 'EveryDiary 설정',
+              onTap: () => context.go('/settings'),
             ),
           ],
         ),

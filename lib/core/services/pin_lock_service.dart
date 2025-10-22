@@ -8,8 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 앱 PIN 잠금을 관리하는 서비스.
 class PinLockService {
   PinLockService()
-      : _secureStorage = const FlutterSecureStorage(),
-        _random = Random.secure();
+    : _secureStorage = const FlutterSecureStorage(),
+      _random = Random.secure();
 
   final FlutterSecureStorage _secureStorage;
   final Random _random;
@@ -19,6 +19,9 @@ class PinLockService {
   static const String _attemptCountKey = 'pin_lock.attempt_count';
   static const String _lockUntilKey = 'pin_lock.lock_until';
   static const String _lastUnlockedKey = 'pin_lock.last_unlocked';
+  static const String _recoveryQuestionKey = 'pin_lock.recovery_question';
+  static const String _recoveryAnswerHashKey = 'pin_lock.recovery_answer_hash';
+  static const String _recoveryAnswerSaltKey = 'pin_lock.recovery_answer_salt';
 
   static const int _maxAttempts = 5;
   static const Duration _lockDuration = Duration(minutes: 30);
@@ -32,7 +35,7 @@ class PinLockService {
   /// PIN을 설정합니다. 기존 PIN은 덮어씁니다.
   Future<void> setPin(String pin) async {
     final salt = _generateSalt();
-    final hash = _hashPin(pin, salt);
+    final hash = _hashSecret(pin, salt);
 
     await _secureStorage.write(key: _pinSaltKey, value: salt);
     await _secureStorage.write(key: _pinHashKey, value: hash);
@@ -52,6 +55,48 @@ class PinLockService {
     await prefs.remove(_attemptCountKey);
     await prefs.remove(_lockUntilKey);
     await prefs.remove(_lastUnlockedKey);
+  }
+
+  /// 비상 복구용 질문과 답변을 저장합니다.
+  Future<void> setRecoveryQuestion({
+    required String question,
+    required String answer,
+  }) async {
+    final normalizedQuestion = question.trim();
+    final salt = _generateSalt();
+    final hash = _hashSecret(answer.trim(), salt);
+
+    await _secureStorage.write(
+      key: _recoveryQuestionKey,
+      value: normalizedQuestion,
+    );
+    await _secureStorage.write(key: _recoveryAnswerSaltKey, value: salt);
+    await _secureStorage.write(key: _recoveryAnswerHashKey, value: hash);
+  }
+
+  /// 저장된 복구 질문을 반환합니다.
+  Future<String?> loadRecoveryQuestion() async {
+    return _secureStorage.read(key: _recoveryQuestionKey);
+  }
+
+  /// 복구 질문/답변을 제거합니다.
+  Future<void> clearRecoveryQuestion() async {
+    await _secureStorage.delete(key: _recoveryQuestionKey);
+    await _secureStorage.delete(key: _recoveryAnswerHashKey);
+    await _secureStorage.delete(key: _recoveryAnswerSaltKey);
+  }
+
+  /// 복구 답변을 검증합니다.
+  Future<bool> verifyRecoveryAnswer(String answer) async {
+    final salt = await _secureStorage.read(key: _recoveryAnswerSaltKey);
+    final storedHash = await _secureStorage.read(key: _recoveryAnswerHashKey);
+
+    if (salt == null || storedHash == null) {
+      return false;
+    }
+
+    final computedHash = _hashSecret(answer.trim(), salt);
+    return _safeEquals(storedHash, computedHash);
   }
 
   /// 남은 재시도 횟수를 반환합니다.
@@ -100,7 +145,7 @@ class PinLockService {
       return false;
     }
 
-    final computedHash = _hashPin(pin, salt);
+    final computedHash = _hashSecret(pin, salt);
     final matches = _safeEquals(storedHash, computedHash);
 
     final prefs = await SharedPreferences.getInstance();
@@ -143,8 +188,8 @@ class PinLockService {
     await prefs.setInt(_lastUnlockedKey, DateTime.now().millisecondsSinceEpoch);
   }
 
-  String _hashPin(String pin, String salt) {
-    final bytes = utf8.encode('$salt:$pin');
+  String _hashSecret(String value, String salt) {
+    final bytes = utf8.encode('$salt:$value');
     return sha256.convert(bytes).toString();
   }
 
@@ -162,4 +207,3 @@ class PinLockService {
     return result == 0;
   }
 }
-

@@ -1,12 +1,15 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
-import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/providers/app_profile_provider.dart';
 import '../../../core/providers/pin_lock_provider.dart';
+import '../../../core/widgets/custom_app_bar.dart';
 import '../models/settings_enums.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/backup_restore_widget.dart';
@@ -125,21 +128,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: 'PIN 잠금',
-                    subtitle:
-                        pinState.isPinEnabled ? '앱 실행 시 PIN 요구' : '사용 안 함',
+                    subtitle: pinState.isPinEnabled
+                        ? '앱 실행 시 PIN 요구'
+                        : '사용 안 함',
                     trailing: Switch.adaptive(
                       value: pinState.isPinEnabled,
                       onChanged: _pinActionInProgress
                           ? null
-                          : (value) => _handlePinToggle(
-                                context,
-                                value,
-                              ),
+                          : (value) => _handlePinToggle(context, value),
                     ),
-                    onTap: () => _handlePinToggle(
-                      context,
-                      !pinState.isPinEnabled,
-                    ),
+                    onTap: () =>
+                        _handlePinToggle(context, !pinState.isPinEnabled),
                   ),
                   if (pinState.isPinEnabled)
                     SettingsTile(
@@ -150,6 +149,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       title: 'PIN 변경',
                       subtitle: '현재 PIN을 입력하고 새 PIN으로 변경합니다',
                       onTap: () => _changePin(context),
+                    ),
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.help_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: '비상 복구 질문',
+                    subtitle: pinState.recoveryQuestion != null
+                        ? '설정됨'
+                        : '설정되지 않음',
+                    onTap: () => _configureRecoveryQuestion(context, pinState),
+                  ),
+                  if (!kIsWeb && !Platform.isAndroid)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: Text(
+                        'iOS에서는 시스템 제한으로 화면 캡처 차단 기능이 완전하게 지원되지 않습니다. '
+                        'PIN 잠금은 계속 적용되며, 중요한 정보는 수동으로 보호해 주세요.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -337,10 +358,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _handlePinToggle(
-    BuildContext context,
-    bool enable,
-  ) async {
+  Future<void> _handlePinToggle(BuildContext context, bool enable) async {
     if (_pinActionInProgress) return;
     setState(() => _pinActionInProgress = true);
 
@@ -399,15 +417,138 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .read(pinLockProvider.notifier)
           .changePin(currentPin: result.currentPin, newPin: result.newPin);
       if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('PIN이 변경되었습니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('PIN이 변경되었습니다.')));
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('PIN 변경에 실패했습니다: $error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('PIN 변경에 실패했습니다: $error')));
     } finally {
+      if (mounted) {
+        setState(() => _pinActionInProgress = false);
+      }
+    }
+  }
+
+  Future<void> _configureRecoveryQuestion(
+    BuildContext context,
+    PinLockState pinState,
+  ) async {
+    if (_pinActionInProgress) return;
+    setState(() => _pinActionInProgress = true);
+
+    final questionController = TextEditingController(
+      text: pinState.recoveryQuestion ?? '',
+    );
+    final answerController = TextEditingController();
+    final confirmController = TextEditingController();
+    String? error;
+
+    Object? dialogResult;
+
+    try {
+      dialogResult = await showDialog<Object?>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('비상 복구 질문 설정'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: questionController,
+                        decoration: const InputDecoration(
+                          labelText: '보안 질문',
+                          hintText: '예: 나만 아는 장소는?',
+                        ),
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: answerController,
+                        decoration: const InputDecoration(labelText: '답변'),
+                        obscureText: false,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: confirmController,
+                        decoration: InputDecoration(
+                          labelText: '답변 확인',
+                          errorText: error,
+                        ),
+                        obscureText: false,
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  if (pinState.recoveryQuestion != null)
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop('cleared'),
+                      child: const Text('삭제'),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('취소'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final question = questionController.text.trim();
+                      final answer = answerController.text.trim();
+                      final confirm = confirmController.text.trim();
+
+                      if (question.isEmpty) {
+                        setStateDialog(() => error = '보안 질문을 입력해 주세요');
+                        return;
+                      }
+                      if (answer.isEmpty) {
+                        setStateDialog(() => error = '답변을 입력해 주세요');
+                        return;
+                      }
+                      if (answer != confirm) {
+                        setStateDialog(() => error = '답변이 일치하지 않습니다');
+                        return;
+                      }
+
+                      Navigator.of(
+                        context,
+                      ).pop({'question': question, 'answer': answer});
+                    },
+                    child: const Text('저장'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (!context.mounted) return;
+
+      final messenger = ScaffoldMessenger.of(context);
+
+      if (dialogResult is Map) {
+        final question = (dialogResult['question'] as String).trim();
+        final answer = (dialogResult['answer'] as String).trim();
+        await ref
+            .read(pinLockProvider.notifier)
+            .setRecoveryQuestion(question: question, answer: answer);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('비상 복구 질문이 저장되었습니다.')),
+        );
+      } else if (dialogResult == 'cleared') {
+        await ref.read(pinLockProvider.notifier).clearRecoveryQuestion();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('비상 복구 질문이 삭제되었습니다.')),
+        );
+      }
+    } finally {
+      questionController.dispose();
+      answerController.dispose();
+      confirmController.dispose();
       if (mounted) {
         setState(() => _pinActionInProgress = false);
       }
@@ -434,6 +575,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
                     decoration: const InputDecoration(
                       labelText: '새 PIN (4자리 숫자)',
                       counterText: '',
@@ -445,6 +590,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
                     decoration: InputDecoration(
                       labelText: 'PIN 확인',
                       counterText: '',
@@ -489,8 +638,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('PIN 잠금 해제'),
-        content:
-            const Text('PIN 잠금을 비활성화하면 앱 실행 시 인증이 필요하지 않습니다.'),
+        content: const Text('PIN 잠금을 비활성화하면 앱 실행 시 인증이 필요하지 않습니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -530,6 +678,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
                     decoration: const InputDecoration(
                       labelText: '현재 PIN',
                       counterText: '',
@@ -541,6 +693,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
                     decoration: const InputDecoration(
                       labelText: '새 PIN',
                       counterText: '',
@@ -552,6 +708,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     keyboardType: TextInputType.number,
                     obscureText: true,
                     maxLength: 4,
+                    enableSuggestions: false,
+                    autocorrect: false,
+                    smartDashesType: SmartDashesType.disabled,
+                    smartQuotesType: SmartQuotesType.disabled,
                     decoration: InputDecoration(
                       labelText: '새 PIN 확인',
                       counterText: '',
@@ -583,7 +743,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       setState(() => error = '새 PIN이 일치하지 않습니다');
                       return;
                     }
-                    Navigator.of(context).pop((currentPin: current, newPin: newPin));
+                    Navigator.of(
+                      context,
+                    ).pop((currentPin: current, newPin: newPin));
                   },
                   child: const Text('변경'),
                 ),

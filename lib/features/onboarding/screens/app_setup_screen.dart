@@ -100,6 +100,10 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                         obscureText: true,
                         keyboardType: TextInputType.number,
                         maxLength: 4,
+                        enableSuggestions: false,
+                        autocorrect: false,
+                        smartDashesType: SmartDashesType.disabled,
+                        smartQuotesType: SmartQuotesType.disabled,
                         validator: (value) {
                           if (!_usePin) {
                             return null;
@@ -116,12 +120,14 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _pinConfirmController,
-                        decoration: const InputDecoration(
-                          labelText: 'PIN 확인',
-                        ),
+                        decoration: const InputDecoration(labelText: 'PIN 확인'),
                         obscureText: true,
                         keyboardType: TextInputType.number,
                         maxLength: 4,
+                        enableSuggestions: false,
+                        autocorrect: false,
+                        smartDashesType: SmartDashesType.disabled,
+                        smartQuotesType: SmartQuotesType.disabled,
                         validator: (value) {
                           if (!_usePin) {
                             return null;
@@ -137,12 +143,16 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: _isSubmitting ? null : () => _submit(context),
+                        onPressed: _isSubmitting
+                            ? null
+                            : () => _submit(context),
                         child: _isSubmitting
                             ? const SizedBox(
                                 height: 18,
                                 width: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('시작하기'),
                       ),
@@ -176,25 +186,24 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
     try {
       if (usePin) {
         await pinNotifier.enablePin(_pinController.text.trim());
+        await profileNotifier.completeOnboarding(
+          userName: userName,
+          pinEnabled: true,
+        );
+        if (!mounted) return;
+        router.go(AppConstants.pinRoute);
       } else {
         await pinNotifier.disablePin();
+        await profileNotifier.completeOnboarding(
+          userName: userName,
+          pinEnabled: false,
+        );
+        if (!mounted) return;
+        router.go(AppConstants.homeRoute);
       }
-
-      await profileNotifier.completeOnboarding(
-        userName: userName,
-        pinEnabled: usePin,
-      );
-
-      if (!mounted) return;
-      if (usePin) {
-        ref.read(pinLockProvider.notifier).requireUnlock();
-      }
-      router.go(AppConstants.homeRoute);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('설정 저장에 실패했습니다: $error')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text('설정 저장에 실패했습니다: $error')));
     } finally {
       if (mounted) {
         setState(() {
@@ -204,4 +213,3 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
     }
   }
 }
-

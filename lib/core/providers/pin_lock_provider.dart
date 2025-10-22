@@ -10,6 +10,7 @@ class PinLockState {
     this.isUnlocked = true,
     this.remainingAttempts = 5,
     this.lockExpiresAt,
+    this.recoveryQuestion,
   });
 
   final bool isInitialized;
@@ -17,6 +18,7 @@ class PinLockState {
   final bool isUnlocked;
   final int remainingAttempts;
   final DateTime? lockExpiresAt;
+  final String? recoveryQuestion;
 
   PinLockState copyWith({
     bool? isInitialized,
@@ -24,6 +26,7 @@ class PinLockState {
     bool? isUnlocked,
     int? remainingAttempts,
     DateTime? lockExpiresAt,
+    String? recoveryQuestion,
   }) {
     return PinLockState(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -31,11 +34,14 @@ class PinLockState {
       isUnlocked: isUnlocked ?? this.isUnlocked,
       remainingAttempts: remainingAttempts ?? this.remainingAttempts,
       lockExpiresAt: lockExpiresAt ?? this.lockExpiresAt,
+      recoveryQuestion: recoveryQuestion ?? this.recoveryQuestion,
     );
   }
 }
 
-final pinLockProvider = StateNotifierProvider<PinLockNotifier, PinLockState>((ref) {
+final pinLockProvider = StateNotifierProvider<PinLockNotifier, PinLockState>((
+  ref,
+) {
   final pinService = PinLockService();
   final profileService = AppProfileService();
   return PinLockNotifier(pinService, profileService)..initialize();
@@ -43,7 +49,7 @@ final pinLockProvider = StateNotifierProvider<PinLockNotifier, PinLockState>((re
 
 class PinLockNotifier extends StateNotifier<PinLockState> {
   PinLockNotifier(this._pinService, this._profileService)
-      : super(const PinLockState());
+    : super(const PinLockState());
 
   final PinLockService _pinService;
   final AppProfileService _profileService;
@@ -59,13 +65,15 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
     final locked = await _pinService.isLockedOut();
     final lockExpires = await _pinService.lockExpiresAt();
     final requiresPin = pinEnabled && hasPin;
+    final recoveryQuestion = await _pinService.loadRecoveryQuestion();
 
     state = state.copyWith(
       isInitialized: true,
       isPinEnabled: requiresPin,
-      isUnlocked: !requiresPin || !locked,
+      isUnlocked: !requiresPin && !locked,
       remainingAttempts: remaining,
       lockExpiresAt: lockExpires,
+      recoveryQuestion: recoveryQuestion,
     );
     _loading = false;
   }
@@ -80,6 +88,7 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
       isUnlocked: true,
       remainingAttempts: await _pinService.remainingAttempts(),
       lockExpiresAt: await _pinService.lockExpiresAt(),
+      recoveryQuestion: state.recoveryQuestion,
     );
   }
 
@@ -91,6 +100,7 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
       isUnlocked: true,
       remainingAttempts: 5,
       lockExpiresAt: null,
+      recoveryQuestion: state.recoveryQuestion,
     );
   }
 
@@ -98,7 +108,7 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
     if (!state.isPinEnabled) {
       return;
     }
-    state = state.copyWith(isUnlocked: false);
+    state = state.copyWith(isUnlocked: false, lockExpiresAt: null);
   }
 
   Future<bool> unlockWithPin(String pin) async {
@@ -138,6 +148,40 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
       isUnlocked: true,
       remainingAttempts: await _pinService.remainingAttempts(),
       lockExpiresAt: await _pinService.lockExpiresAt(),
+      recoveryQuestion: state.recoveryQuestion,
+    );
+  }
+
+  Future<void> setRecoveryQuestion({
+    required String question,
+    required String answer,
+  }) async {
+    await _pinService.setRecoveryQuestion(question: question, answer: answer);
+    state = state.copyWith(recoveryQuestion: question.trim());
+  }
+
+  Future<void> clearRecoveryQuestion() async {
+    await _pinService.clearRecoveryQuestion();
+    state = state.copyWith(recoveryQuestion: null);
+  }
+
+  Future<void> resetPinWithRecovery({
+    required String answer,
+    required String newPin,
+  }) async {
+    final verified = await _pinService.verifyRecoveryAnswer(answer);
+    if (!verified) {
+      throw StateError('보안 답변이 일치하지 않습니다.');
+    }
+
+    await _pinService.setPin(newPin);
+    await _profileService.setPinEnabled(true);
+    state = state.copyWith(
+      isPinEnabled: true,
+      isUnlocked: true,
+      remainingAttempts: await _pinService.remainingAttempts(),
+      lockExpiresAt: await _pinService.lockExpiresAt(),
+      recoveryQuestion: state.recoveryQuestion,
     );
   }
 
@@ -146,4 +190,3 @@ class PinLockNotifier extends StateNotifier<PinLockState> {
     await initialize();
   }
 }
-

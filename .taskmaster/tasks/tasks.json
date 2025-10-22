@@ -1141,7 +1141,7 @@
             "description": "local_auth 패키지를 사용하여 PIN 입력 대신 지문/얼굴 인식 옵션을 제공하고, 생체인증 실패 시 PIN 입력으로 폴백하는 기능을 구현합니다.",
             "dependencies": [],
             "details": "- local_auth 패키지 추가 및 설정\n- 생체인증 가능 여부 확인 로직\n- PinUnlockScreen에 생체인증 버튼 추가\n- 생체인증 성공/실패 처리\n- 설정 화면에 생체인증 활성화/비활성화 토글 추가\n- 생체인증 권한 요청 및 오류 처리",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "생체인증 지원 기기에서 지문/얼굴 인식 테스트, 미지원 기기에서 PIN 폴백 확인, 권한 거부 시나리오 테스트"
           },
           {
@@ -1150,7 +1150,7 @@
             "description": "앱이 백그라운드로 이동한 시간을 추적하고, 설정된 시간이 경과하면 포그라운드 복귀 시 PIN 입력을 요구하는 자동 잠금 시스템을 구현합니다.",
             "dependencies": [],
             "details": "- AppLifecycleState 모니터링 강화\n- 백그라운드 진입 시간 추적 로직\n- 자동 잠금 시간 설정 옵션 (즉시, 1분, 5분, 15분)\n- 포그라운드 복귀 시 경과 시간 계산 및 PIN 요구 로직\n- 설정 화면에 자동 잠금 시간 선택 UI 추가\n- 타이머 상태 관리 및 저장",
-            "status": "pending",
+            "status": "cancelled",
             "testStrategy": "다양한 잠금 시간 설정 테스트, 백그라운드/포그라운드 전환 시나리오 확인, 시간 계산 정확성 검증"
           },
           {
@@ -1159,7 +1159,7 @@
             "description": "PIN을 5회 연속 실패했을 때 활성화되는 비상복구 시스템을 구현하여, 보안 질문/답변을 통해 PIN을 재설정할 수 있도록 합니다.",
             "dependencies": [],
             "details": "- 보안 질문 설정 화면 구현\n- 미리 정의된 보안 질문 목록 제공\n- 사용자 정의 보안 질문 입력 옵션\n- 보안 답변 암호화 저장\n- PIN 5회 실패 후 비상복구 버튼 활성화\n- 복구 프로세스 화면 구현\n- 복구 성공 시 PIN 재설정 강제 플로우",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "보안 질문/답변 설정 프로세스 테스트, 5회 실패 후 복구 옵션 활성화 확인, 복구 성공 후 PIN 재설정 플로우 검증"
           },
           {
@@ -1168,7 +1168,7 @@
             "description": "PIN 입력 실패 시 진동 피드백을 강화하고, 재시도 횟수 및 잠금 시간을 시각적으로 개선하며, 애니메이션 효과와 접근성을 향상시킵니다.",
             "dependencies": [],
             "details": "- 입력 실패 시 진동 피드백 패턴 개선\n- 재시도 횟수 시각적 표시 개선 (프로그레스 바, 경고 색상)\n- 잠금 시간 카운트다운 UI 개선\n- PIN 입력 실패 시 흔들림 애니메이션 추가\n- 성공/실패 시 페이드 효과 구현\n- 접근성 개선 (음성 피드백, 대비 조정)\n- 다크 모드에서 UI 가독성 최적화",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "진동 피드백 강도 및 패턴 테스트, 애니메이션 부드러움 확인, 스크린 리더 호환성 테스트, 고대비 모드 가독성 검증"
           },
           {
@@ -1176,8 +1176,8 @@
             "title": "보안 강화 기능 구현",
             "description": "앱 스위처에서 화면 블러 처리, 스크린샷 방지, PIN 입력 시 키보드 보안 모드 등 추가 보안 기능을 구현합니다.",
             "dependencies": [],
-            "details": "- 앱 스위처에서 화면 블러 처리 구현\n- Android 스크린샷 방지 기능 추가\n- PIN 입력 화면에서 키보드 보안 모드 활성화\n- 앱 생명주기에 따른 보안 상태 관리\n- iOS에서 앱 스위처 보안 처리\n- 개발자 옵션 감지 및 경고 (선택사항)",
-            "status": "pending",
+            "details": "- 앱 스위처에서 화면 블러 처리 구현\n- Android 스크린샷 방지 기능 추가\n- PIN 입력 화면에서 키보드 보안 모드 활성화\n- 앱 생명주기에 따른 보안 상태 관리\n- iOS에서 앱 스위처 보안 처리\n- 개발자 옵션 감지 및 경고 (선택사항)\n<info added on 2025-10-16T07:43:09.146Z>\n구체적인 구현 계획 수립:\n\n1. Android 스크린샷/화면 녹화 방지 구현:\n   - flutter_windowmanager 패키지 의존성 추가 및 기존 의존성과의 충돌 여부 확인\n   - PinUnlockScreen, AppSetupScreen, EveryDiaryHomePage 등 민감한 화면에서 FLAG_SECURE 플래그 적용\n   - 화면 진입/이탈 시 보안 플래그 등록/해제 로직 구현\n\n2. 앱 스위처 진입 시 화면 블러 처리:\n   - PIN 잠금 전용 오버레이 위젯 개발 (블러 효과 + 브랜드 로고 조합)\n   - PinLockProvider 또는 글로벌 AppLifecycleObserver에서 AppLifecycleState.paused/detached 상태 감지 시 오버레이 표시\n   - AppLifecycleState.resumed 상태에서 오버레이 자동 해제 구현\n\n3. PIN 입력 필드 보안 강화:\n   - 텍스트 필드에 enableSuggestions: false, autocorrect: false 설정 적용\n   - smartDashesType 및 smartQuotesType을 SmartDashesType.disabled로 설정\n   - 기존 포커스 상태별 진동/시각 피드백 기능 유지\n\n4. 플랫폼별 제약사항 및 추가 검증:\n   - iOS에서 FLAG_SECURE 미지원에 대한 사용자 안내 메시지 추가 (Android 전용 기능임을 명시)\n   - 기존 테스트 케이스 재실행: 앱 재시작 시 PIN 요구, 비상 복구 시스템, 백업 기능의 회귀 테스트 수행\n</info added on 2025-10-16T07:43:09.146Z>",
+            "status": "in-progress",
             "testStrategy": "앱 스위처 블러 처리 확인, 스크린샷 방지 기능 테스트, 키보드 보안 모드 동작 검증, 다양한 OS 버전에서 호환성 테스트"
           }
         ]
@@ -1200,7 +1200,7 @@
     ],
     "metadata": {
       "created": "2025-09-04T01:55:45.055Z",
-      "updated": "2025-10-10T09:44:03.048Z",
+      "updated": "2025-10-16T07:42:20.385Z",
       "description": "Tasks for master context"
     }
   },
