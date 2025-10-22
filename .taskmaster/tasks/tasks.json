@@ -1050,7 +1050,7 @@
             "id": 1,
             "title": "Release 빌드 설정 및 API 키 관리",
             "description": "Flutter release 빌드를 위한 keystore 서명, 프로가드/리소스 최적화, API 키를 dart-define 또는 환경 변수로 분리하여 디버그 빌드와 다른 설정을 구성합니다.",
-            "details": "- Android keystore 생성 및 `key.properties` 구성\n- `build.gradle`에 release signingConfig 연결 및 최소 proguard 설정 확인\n- `flutter build apk --release` / `flutter build appbundle` 파이프라인 검증\n- API 키를 코드에서 분리하고 release/ddebug 각각 `--dart-define` 또는 `.env`에서 주입되도록 정리",
+            "details": "- Android keystore 생성 및 `key.properties` 구성\n- `build.gradle`에 release signingConfig 연결 및 최소 proguard 설정 확인\n- `flutter build apk --release` / `flutter build appbundle` 파이프라인 검증\n- API 키를 코드에서 분리하고 release/ddebug 각각 `--dart-define` 또는 `.env`에서 주입되도록 정리\n<info added on 2025-10-22T14:59:37.522Z>\nrelease.keystore 생성 및 `android/key.properties`, `app/build.gradle`에 release signingConfig 연결 완료. `flutter build apk --release` + `--dart-define`으로 릴리스 빌드 성공 후 실제 기기 설치 검증 완료. 다음 단계로 `flutter build appbundle` 검증, API 키 주입 방식의 release/debug 분리 정리, 프로가드 세부 설정 점검이 필요함.\n</info added on 2025-10-22T14:59:37.522Z>\n<info added on 2025-10-22T15:02:35.796Z>\n`flutter build appbundle --release` 실행 완료하여 Play Console 업로드용 .aab 번들 파일 생성 검증 완료. 다음 단계로 API 키 주입 방식의 release/debug 환경 분리 정리와 프로가드 세부 설정 점검이 필요함.\n</info added on 2025-10-22T15:02:35.796Z>\n<info added on 2025-10-22T15:26:44.551Z>\nAPI 키 주입 방식은 현재 `--dart-define` + 환경 변수 조합으로 빌드 명령 실행하는 흐름을 유지하기로 결정. 프로가드/리소스 최적화 검토를 다음 단계로 진행하여 앱 번들 크기 최적화 및 코드 난독화 세부 설정을 점검할 예정.\n</info added on 2025-10-22T15:26:44.551Z>",
             "status": "in-progress",
             "dependencies": [],
             "parentTaskId": 15
@@ -1059,8 +1059,8 @@
             "id": 2,
             "title": "앱 아이콘 및 런처 리소스 교체",
             "description": "임시 Flutter 아이콘을 브랜드 리소스로 교체하고 Android/iOS/웹 런처 이미지 및 스플래시 화면을 최종 버전으로 업데이트합니다.",
-            "details": "- Android `mipmap`/`drawable` 아이콘과 adaptive icon 정의 업데이트\n- iOS `AppIcon.appiconset`, LaunchScreen storyboard 자산 교체\n- `flutter_launcher_icons` 혹은 커스텀 스크립트로 일관된 아이콘 생성\n- 웹 `favicon`, `manifest.json` 아이콘, 스플래시 이미지 동기화\n- 교체 후 실제 기기/에뮬레이터에서 표시 확인",
-            "status": "pending",
+            "details": "- Android `mipmap`/`drawable` 아이콘과 adaptive icon 정의 업데이트\n- iOS `AppIcon.appiconset`, LaunchScreen storyboard 자산 교체\n- `flutter_launcher_icons` 혹은 커스텀 스크립트로 일관된 아이콘 생성\n- 웹 `favicon`, `manifest.json` 아이콘, 스플래시 이미지 동기화\n- 교체 후 실제 기기/에뮬레이터에서 표시 확인\n<info added on 2025-10-22T15:19:33.509Z>\neverydiary_icon.png(1024x1024) 아이콘 확정 및 pubspec.yaml에 flutter_launcher_icons 설정 추가 완료. flutter pub run flutter_launcher_icons 실행으로 Android/iOS/Web 아이콘과 파비콘 재생성 완료. 다음 단계로 실제 기기/시뮬레이터에서 표시 확인 및 iOS 런치 스크린/스플래시 최종 교체 여부 검토 예정.\n</info added on 2025-10-22T15:19:33.509Z>",
+            "status": "in-progress",
             "dependencies": [],
             "parentTaskId": 15
           }
@@ -1194,7 +1194,7 @@
     ],
     "metadata": {
       "created": "2025-09-04T01:55:45.055Z",
-      "updated": "2025-10-22T13:47:23.319Z",
+      "updated": "2025-10-22T15:17:27.320Z",
       "description": "Tasks for master context"
     }
   },

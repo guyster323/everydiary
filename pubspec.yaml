@@ -125,6 +125,9 @@ dev_dependencies:
   # Code Quality & Linting
   flutter_lints: ^5.0.0
 
+  # Tooling
+  flutter_launcher_icons: ^0.13.1
+
   # Code Generation
   build_runner: ^2.4.13
   freezed: ^2.5.7
@@ -181,3 +184,15 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 version: 1.0.1+2
+
+flutter_launcher_icons:
+  image_path: everydiary_icon.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: everydiary_icon.png
+    favicon: true
+  adaptive_icon_background: "#FF6A2E"
+  adaptive_icon_foreground: everydiary_icon.png
