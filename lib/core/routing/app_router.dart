@@ -15,6 +15,7 @@ import '../../features/diary/screens/diary_list_screen.dart';
 import '../../features/diary/screens/diary_write_screen.dart';
 import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/diary/services/diary_list_service.dart';
+import '../../features/home/widgets/app_intro_section.dart';
 import '../../features/onboarding/screens/app_setup_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
@@ -440,7 +441,7 @@ class EveryDiaryHomePage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _QuickActionsSection(),
                   const SizedBox(height: 24),
-                  _HomeInfoSection(theme: theme),
+                  const AppIntroSection(),
                   const SizedBox(height: 48),
                 ],
               ),
@@ -557,90 +558,6 @@ class _QuickActionButton extends StatelessWidget {
         icon: Icon(icon),
         label: Text(label, textAlign: TextAlign.center),
       ),
-    );
-  }
-}
-
-class _HomeInfoSection extends StatelessWidget {
-  const _HomeInfoSection({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('도움말', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 12),
-        const Card(
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _InfoRow(
-                  icon: Icons.palette,
-                  title: 'AI 이미지 생성',
-                  description: '일기를 저장하면 감정과 키워드를 분석해 수채화 느낌의 이미지를 만들어 드려요.',
-                ),
-                SizedBox(height: 12),
-                _InfoRow(
-                  icon: Icons.cloud_done,
-                  title: 'Firebase 백업',
-                  description: '작성한 일기는 Google 계정과 연동되어 안전하게 백업됩니다.',
-                ),
-                SizedBox(height: 12),
-                _InfoRow(
-                  icon: Icons.lock,
-                  title: '로그인 유지',
-                  description:
-                      '로그인 상태 유지 옵션을 선택하면 다음 방문 때 바로 홈에서 이어서 작성할 수 있어요.',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.title,
-    required this.description,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: theme.colorScheme.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.titleSmall),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

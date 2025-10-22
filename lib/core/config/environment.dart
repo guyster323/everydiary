@@ -3,7 +3,7 @@ enum Environment { development, staging, production }
 
 /// 환경별 구성 관리 클래스
 class EnvironmentConfig {
-  static Environment _currentEnvironment = Environment.development;
+  static Environment _currentEnvironment = Environment.production;
 
   /// 현재 환경 설정
   static Environment get current => _currentEnvironment;
@@ -38,4 +38,3 @@ class EnvironmentConfig {
     }
   }
 }
-

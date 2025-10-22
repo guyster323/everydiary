@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'core/config/config_service.dart';
 import 'core/routing/app_router.dart';
 import 'core/security/screen_security_guard.dart';
 import 'core/services/android_native_service_manager.dart';
+import 'core/services/app_intro_service.dart';
 import 'core/theme/theme_manager.dart' as theme_manager;
 import 'core/utils/hot_reload_helper.dart';
 import 'core/utils/logger.dart';
@@ -26,7 +29,6 @@ void main() async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      Logger.info('✅ Firebase 초기화 완료');
     } catch (e) {
       Logger.warning('⚠️ Firebase 초기화 실패, 오프라인 모드로 실행: $e');
       // Firebase 실패해도 앱 실행 지속
@@ -34,8 +36,8 @@ void main() async {
 
     // 구성 시스템 초기화
     await ConfigService.instance.initialize(
-      environment: Environment.development, // 환경에 따라 변경
-      loadSecretsFromAssets: false, // Android에서 문제 발생 시 비활성화
+      environment: Environment.production,
+      loadSecretsFromAssets: false,
       loadSecretsFromEnvironment: true,
     );
 
@@ -46,19 +48,16 @@ void main() async {
         anonKey: 'dummy-key', // 실제 키로 교체 필요
         debug: false,
       );
-      Logger.info('✅ Supabase 초기화 성공');
     } catch (e) {
       Logger.warning('⚠️ Supabase 초기화 실패, 오프라인 모드로 실행: $e');
       // 실패해도 앱 실행 지속
     }
 
-    // 로그 출력
-    Logger.info('🚀 EveryDiary app starting...');
-    Logger.info('Environment: ${EnvironmentConfig.environmentName}');
-    Logger.info('App Name: ${ConfigManager.instance.config.appName}');
-
     // 개발 도구 초기화
     HotReloadHelper.initialize();
+
+    // 앱 소개 이미지 사전 로드 (백그라운드 처리)
+    unawaited(AppIntroService.instance.preload());
 
     // 테마 매니저 초기화
     await theme_manager.ThemeManager().initialize();
@@ -67,12 +66,11 @@ void main() async {
     if (!kIsWeb) {
       try {
         await AndroidNativeServiceManager().initialize();
-        Logger.info('✅ Android Native Service Manager 초기화 완료');
       } catch (e) {
         Logger.warning('❌ Android Native Service Manager 초기화 실패: $e');
       }
     } else {
-      Logger.info('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
+      Logger.debug('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
     }
 
     runApp(const ProviderScope(child: EveryDiaryApp()));

@@ -1,9 +1,11 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
+
 /// 로깅 유틸리티 클래스
 /// 개발 환경에서는 상세한 로그를, 프로덕션에서는 에러만 로그
 class Logger {
-  static const bool _isDebugMode = true; // 실제로는 kDebugMode 사용
+  static const bool _isDebugMode = kDebugMode;
 
   /// 디버그 로그
   static void debug(String message, {String? tag}) {

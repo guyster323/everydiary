@@ -13,28 +13,9 @@ class DiaryRepository {
 
   /// 일기 생성
   Future<DiaryEntry> createDiaryEntry(CreateDiaryEntryDto dto) async {
-    Logger.info('DiaryRepository.createDiaryEntry 시작', tag: 'DiaryRepository');
     try {
-      Logger.info('Logger.info 호출 전', tag: 'DiaryRepository');
-      Logger.info(
-        'DiaryRepository.createDiaryEntry 시작 - userId: ${dto.userId}, title: ${dto.title}',
-        tag: 'DiaryRepository',
-      );
-      Logger.info('Logger.info 호출 완료', tag: 'DiaryRepository');
-
-      Logger.info('데이터베이스 연결 시작', tag: 'DiaryRepository');
       final db = await _databaseService.database;
-      Logger.info('데이터베이스 연결 완료', tag: 'DiaryRepository');
-
-      Logger.info('현재 시간 생성', tag: 'DiaryRepository');
       final now = DateTime.now().toIso8601String();
-      Logger.info('현재 시간 생성 완료: $now', tag: 'DiaryRepository');
-
-      Logger.info('Logger.info 호출 전 (DB)', tag: 'DiaryRepository');
-      Logger.info('데이터베이스 연결 완료, 삽입 데이터 준비 중', tag: 'DiaryRepository');
-      Logger.info('Logger.info 호출 완료 (DB)', tag: 'DiaryRepository');
-
-      Logger.info('데이터베이스 삽입 시작', tag: 'DiaryRepository');
       final id = await db.insert('diary_entries', {
         'user_id': dto.userId,
         'title': dto.title,
@@ -53,9 +34,6 @@ class DiaryRepository {
         'updated_at': now,
         'is_deleted': 0,
       });
-      Logger.info('데이터베이스 삽입 완료 - ID: $id', tag: 'DiaryRepository');
-
-      Logger.info('데이터베이스 삽입 성공 - ID: $id', tag: 'DiaryRepository');
 
       final attachments = await _databaseService.getAttachmentsByDiaryId(id);
 
@@ -82,8 +60,6 @@ class DiaryRepository {
             .toList(),
         tags: [],
       );
-
-      Logger.info('DiaryEntry 객체 생성 완료', tag: 'DiaryRepository');
       return diaryEntry;
     } catch (e) {
       Logger.error(
