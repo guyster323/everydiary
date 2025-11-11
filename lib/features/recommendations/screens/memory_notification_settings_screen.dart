@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../../../core/widgets/custom_error_widget.dart';
@@ -130,18 +131,19 @@ class _MemoryNotificationSettingsScreenState
       });
 
       if (mounted) {
+        final l10n = ref.read(localizationProvider);
         if (granted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('알림 권한이 허용되었습니다'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(l10n.get('memory_notification_permission_granted')),
+              duration: const Duration(seconds: 2),
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('알림 권한이 거부되었습니다'),
-              duration: Duration(seconds: 2),
+            SnackBar(
+              content: Text(l10n.get('memory_notification_permission_denied')),
+              duration: const Duration(seconds: 2),
             ),
           );
         }
@@ -186,18 +188,20 @@ class _MemoryNotificationSettingsScreenState
       );
 
       if (mounted) {
+        final l10n = ref.read(localizationProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('회상 알림이 설정되었습니다'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(l10n.get('memory_notification_scheduled')),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final l10n = ref.read(localizationProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('알림 설정 중 오류가 발생했습니다: $e'),
+            content: Text('${l10n.get('memory_notification_schedule_error')}: $e'),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -224,20 +228,22 @@ class _MemoryNotificationSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
     return Scaffold(
-      appBar: const CustomAppBar(title: '회상 알림 설정'),
+      appBar: CustomAppBar(title: l10n.get('memory_notification_settings_title')),
       body: _buildBody(),
     );
   }
 
   Widget _buildBody() {
+    final l10n = ref.watch(localizationProvider);
     if (_isLoading) {
-      return const Center(child: CustomLoading(message: '설정을 불러오는 중...'));
+      return Center(child: CustomLoading(message: l10n.get('memory_notification_settings_loading')));
     }
 
     if (_error != null) {
       return CustomErrorWidget(
-        message: '설정을 불러오는데 실패했습니다',
+        message: l10n.get('memory_notification_settings_load_error'),
         error: _error!,
         onRetry: _loadSettings,
       );
@@ -272,6 +278,7 @@ class _MemoryNotificationSettingsScreenState
   }
 
   Widget _buildNotificationToggle() {
+    final l10n = ref.watch(localizationProvider);
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,13 +295,13 @@ class _MemoryNotificationSettingsScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '회상 알림',
+                      l10n.get('memory_notification_toggle_title'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      '과거 일기를 회상하도록 알림을 받습니다',
+                      l10n.get('memory_notification_toggle_description'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -314,12 +321,13 @@ class _MemoryNotificationSettingsScreenState
   }
 
   Widget _buildTimeSettings() {
+    final l10n = ref.watch(localizationProvider);
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '알림 시간',
+            l10n.get('memory_notification_time_title'),
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -349,7 +357,7 @@ class _MemoryNotificationSettingsScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '알림 받을 시간',
+                          l10n.get('memory_notification_time_label'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         const SizedBox(height: 4),
@@ -381,20 +389,21 @@ class _MemoryNotificationSettingsScreenState
   }
 
   Widget _buildNotificationTypes() {
+    final l10n = ref.watch(localizationProvider);
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '알림 유형',
+            l10n.get('memory_notification_types_title'),
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           _buildNotificationTypeItem(
-            '어제의 기록',
-            '어제 작성한 일기를 회상합니다',
+            l10n.get('memory_notification_yesterday_title'),
+            l10n.get('memory_notification_yesterday_description'),
             _settings.enableYesterdayMemories,
             (value) {
               setState(() {
@@ -403,8 +412,8 @@ class _MemoryNotificationSettingsScreenState
             },
           ),
           _buildNotificationTypeItem(
-            '일주일 전의 기록',
-            '일주일 전 작성한 일기를 회상합니다',
+            l10n.get('memory_notification_one_week_ago_title'),
+            l10n.get('memory_notification_one_week_ago_description'),
             _settings.enableOneWeekAgoMemories,
             (value) {
               setState(() {
@@ -413,8 +422,8 @@ class _MemoryNotificationSettingsScreenState
             },
           ),
           _buildNotificationTypeItem(
-            '한달 전의 기록',
-            '한달 전 작성한 일기를 회상합니다',
+            l10n.get('memory_notification_one_month_ago_title'),
+            l10n.get('memory_notification_one_month_ago_description'),
             _settings.enableOneMonthAgoMemories,
             (value) {
               setState(() {
@@ -425,8 +434,8 @@ class _MemoryNotificationSettingsScreenState
             },
           ),
           _buildNotificationTypeItem(
-            '1년 전의 기록',
-            '1년 전 작성한 일기를 회상합니다',
+            l10n.get('memory_notification_one_year_ago_title'),
+            l10n.get('memory_notification_one_year_ago_description'),
             _settings.enableOneYearAgoMemories,
             (value) {
               setState(() {
@@ -435,8 +444,8 @@ class _MemoryNotificationSettingsScreenState
             },
           ),
           _buildNotificationTypeItem(
-            '과거의 오늘',
-            '작년, 재작년 같은 날의 기록을 회상합니다',
+            l10n.get('memory_notification_past_today_title'),
+            l10n.get('memory_notification_past_today_description'),
             _settings.enablePastTodayMemories,
             (value) {
               setState(() {
@@ -486,6 +495,7 @@ class _MemoryNotificationSettingsScreenState
   }
 
   Widget _buildPermissionStatus() {
+    final l10n = ref.watch(localizationProvider);
     return CustomCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,13 +514,15 @@ class _MemoryNotificationSettingsScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '알림 권한',
+                      l10n.get('memory_notification_permission_title'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      _hasPermission ? '알림 권한이 허용되었습니다' : '알림 권한이 필요합니다',
+                      _hasPermission
+                          ? l10n.get('memory_notification_permission_granted_status')
+                          : l10n.get('memory_notification_permission_required'),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: _hasPermission
                             ? Colors.green
@@ -523,7 +535,7 @@ class _MemoryNotificationSettingsScreenState
               if (!_hasPermission)
                 TextButton(
                   onPressed: _requestPermission,
-                  child: const Text('권한 요청'),
+                  child: Text(l10n.get('memory_notification_permission_request_button')),
                 ),
             ],
           ),
@@ -534,7 +546,7 @@ class _MemoryNotificationSettingsScreenState
 }
 
 /// 시간 선택 바텀시트
-class _TimeSelectionBottomSheet extends StatefulWidget {
+class _TimeSelectionBottomSheet extends ConsumerStatefulWidget {
   final List<int> selectedHours;
   final ValueChanged<List<int>> onHoursChanged;
 
@@ -544,11 +556,11 @@ class _TimeSelectionBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<_TimeSelectionBottomSheet> createState() =>
+  ConsumerState<_TimeSelectionBottomSheet> createState() =>
       _TimeSelectionBottomSheetState();
 }
 
-class _TimeSelectionBottomSheetState extends State<_TimeSelectionBottomSheet> {
+class _TimeSelectionBottomSheetState extends ConsumerState<_TimeSelectionBottomSheet> {
   late List<int> _selectedHours;
 
   @override
@@ -570,13 +582,14 @@ class _TimeSelectionBottomSheetState extends State<_TimeSelectionBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
     return Container(
       height: 400,
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Text(
-            '알림 시간 선택',
+            l10n.get('memory_notification_time_selection_title'),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
@@ -637,7 +650,7 @@ class _TimeSelectionBottomSheetState extends State<_TimeSelectionBottomSheet> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
+                  child: Text(l10n.get('cancel')),
                 ),
               ),
               const SizedBox(width: 16),
@@ -647,7 +660,7 @@ class _TimeSelectionBottomSheetState extends State<_TimeSelectionBottomSheet> {
                     widget.onHoursChanged(_selectedHours);
                     Navigator.of(context).pop();
                   },
-                  child: const Text('확인'),
+                  child: Text(l10n.get('ok')),
                 ),
               ),
             ],

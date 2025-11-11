@@ -61,7 +61,7 @@ class ImageGenerationPurchaseDialog extends ConsumerWidget {
                           children: [
                             Text(
                               AdService.instance.isRewardedAdReady
-                                  ? l10n.get('watch_ad_for_3_times')
+                                  ? l10n.get('watch_ad_for_1_time')
                                   : l10n.get('ad_loading'),
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
@@ -283,17 +283,21 @@ class ImageGenerationPurchaseDialog extends ConsumerWidget {
     navigator.pop();
 
     debugPrint('🔵 [AdReward] 광고 시청 시작');
+
+    // l10n도 미리 저장
+    final l10n = ref.read(localizationProvider);
+
     AdService.instance.showRewardedAd(
       onRewarded: (amount) {
         debugPrint('🔵 [AdReward] 광고 시청 완료, 보상 지급 시작: amount=$amount');
-        // 광고 시청 완료 - 3회 생성 횟수 추가
-        countService.addGenerations(3).then((_) {
+        // 광고 시청 완료 - 1회 생성 횟수 추가
+        countService.addGenerations(1).then((_) {
           debugPrint('✅ [AdReward] 보상 지급 성공');
           messenger.showSnackBar(
-            const SnackBar(
-              content: Text('광고 시청 완료! 3회 생성 횟수가 추가되었습니다.'),
+            SnackBar(
+              content: Text(l10n.get('ad_reward_success')),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }).catchError((Object e) {

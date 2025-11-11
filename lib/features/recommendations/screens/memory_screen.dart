@@ -7,6 +7,7 @@ import '../../../core/animations/slide_in_animation.dart';
 import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
+import '../../../shared/services/session_service.dart';
 import '../models/diary_memory.dart';
 import '../models/memory_filter.dart';
 import '../services/memory_service.dart';
@@ -75,23 +76,31 @@ class _MemoryScreenState extends ConsumerState<MemoryScreen>
     });
 
     try {
-      // 실제 사용자 ID를 가져오기 (임시로 1 사용)
-      const userId = '1';
+      // SessionService에서 현재 사용자 ID를 가져오기
+      final sessionService = SessionService.instance;
+      final user = await sessionService.getCurrentUser();
+
+      // 사용자가 없거나 ID가 없으면 기본값 1 사용 (게스트 모드)
+      final userId = user?.id?.toString() ?? '1';
 
       final result = await _memoryService.generateMemories(
         userId: userId,
         filter: _currentFilter,
       );
 
-      setState(() {
-        _memoryResult = result;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _memoryResult = result;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

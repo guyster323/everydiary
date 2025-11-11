@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/animations/fade_in_animation.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../models/diary_memory.dart';
 
 /// 회상 유형 선택기 위젯
-class MemoryTypeSelector extends StatefulWidget {
+class MemoryTypeSelector extends ConsumerStatefulWidget {
   final MemoryType? selectedType;
   final ValueChanged<MemoryType?> onTypeSelected;
 
@@ -15,10 +17,10 @@ class MemoryTypeSelector extends StatefulWidget {
   });
 
   @override
-  State<MemoryTypeSelector> createState() => _MemoryTypeSelectorState();
+  ConsumerState<MemoryTypeSelector> createState() => _MemoryTypeSelectorState();
 }
 
-class _MemoryTypeSelectorState extends State<MemoryTypeSelector>
+class _MemoryTypeSelectorState extends ConsumerState<MemoryTypeSelector>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
 
@@ -45,6 +47,7 @@ class _MemoryTypeSelectorState extends State<MemoryTypeSelector>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
     return FadeInAnimation(
       controller: _animationController,
       child: Container(
@@ -54,7 +57,11 @@ class _MemoryTypeSelectorState extends State<MemoryTypeSelector>
           scrollDirection: Axis.horizontal,
           children: [
             // 전체 선택 버튼
-            _buildTypeChip(type: null, label: '전체', icon: Icons.all_inclusive),
+            _buildTypeChip(
+              type: null,
+              label: l10n.get('memory_type_all'),
+              icon: Icons.all_inclusive,
+            ),
             const SizedBox(width: 8),
 
             // 각 회상 유형별 버튼
@@ -63,7 +70,7 @@ class _MemoryTypeSelectorState extends State<MemoryTypeSelector>
                 padding: const EdgeInsets.only(right: 8),
                 child: _buildTypeChip(
                   type: type,
-                  label: _getTypeDisplayName(type),
+                  label: _getTypeDisplayName(type, l10n),
                   icon: _getTypeIcon(type),
                 ),
               );
@@ -124,26 +131,26 @@ class _MemoryTypeSelectorState extends State<MemoryTypeSelector>
     );
   }
 
-  String _getTypeDisplayName(MemoryType type) {
+  String _getTypeDisplayName(MemoryType type, dynamic l10n) {
     switch (type) {
       case MemoryType.yesterday:
-        return '어제';
+        return l10n.get('memory_type_yesterday');
       case MemoryType.oneWeekAgo:
-        return '일주일 전';
+        return l10n.get('memory_type_one_week_ago');
       case MemoryType.oneMonthAgo:
-        return '한달 전';
+        return l10n.get('memory_type_one_month_ago');
       case MemoryType.oneYearAgo:
-        return '1년 전';
+        return l10n.get('memory_type_one_year_ago');
       case MemoryType.pastToday:
-        return '과거의 오늘';
+        return l10n.get('memory_type_past_today');
       case MemoryType.sameTimeOfDay:
-        return '같은 시간';
+        return l10n.get('memory_type_same_time');
       case MemoryType.seasonal:
-        return '계절별';
+        return l10n.get('memory_type_seasonal');
       case MemoryType.specialDate:
-        return '특별한 날';
+        return l10n.get('memory_type_special_date');
       case MemoryType.similarTags:
-        return '관련 태그';
+        return l10n.get('memory_type_similar_tags');
     }
   }
 

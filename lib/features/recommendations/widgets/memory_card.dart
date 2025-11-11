@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/animations/fade_in_animation.dart';
 import '../../../core/animations/slide_in_animation.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../models/diary_memory.dart';
 
 /// 회상 카드 위젯
-class MemoryCard extends StatefulWidget {
+class MemoryCard extends ConsumerStatefulWidget {
   final DiaryMemory memory;
   final VoidCallback? onTap;
   final VoidCallback? onBookmark;
@@ -20,10 +22,10 @@ class MemoryCard extends StatefulWidget {
   });
 
   @override
-  State<MemoryCard> createState() => _MemoryCardState();
+  ConsumerState<MemoryCard> createState() => _MemoryCardState();
 }
 
-class _MemoryCardState extends State<MemoryCard> with TickerProviderStateMixin {
+class _MemoryCardState extends ConsumerState<MemoryCard> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
 
@@ -87,6 +89,7 @@ class _MemoryCardState extends State<MemoryCard> with TickerProviderStateMixin {
   }
 
   Widget _buildHeader() {
+    final l10n = ref.watch(localizationProvider);
     return Row(
       children: [
         // 회상 이유 배지
@@ -101,7 +104,7 @@ class _MemoryCardState extends State<MemoryCard> with TickerProviderStateMixin {
             ),
           ),
           child: Text(
-            widget.memory.reason.displayText,
+            _getMemoryReasonText(widget.memory.reason.type, l10n),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: _getMemoryTypeColor(),
               fontWeight: FontWeight.w600,
@@ -129,10 +132,35 @@ class _MemoryCardState extends State<MemoryCard> with TickerProviderStateMixin {
                 : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           onPressed: widget.onBookmark,
-          tooltip: widget.memory.isBookmarked ? '북마크 해제' : '북마크',
+          tooltip: widget.memory.isBookmarked
+              ? l10n.get('memory_bookmark_remove')
+              : l10n.get('memory_bookmark'),
         ),
       ],
     );
+  }
+
+  String _getMemoryReasonText(MemoryType type, dynamic l10n) {
+    switch (type) {
+      case MemoryType.yesterday:
+        return l10n.get('memory_reason_yesterday');
+      case MemoryType.oneWeekAgo:
+        return l10n.get('memory_reason_one_week_ago');
+      case MemoryType.oneMonthAgo:
+        return l10n.get('memory_reason_one_month_ago');
+      case MemoryType.oneYearAgo:
+        return l10n.get('memory_reason_one_year_ago');
+      case MemoryType.pastToday:
+        return l10n.get('memory_reason_past_today');
+      case MemoryType.sameTimeOfDay:
+        return l10n.get('memory_reason_same_time');
+      case MemoryType.seasonal:
+        return l10n.get('memory_reason_seasonal');
+      case MemoryType.specialDate:
+        return l10n.get('memory_reason_special_date');
+      case MemoryType.similarTags:
+        return l10n.get('memory_reason_similar_tags');
+    }
   }
 
   Widget _buildTitle() {
