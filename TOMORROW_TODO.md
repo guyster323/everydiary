@@ -1,300 +1,391 @@
 # 내일 작업 TODO - EveryDiary
 
-## 📅 날짜: 2025-11-11
+## 📅 날짜: 2025-11-12
 
 ---
 
-## 🎯 오늘(2025-11-10) 완료된 작업
+## 🎯 오늘(2025-11-11) 완료된 작업
 
-### 1. AppIntro 이미지를 Assets으로 변경 ✅
-- `lib/core/services/app_intro_service.dart` 수정
-  - AI 이미지 생성 로직 제거
-  - `assets/images/app_intro/{feature_id}.png` 직접 로드
-  - Import 정리 (dart:io, path_provider, ImageGenerationService 제거)
+### 1. 회상 페이지 로컬라이제이션 ✅
+- **Badge 텍스트 로컬라이징**
+  - '어제의 기록', '이 시간의 기록' 등 → 다국어 지원
+  - `memory_card.dart` 수정: `_getMemoryReasonText()` 메서드 추가
 
-- `lib/features/home/widgets/app_intro_section.dart` 수정
-  - "이미지 생성 중" 메시지 제거
-  - Progress bar 제거
-  - `Image.file` → `Image.asset` 변경
-  - dart:io import 제거
+- **필터 버튼 로컬라이징**
+  - '전체', '어제', '일주일 전', '한달 전', '계절별' 등 → 다국어 지원
+  - `memory_type_selector.dart` 수정: `_getTypeDisplayName()` 메서드 수정
 
-### 2. Android 빌드 수정 ✅
-- `android/app/src/main/AndroidManifest.xml`
-  - AdMob 테스트 App ID 추가
+- **로컬라이제이션 키 추가** (`app_localizations.dart`)
+  - `memory_type_*` 시리즈 (9개 키)
+  - `memory_reason_*` 시리즈 (9개 키)
+  - 한국어, 영어, 일본어, 중국어(간체/번체) 총 4개 언어 지원
 
-### 3. API Keys 설정 ✅
-- `assets/config/secrets.json` 생성
-  - Gemini API Key 추가
-  - Hugging Face API Key 추가
+### 2. 광고 보상 시스템 개선 ✅
+- **생성 횟수 조정**
+  - 광고 시청 보상: 3회 → 1회로 감소
+  - `image_generation_purchase_dialog.dart` 수정
+  - `countService.addGenerations(3)` → `addGenerations(1)`
 
-### 4. Provider 이름 충돌 해결 ✅
-- `lib/core/providers/generation_count_provider.dart`
-  - `imageGenerationServiceProvider` → `generationCountServiceProvider`로 변경
+- **문구 수정**
+  - "광고 보고 3회 받기" → "광고 보고 1회 더 받기"
+  - "3 times" → "1 time more" 형식으로 변경
+  - 로컬라이제이션 키: `watch_ad_for_1_time`, `ad_reward_success`
 
-- `lib/features/diary/widgets/image_generation_purchase_dialog.dart`
-  - import 수정
-  - provider 사용 코드 수정
-
-### 5. 앱 빌드 및 실행 ✅
-- SM F946N 디바이스에 성공적으로 설치
-- Flutter DevTools 실행 중
+### 3. Git 커밋 및 업로드 ✅
+- 커밋 ID: `587adaa`
+- 커밋 메시지: "refactor: localize memory feature and reduce ad reward to 1 generation"
+- 변경 파일: 8개
+- GitHub 업로드 완료
 
 ---
 
-## ✅ 완료된 문제점
+## 📋 내일(2025-11-12) 작업 계획
 
-### ✅ 1. **AppIntro 이미지 생성 시도 제거**
-**상태: 완료됨**
-- `lib/main.dart`에 `AppIntroService.instance.preload()` 호출 없음
-- `app_intro_service.dart`에 `generateImageFromText` 호출 없음
-- Assets 이미지만 사용하도록 변경 완료
+### 🔴 우선순위 1: OCR 및 음성 인식 기능 로컬라이제이션 (2시간)
 
-### ✅ 2. **secrets.json API 키 로드**
-**상태: 완료됨**
-- `assets/config/secrets.json` 파일 존재
-- `pubspec.yaml`에 `assets/config/` 경로 등록됨
-- ConfigService 정상 로드
+#### Task 1.1: OCR 관련 텍스트 로컬라이징
+**목표**: OCR 기능의 모든 사용자 표시 텍스트를 다국어로 지원
 
-### ✅ 3. **백업 Notification 기능 삭제**
-**상태: 완료됨**
-- `backup_service.dart`에서 notification 관련 코드 없음
-- 네트워크 연결 시 자동 백업 알림 기능 제거됨
+**작업 단계**:
+1. **OCR 기능 파일 탐색 및 분석** (30분)
+   - [ ] OCR 관련 파일 찾기 (예상 위치)
+     ```
+     lib/features/diary/widgets/diary_rich_text_editor.dart
+     lib/features/diary/services/ocr_service.dart (있다면)
+     lib/features/ocr/ (디렉토리가 있다면)
+     ```
+   - [ ] 하드코딩된 한글 텍스트 식별
+   - [ ] OCR 사용 UI 확인 (버튼, 다이얼로그, 에러 메시지 등)
 
-### ✅ 4. **Flutter Analyze 문제 해결**
-**상태: 완료됨 (28개 → 0개)**
-- 모든 `print()` → `debugPrint()`로 변환
-- Unused import 제거 (user_customization_provider.dart)
-- Type inference 문제 수정 (catchError에 Object 타입 명시)
-- Future.delayed 타입 명시 (Future<void>.delayed)
-- Unnecessary import 제거 (image_generation_purchase_dialog.dart)
+2. **로컬라이제이션 키 추가** (20분)
+   - [ ] `app_localizations.dart`에 OCR 관련 키 추가
+     ```dart
+     // 예상 필요 키
+     'ocr_button': 'OCR로 텍스트 추출',
+     'ocr_button_en': 'Extract Text',
+     'ocr_processing': '이미지에서 텍스트를 추출하는 중...',
+     'ocr_success': '텍스트 추출 완료',
+     'ocr_failed': 'OCR 처리 실패',
+     'ocr_no_text': '추출된 텍스트가 없습니다',
+     'ocr_permission_required': '카메라 권한이 필요합니다',
+     'ocr_select_source': '이미지 소스 선택',
+     'ocr_camera': '카메라',
+     'ocr_gallery': '갤러리',
+     ```
+   - [ ] 영어, 일본어, 중국어 번역 추가
 
-### ✅ 5. **Google AdMob 수익 연결 가이드 작성**
-**상태: 완료됨**
-- `ADMOB_SETUP_GUIDE.md` 생성
-- AdMob 계정 생성부터 수익 수령까지 전체 프로세스 문서화
-- 광고 단위 생성, 코드 통합, 결제 정보 설정 방법 포함
-- 문제 해결 및 수익 극대화 팁 포함
+3. **OCR UI 파일 수정** (40분)
+   - [ ] 하드코딩된 문자열 → `l10n.get()` 변경
+   - [ ] Widget을 ConsumerWidget/ConsumerStatefulWidget으로 변환 (필요시)
+   - [ ] `localizationProvider` 추가
+   - [ ] 모든 사용자 표시 텍스트 교체
 
-### ✅ 6. **AI 이미지 생성 횟수 구매 페이지 구현**
-**상태: 완료됨**
-- `lib/shared/services/payment_service.dart` 수정
-  - `_processImageGenerationPurchase()` 메서드 추가
-  - SharedPreferences 통합으로 구매 횟수 자동 추가
-  - 구매 기록 저장 기능
-- `lib/features/diary/widgets/image_generation_purchase_dialog.dart` 수정
-  - 실제 구매 로직 구현 (PaymentService 통합)
-  - 에러 핸들링 및 사용자 피드백 (SnackBar)
-  - 구매 성공 시 자동 UI 업데이트
-- `lib/main.dart` 수정
-  - PaymentService 초기화 추가
+4. **테스트 및 검증** (30분)
+   - [ ] 4개 언어로 앱 실행하여 OCR 기능 테스트
+   - [ ] 모든 텍스트가 올바르게 표시되는지 확인
+   - [ ] 에러 메시지도 로컬라이징 되었는지 확인
 
-## ⚠️ 발견된 문제점 (우선순위 순)
+#### Task 1.2: 음성 인식 관련 텍스트 로컬라이징
+**목표**: 음성 인식 기능의 모든 사용자 표시 텍스트를 다국어로 지원
 
-### 🔴 긴급 - 즉시 수정 필요
+**작업 단계**:
+1. **음성 인식 기능 파일 탐색** (20분)
+   - [ ] 음성 인식 관련 파일 찾기 (예상 위치)
+     ```
+     lib/features/diary/widgets/diary_rich_text_editor.dart
+     lib/features/diary/services/voice_recognition_service.dart (있다면)
+     lib/features/voice/ (디렉토리가 있다면)
+     ```
+   - [ ] 하드코딩된 한글 텍스트 식별
 
-**없음** - 모든 긴급 문제 해결 완료!
+2. **로컬라이제이션 키 추가** (20분)
+   - [ ] `app_localizations.dart`에 음성 인식 관련 키 추가
+     ```dart
+     // 예상 필요 키
+     'voice_button': '음성으로 입력',
+     'voice_button_en': 'Voice Input',
+     'voice_listening': '듣는 중...',
+     'voice_processing': '음성을 텍스트로 변환 중...',
+     'voice_success': '음성 입력 완료',
+     'voice_failed': '음성 인식 실패',
+     'voice_permission_required': '마이크 권한이 필요합니다',
+     'voice_not_available': '음성 인식을 사용할 수 없습니다',
+     'voice_tap_to_speak': '말하기 시작하려면 탭하세요',
+     'voice_tap_to_stop': '중지하려면 탭하세요',
+     ```
+   - [ ] 영어, 일본어, 중국어 번역 추가
 
----
+3. **음성 인식 UI 파일 수정** (30분)
+   - [ ] 하드코딩된 문자열 → `l10n.get()` 변경
+   - [ ] Widget 구조 변환 (필요시)
+   - [ ] `localizationProvider` 추가
 
-### 🟡 중요 - 향후 작업 권장
-
-#### 1. **POWERSHELL_CLAUDE_CODE_GUIDE.md 포맷 확인** (선택사항)
-**문제:**
-- 파일 내용 재확인 필요
-
-**해결방법:**
-1. 파일 내용 확인
-2. 마크다운 포맷 검증
-
----
-
-## 📋 작업 완료 체크리스트
-
-### ✅ 우선순위 1: 긴급 수정 (완료)
-- [x] `lib/main.dart`에서 `AppIntroService.instance.preload()` 제거 확인
-- [x] AppIntro 관련 이미지 생성 코드 제거 확인
-- [x] secrets.json API 키 로드 확인
-- [x] flutter analyze 실행 후 경고 수정 (28개 → 0개)
-
-### 우선순위 2: 테스트 및 검증 (1시간)
-- [ ] 앱 소개 섹션에 assets 이미지가 제대로 표시되는지 확인
-- [ ] 이미지 생성 시도 로그가 더 이상 나타나지 않는지 확인
-- [ ] 홈 화면에 generation count 위젯이 제대로 표시되는지 확인
-- [ ] 일기 작성 시 이미지 생성 제한 로직 테스트 (무료 3회)
-- [ ] 구매 다이얼로그 표시 확인
-
-### 우선순위 3: 문서 정리 (20분)
-- [ ] POWERSHELL_CLAUDE_CODE_GUIDE.md 재작성
-- [ ] CHANGES_SUMMARY.md 업데이트
-- [ ] Git commit 메시지 작성
-
-### 우선순위 4: 추가 개선사항 (시간 있을 때)
-- [ ] 회상 기능 로컬 DB 쿼리 테스트
-- [ ] 개인정보/이용약관 화면 표시 확인
-- [ ] 썸네일 모니터링 화면 제거 확인
-- [ ] 설정 화면에서 미구현 기능 제거 확인
+4. **테스트 및 검증** (20분)
+   - [ ] 다국어 환경에서 음성 인식 테스트
+   - [ ] 권한 요청 메시지 확인
+   - [ ] 에러 처리 메시지 확인
 
 ---
 
-## 🎉 모든 긴급 작업 완료!
+### 🟡 우선순위 2: OCR 사용 시 PIN 재요구 문제 개선 (1.5시간)
 
-### 완료된 작업 (2025-11-11)
+#### 현재 문제점 분석
+**증상**: OCR 기능을 사용할 때마다 PIN을 다시 요구함
+**원인**: (예상)
+- 백그라운드/포그라운드 전환 시 세션 만료
+- OCR 처리 중 앱이 일시정지 상태로 전환
+- 보안 설정이 너무 엄격하게 구성됨
 
-1. ✅ AppIntro preload() 제거 확인
-2. ✅ AppIntro 이미지 생성 코드 제거 확인
-3. ✅ secrets.json API 키 로드 확인
-4. ✅ 백업 Notification 기능 삭제 확인
-5. ✅ Flutter analyze 문제 수정 (28개 → 0개)
-   - print() → debugPrint() 변환 (25개)
-   - Unused import 제거 (2개)
-   - Type inference 수정 (2개)
-   - Future 타입 명시 (1개)
-6. ✅ Google AdMob 수익 연결 가이드 작성
-   - ADMOB_SETUP_GUIDE.md 생성
-   - 계정 설정부터 수익 수령까지 전체 프로세스
-7. ✅ AI 이미지 생성 횟수 구매 페이지 구현
-   - PaymentService 통합
-   - 실제 구매 로직 구현
-   - 자동 횟수 추가 및 UI 업데이트
+#### 해결 방안 옵션
 
-### 다음 세션 권장 작업
+**Option A: 세션 기반 인증 유지 (권장)**
+- **장점**: 자연스러운 사용자 경험, 보안 유지
+- **단점**: 구현 복잡도 중간
+- **구현 내용**:
+  1. [ ] `lib/shared/services/session_service.dart` 확인
+  2. [ ] 세션 타임아웃 설정 확인 (현재 값)
+  3. [ ] OCR 사용 중에는 세션 유지하도록 수정
+  4. [ ] 백그라운드 전환 시 일정 시간(예: 5분) 동안 세션 유지
+  5. [ ] 테스트: OCR → 다른 앱 전환 → 복귀 시 PIN 요구 안 함
 
-```
-지금까지의 작업이 모두 완료되었어!
+**Option B: OCR 전용 권한 캐싱**
+- **장점**: OCR 사용성 대폭 향상
+- **단점**: 보안 취약점 가능성
+- **구현 내용**:
+  1. [ ] OCR 권한 캐시 플래그 추가
+  2. [ ] PIN 입력 후 일정 시간(예: 30분) 동안 OCR 사용 시 PIN 생략
+  3. [ ] 캐시 만료 시간 설정 추가
+  4. [ ] 테스트 및 보안 검토
 
-다음 작업으로는:
-1. 앱 소개 섹션 assets 이미지 표시 확인
-2. 이미지 생성 제한 로직 테스트
-3. 회상 기능 테스트
-4. 개인정보/이용약관 화면 확인
+**Option C: 사용자 설정 추가**
+- **장점**: 사용자가 보안 수준 선택 가능
+- **단점**: UI 복잡도 증가
+- **구현 내용**:
+  1. [ ] 설정 화면에 "OCR 사용 시 PIN 생략" 옵션 추가
+  2. [ ] `lib/features/settings/models/settings_model.dart` 수정
+  3. [ ] `settings_provider.dart`에 로직 추가
+  4. [ ] PIN 요구 로직 수정
+  5. [ ] 테스트
 
-위 항목들 중 필요한 것부터 진행하면 돼.
-```
+#### 추천 접근법: **Option A (세션 기반 인증)**
+- 보안과 사용성의 균형
+- 기존 세션 관리 시스템 활용
+- 사용자 혼란 최소화
+
+#### 작업 단계 (Option A 기준)
+1. **세션 관리 분석** (30분)
+   - [ ] `lib/shared/services/session_service.dart` 읽기
+   - [ ] PIN 인증 로직 확인
+   - [ ] 세션 만료 조건 파악
+   - [ ] OCR 호출 시점의 세션 상태 로깅
+
+2. **세션 유지 로직 구현** (40분)
+   - [ ] `SessionService`에 `extendSession()` 메서드 추가
+   - [ ] OCR 시작 시 세션 연장 호출
+   - [ ] 백그라운드 전환 시 타임아웃 증가 (예: 5분)
+   - [ ] 세션 만료 시간 설정 추가
+
+3. **PIN 요구 로직 수정** (20분)
+   - [ ] `lib/features/security/screens/pin_unlock_screen.dart` 확인
+   - [ ] OCR 컨텍스트에서는 짧은 타임아웃 적용
+   - [ ] 디버그 로그 추가
+
+4. **테스트 및 검증** (30분)
+   - [ ] 시나리오 1: OCR 사용 → 대기 → 다시 OCR (PIN 요구 안 함)
+   - [ ] 시나리오 2: OCR 사용 → 다른 앱 전환 → 복귀 → OCR (PIN 요구 안 함)
+   - [ ] 시나리오 3: 5분 이상 대기 → OCR (PIN 요구됨)
+   - [ ] 보안 취약점 확인
 
 ---
 
-## 💡 Claude Code 종료 전 체크리스트
+## 📁 예상 수정 파일 목록
 
-### 현재 Claude Code를 종료하기 전에:
-
-1. **백그라운드 프로세스 종료**
-   ```bash
-   # 실행 중인 flutter run 프로세스 확인
-   # Ctrl+C로 종료하거나
-   q  # flutter run 내에서 q 입력
-   ```
-
-2. **변경사항 확인**
-   ```bash
-   git status
-   git diff
-   ```
-
-3. **필요시 커밋** (선택사항)
-   ```bash
-   git add .
-   git commit -m "WIP: AppIntro assets 이미지 변경 작업 중"
-   ```
-
-4. **문서 저장 확인**
-   - TOMORROW_TODO.md ✅
-   - CHANGES_SUMMARY.md ✅
-   - POWERSHELL_CLAUDE_CODE_GUIDE.md ⚠️ (재작성 필요)
-
----
-
-## 📚 참고 파일 경로
-
-### 긴급 수정 필요 파일
+### OCR 로컬라이제이션
 ```
-lib/main.dart                                          # preload() 제거
-lib/core/providers/app_intro_provider.dart            # 이미지 생성 확인
-lib/core/config/secrets_manager.dart                  # API 키 로드
-lib/core/config/api_keys.dart                         # API 키 사용
-assets/config/secrets.json                            # API 키 저장
+lib/core/l10n/app_localizations.dart                    # 로컬라이제이션 키 추가
+lib/features/diary/widgets/diary_rich_text_editor.dart  # OCR 버튼 UI
+lib/features/diary/services/ocr_service.dart            # OCR 서비스 (있다면)
+lib/features/ocr/*.dart                                 # OCR 관련 파일들
 ```
 
-### 테스트 필요 파일
+### 음성 인식 로컬라이제이션
 ```
-lib/features/home/widgets/app_intro_section.dart     # 앱 소개 표시
-lib/features/home/widgets/generation_count_widget.dart # 남은 횟수 표시
-lib/features/diary/widgets/image_generation_purchase_dialog.dart # 구매 다이얼로그
-lib/core/services/app_intro_service.dart              # Assets 로드
+lib/core/l10n/app_localizations.dart                    # 로컬라이제이션 키 추가
+lib/features/diary/widgets/diary_rich_text_editor.dart  # 음성 버튼 UI
+lib/features/diary/services/voice_recognition_service.dart  # 음성 서비스 (있다면)
+lib/features/voice/*.dart                               # 음성 관련 파일들
 ```
 
-### 확인 필요 Assets
+### PIN 재요구 개선
 ```
-assets/images/app_intro/ocr.png
-assets/images/app_intro/voice.png
-assets/images/app_intro/emotion.png
-assets/images/app_intro/ai_image.png
-assets/images/app_intro/search.png
-assets/images/app_intro/backup.png
-assets/images/app_intro/pin_security.png
-assets/images/app_intro/screen_privacy.png
+lib/shared/services/session_service.dart                # 세션 관리
+lib/features/security/screens/pin_unlock_screen.dart    # PIN 입력 화면
+lib/features/security/services/pin_service.dart         # PIN 서비스 (있다면)
+lib/features/settings/models/settings_model.dart        # 설정 모델 (Option C)
+lib/features/settings/providers/settings_provider.dart  # 설정 프로바이더 (Option C)
 ```
 
 ---
 
-## 🎯 최종 목표
+## ⏱️ 예상 소요 시간
 
-### 단기 목표 (내일)
-- AppIntro에서 이미지 생성 시도 완전 제거
-- Assets 이미지만 사용하도록 확정
-- API 키 로드 문제 해결
-- Lint 경고 모두 제거
-
-### 중기 목표 (이번 주)
-- 모든 기능 테스트 완료
-- 문서 정리
-- Git commit 정리
-- 배포 준비
+| 작업 | 예상 시간 | 우선순위 |
+|------|----------|---------|
+| OCR 텍스트 로컬라이징 | 2시간 | 🔴 높음 |
+| 음성 인식 텍스트 로컬라이징 | 1.5시간 | 🔴 높음 |
+| PIN 재요구 문제 분석 | 30분 | 🟡 중간 |
+| PIN 재요구 문제 해결 | 1시간 | 🟡 중간 |
+| 테스트 및 검증 | 1시간 | 🟢 낮음 |
+| **총 예상 시간** | **6시간** | - |
 
 ---
 
-## 📞 문제 발생 시
+## 🎯 작업 완료 체크리스트
 
-### 디버깅 명령어
-```bash
-# 로그 확인
-adb logcat | grep "flutter"
+### ✅ 우선순위 1: OCR/음성 로컬라이제이션
+- [ ] OCR 관련 파일 탐색 및 분석
+- [ ] OCR 로컬라이제이션 키 추가 (4개 언어)
+- [ ] OCR UI 파일 수정
+- [ ] 음성 인식 관련 파일 탐색
+- [ ] 음성 인식 로컬라이제이션 키 추가 (4개 언어)
+- [ ] 음성 인식 UI 파일 수정
+- [ ] 다국어 환경에서 테스트
 
-# 앱 재시작
-flutter run -d R3CW80CCH6V
+### ✅ 우선순위 2: PIN 재요구 개선
+- [ ] 세션 관리 로직 분석
+- [ ] 세션 유지 메커니즘 구현
+- [ ] PIN 요구 로직 수정
+- [ ] 다양한 시나리오 테스트
+- [ ] 보안 취약점 확인
 
-# Clean build
-flutter clean
-flutter pub get
-flutter run -d R3CW80CCH6V
-```
-
-### 자주 발생하는 오류
-
-**1. "Missing required secret" 오류**
-→ secrets.json 로드 확인
-→ SecretsManager 로직 확인
-
-**2. "이미지 생성 실패" 로그**
-→ main.dart의 preload() 제거
-→ AppIntroProvider 확인
-
-**3. "Provider not found" 오류**
-→ Provider 이름 확인
-→ import 경로 확인
-
----
-
-## ✅ 완료 시 업데이트
-
-작업 완료 후 이 섹션에 체크:
-- [ ] 긴급 수정 완료
-- [ ] 테스트 완료
-- [ ] 문서 업데이트
-- [ ] Git commit
+### ✅ 우선순위 3: Git 관리
+- [ ] 변경사항 커밋 (OCR/음성 로컬라이제이션)
+- [ ] 변경사항 커밋 (PIN 재요구 개선)
+- [ ] GitHub 업로드
 - [ ] 다음 TODO 파일 작성
 
 ---
 
-**작성일**: 2025-11-10 22:20
-**다음 작업일**: 2025-11-11
-**예상 소요 시간**: 2시간
+## 💡 참고 사항
+
+### 로컬라이제이션 베스트 프랙티스
+1. **일관성 유지**: 기존 로컬라이제이션 키 네이밍 규칙 따르기
+   - `feature_action_context` 형식 (예: `ocr_button_camera`)
+
+2. **번역 품질**:
+   - 영어: 자연스러운 표현 사용
+   - 일본어: 경어 사용, 간결하게
+   - 중국어: 간체/번체 구분 (현재 간체만 지원 중)
+
+3. **테스트 커버리지**:
+   - 각 언어로 전환하여 UI 깨짐 확인
+   - 긴 텍스트가 UI를 벗어나지 않는지 확인
+
+### 보안 고려사항
+1. **세션 타임아웃**:
+   - 너무 짧으면 사용성 저하
+   - 너무 길면 보안 취약
+   - **권장**: 활성 사용 시 5분, 백그라운드 1분
+
+2. **PIN 재입력 시나리오**:
+   - 앱 종료 후 재실행: PIN 필수
+   - 설정 변경: PIN 필수
+   - 민감한 데이터 접근: PIN 필수
+   - OCR/음성 인식: 세션 유효 시 생략 가능
+
+---
+
+## 📝 커밋 메시지 템플릿
+
+### OCR/음성 로컬라이제이션 완료 시
+```
+feat: localize OCR and voice recognition features
+
+Major Changes:
+- Added localization keys for OCR feature (10+ keys)
+- Added localization keys for voice recognition (10+ keys)
+- Updated diary_rich_text_editor.dart to use localizationProvider
+- Converted widgets to ConsumerWidget for l10n access
+- Replaced all hardcoded Korean strings with l10n.get() calls
+
+Localization:
+- Korean: OCR/음성 인식 관련 텍스트
+- English: OCR/voice recognition texts
+- Japanese: OCR/音声認識 texts
+- Chinese: OCR/语音识别 texts
+
+Files Modified:
+- lib/core/l10n/app_localizations.dart
+- lib/features/diary/widgets/diary_rich_text_editor.dart
+- lib/features/diary/services/ocr_service.dart (if exists)
+- lib/features/diary/services/voice_recognition_service.dart (if exists)
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+### PIN 재요구 개선 완료 시
+```
+fix: improve PIN re-authentication flow for OCR/voice features
+
+Problem:
+- PIN was requested every time OCR/voice recognition was used
+- Session expired too quickly during media processing
+- Poor user experience with frequent re-authentication
+
+Solution:
+- Extended session timeout during active OCR/voice processing
+- Implemented session extension mechanism in SessionService
+- Background transitions now maintain session for 5 minutes
+- OCR/voice context maintains session without re-authentication
+
+Changes:
+- lib/shared/services/session_service.dart: Added extendSession() method
+- lib/features/security/screens/pin_unlock_screen.dart: Context-aware timeout
+- Added debug logging for session state transitions
+
+Testing:
+- Verified OCR usage without PIN re-prompt within session
+- Tested background/foreground transitions
+- Confirmed security timeout after extended inactivity
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+---
+
+## 🔍 디버깅 가이드
+
+### OCR 관련 로그 확인
+```bash
+# OCR 관련 로그 필터링
+adb logcat | grep -i "ocr"
+
+# 권한 관련 로그
+adb logcat | grep -i "permission"
+```
+
+### 세션 관리 로그 확인
+```bash
+# 세션 관련 로그
+adb logcat | grep -i "session"
+
+# PIN 인증 로그
+adb logcat | grep -i "pin"
+```
+
+### 문제 발생 시 체크리스트
+1. [ ] Flutter analyze 실행하여 경고 확인
+2. [ ] 로컬라이제이션 키가 모든 언어에 추가되었는지 확인
+3. [ ] ConsumerWidget 변환 시 ref 파라미터 추가했는지 확인
+4. [ ] import 문에 `flutter_riverpod/flutter_riverpod.dart` 포함되었는지 확인
+
+---
+
+**작성일**: 2025-11-11 23:00
+**다음 작업일**: 2025-11-12
+**예상 소요 시간**: 6시간
+**우선순위**: 🔴 높음
