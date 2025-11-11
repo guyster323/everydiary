@@ -1,0 +1,2770 @@
+import '../../../features/settings/models/settings_enums.dart';
+
+/// 앱 다국어 지원 클래스
+/// 각 언어별 번역 문자열을 제공합니다
+class AppLocalizations {
+  final Language language;
+
+  AppLocalizations(this.language);
+
+  /// 현재 언어에 해당하는 번역 문자열 가져오기
+  String get(String key) {
+    return _translations[language]?[key] ?? _translations[Language.korean]?[key] ?? key;
+  }
+
+  /// 모든 언어별 번역 문자열
+  static final Map<Language, Map<String, String>> _translations = {
+    // 한국어
+    Language.korean: _korean,
+    // 영어
+    Language.english: _english,
+    // 일본어
+    Language.japanese: _japanese,
+    // 중국어 (간체)
+    Language.chineseSimplified: _chineseSimplified,
+    // 중국어 (번체)
+    Language.chineseTraditional: _chineseTraditional,
+  };
+
+  // ============== 한국어 ==============
+  static const Map<String, String> _korean = {
+    // 공통
+    'app_name': 'EveryDiary',
+    'ok': '확인',
+    'cancel': '취소',
+    'save': '저장',
+    'delete': '삭제',
+    'edit': '수정',
+    'close': '닫기',
+    'yes': '예',
+    'no': '아니오',
+
+    // 설정
+    'settings': '설정',
+    'settings_reset': '설정 초기화',
+    'app_settings': '앱 설정',
+    'thumbnail_style': '썸네일 스타일',
+    'thumbnail_style_subtitle': 'AI 썸네일 스타일과 키워드를 설정합니다',
+    'theme': '테마',
+    'font_size': '폰트 크기',
+    'language': '언어',
+    'language_select': '언어 선택',
+    'security_management': 'EveryDiary 보안 및 관리',
+    'username': '사용자 이름',
+    'username_not_set': '설정되지 않음',
+    'pin_lock': 'PIN 잠금',
+    'pin_lock_enabled': '앱 실행 시 PIN 요구',
+    'pin_lock_disabled': '사용 안 함',
+    'pin_change': 'PIN 변경',
+    'pin_change_subtitle': '현재 PIN을 입력하고 새 PIN으로 변경합니다',
+    'recovery_question': '비상 복구 질문',
+    'recovery_question_set': '설정됨',
+    'recovery_question_not_set': '설정되지 않음',
+
+    // PIN 관련
+    'pin_setup': 'PIN 잠금 설정',
+    'pin_new': '새 PIN (4자리 숫자)',
+    'pin_confirm': 'PIN 확인',
+    'pin_current': '현재 PIN',
+    'pin_change_title': 'PIN 변경',
+    'pin_disable': 'PIN 잠금 해제',
+    'pin_disable_message': 'PIN 잠금을 비활성화하면 앱 실행 시 인증이 필요하지 않습니다.',
+    'pin_disable_button': '비활성화',
+    'pin_error_length': '4자리 숫자를 입력해 주세요',
+    'pin_error_mismatch': 'PIN이 일치하지 않습니다',
+    'pin_error_new_mismatch': '새 PIN이 일치하지 않습니다',
+    'pin_enabled_message': 'PIN 잠금이 활성화되었습니다.',
+    'pin_disabled_message': 'PIN 잠금이 비활성화되었습니다.',
+    'pin_changed_message': 'PIN이 변경되었습니다.',
+    'pin_change_failed': 'PIN 변경에 실패했습니다',
+
+    // 복구 질문
+    'recovery_question_setup': '비상 복구 질문 설정',
+    'recovery_question_label': '보안 질문',
+    'recovery_question_hint': '예: 나만 아는 장소는?',
+    'recovery_answer': '답변',
+    'recovery_answer_confirm': '답변 확인',
+    'recovery_question_error_empty': '보안 질문을 입력해 주세요',
+    'recovery_answer_error_empty': '답변을 입력해 주세요',
+    'recovery_answer_error_mismatch': '답변이 일치하지 않습니다',
+    'recovery_question_saved': '비상 복구 질문이 저장되었습니다.',
+    'recovery_question_deleted': '비상 복구 질문이 삭제되었습니다.',
+    'recovery_question_delete': '삭제',
+
+    // 사용자 이름
+    'username_change': '사용자 이름 변경',
+    'username_label': '이름',
+    'username_hint': '예: 홍길동',
+    'username_error_empty': '이름을 입력해 주세요',
+    'username_updated': '사용자 이름이 업데이트되었습니다.',
+
+    // 테마
+    'theme_system': '시스템 설정',
+    'theme_light': '라이트 모드',
+    'theme_dark': '다크 모드',
+
+    // 폰트 크기
+    'font_small': '작게',
+    'font_medium': '보통',
+    'font_large': '크게',
+    'font_extra_large': '매우 크게',
+
+    // 이미지 생성
+    'image_generation_count': 'AI 이미지 생성 횟수',
+    'image_generation_description': 'AI가 생성하는 멋진 일기 이미지를 더 많이 만들어보세요!',
+    'watch_ad_for_3_times': '광고 보고 3회 받기',
+    'watch_ad_subtitle': '짧은 광고 시청으로 무료로 받으세요',
+    'ad_loading': '광고 준비 중...',
+    'ad_wait': '잠시만 기다려주세요',
+    'or_purchase': '또는 구매하기',
+
+    // 구매
+    'purchase_10_times': '10회',
+    'purchase_30_times': '30회',
+    'purchase_100_times': '100회',
+    'purchase_popular': '인기',
+    'purchase_best_value': '최고 가성비',
+
+    // 날짜 표시
+    'date_today': '오늘',
+    'date_yesterday': '어제',
+
+    // 알림
+    'notifications': '알림',
+    'daily_reminder': '일기 작성 알림',
+    'daily_reminder_subtitle': '매일 일기 작성을 알려드립니다',
+    'reminder_time': '알림 시간',
+
+    // 데이터 관리
+    'data_management': '데이터 관리',
+
+    // 정보
+    'info': '정보',
+    'app_version': '앱 버전',
+    'privacy_policy': '개인정보 처리방침',
+    'privacy_policy_subtitle': '개인정보 보호 정책을 확인하세요',
+    'terms_of_service': '이용약관',
+    'terms_of_service_subtitle': '서비스 이용약관을 확인하세요',
+
+    // ===== NEW TRANSLATIONS =====
+
+    // Onboarding (14 keys)
+    'welcome_title': 'EveryDiary에 오신 것을 환영해요!',
+    'setup_subtitle': '앱에서 사용할 이름과 잠금 옵션을 먼저 설정해 주세요.',
+    'name_label': '이름',
+    'name_hint': '예: 홍길동',
+    'name_required': '이름을 입력해 주세요',
+    'name_max_length': '이름은 24자 이하로 입력해 주세요',
+    'pin_lock_title': '앱 실행 시 PIN 잠금 사용',
+    'pin_lock_subtitle': '앱을 열 때 4자리 PIN을 입력하도록 설정합니다.',
+    'pin_label': 'PIN (4자리 숫자)',
+    'pin_required': '4자리 숫자를 입력해 주세요',
+    'pin_numbers_only': '숫자만 입력할 수 있습니다',
+    'pin_confirm_label': 'PIN 확인',
+    'pin_mismatch': 'PIN이 일치하지 않습니다',
+    'start_button': '시작하기',
+    'setup_save_failed': '설정 저장에 실패했습니다',
+
+    // Home Screen (11 keys)
+    'home_greeting': '{name}님, 반가워요 👋',
+    'home_subtitle': '오늘의 순간을 기록하고 AI 이미지로 감정을 남겨보세요.',
+    'quick_actions_title': '빠른 작업',
+    'new_diary': '새 일기 쓰기',
+    'view_diaries': '내 일기 보기',
+    'statistics_action': '일기 통계',
+    'memory_notifications': '추억 알림 설정',
+    'app_intro_title': '앱 소개',
+    'fallback_features_title': 'EveryDiary 주요 기능',
+    'fallback_features_list': 'OCR · 음성 녹음 · 감정 분석 · AI 이미지 · 백업 관리 · PIN 보안 · 화면 숨김',
+    'diary_author': '일기 작성자',
+
+    // Error Page (4 keys)
+    'error_title': '오류',
+    'page_not_found': '페이지를 찾을 수 없습니다',
+    'page_not_found_subtitle': '요청하신 페이지가 존재하지 않습니다',
+    'back_to_home': '홈으로 돌아가기',
+
+    // Privacy & Terms (2 keys)
+    'privacy_policy_title': '개인정보 처리방침',
+    'terms_of_service_title': '이용약관',
+
+    // Diary Write Screen (49 keys)
+    'diary_write_title': '일기 작성',
+    'save_tooltip': '저장',
+    'thumbnail_style_tooltip': '썸네일 스타일 설정',
+    'exit_without_save_title': '저장하지 않고 나가시겠습니까?',
+    'exit_without_save_message': '작성 중인 내용이 저장되지 않습니다.',
+    'exit': '나가기',
+    'title_label': '제목',
+    'title_hint': '오늘의 일기 제목을 입력하세요',
+    'title_required': '제목을 입력해주세요',
+    'date_label': '날짜',
+    'emotion_analysis_label': '감정 분석',
+    'emotion_analyzing': '감정을 분석 중...',
+    'weather_label': '날씨',
+    'weather_hint': '날씨를 선택하세요',
+    'weather_sunny': '맑음',
+    'weather_cloudy': '흐림',
+    'weather_rainy': '비',
+    'weather_snowy': '눈',
+    'weather_windy': '바람',
+    'weather_foggy': '안개',
+    'weather_hot': '폭염',
+    'weather_cold': '한파',
+    'weather_other': '기타',
+    'ocr_button': 'OCR',
+    'voice_recording_button': '음성녹음',
+    'save_button': '일기 저장',
+    'saved_success': '일기가 저장되었습니다.',
+    'save_failed': '저장 실패',
+    'diary_not_found': '일기를 찾을 수 없습니다',
+    'load_error': '일기를 불러오는 중 오류가 발생했습니다',
+    'load_timeout': '일기 로딩 시간이 초과되었습니다. 다시 시도해주세요.',
+    'retry': '다시 시도',
+    'text_add_error': '텍스트 추가 중 오류가 발생했습니다',
+    'thumbnail_empty_content': '내용이 비어 있어 썸네일을 생성할 수 없습니다.',
+    'thumbnail_no_diary': '편집 중인 일기가 없어 재생성을 건너뜁니다.',
+    'thumbnail_regenerating': '썸네일을 재생성 중입니다. 잠시만 기다려주세요.',
+    'ocr_success': '텍스트 인식 완료',
+    'ocr_cancelled': '텍스트 인식이 취소되었습니다',
+    'ocr_unavailable': 'OCR 기능을 사용할 수 없습니다',
+    'camera_permission_error': '카메라에 접근할 수 없습니다. 권한을 확인해주세요.',
+    'camera_permission_required': '카메라 권한이 필요합니다.',
+    'voice_error': '음성녹음 오류',
+    'voice_text_added': '음성 텍스트가 추가되었습니다.',
+    'voice_text_add_failed': '음성 텍스트 추가에 실패했습니다.',
+    'invalid_diary_id': '잘못된 일기 ID입니다',
+    'content_placeholder': '여기에 내용을 입력하세요...',
+    'characters': '자',
+    'diary_content_placeholder': '오늘의 이야기를 기록해 보세요...',
+    'editor_undo_tooltip': '실행 취소',
+    'editor_redo_tooltip': '다시 실행',
+    'editor_bold_tooltip': '굵게',
+    'editor_italic_tooltip': '기울임',
+    'editor_underline_tooltip': '밑줄',
+    'editor_bulleted_list_tooltip': '글머리 기호 목록',
+    'editor_numbered_list_tooltip': '번호 목록',
+    'editor_align_left_tooltip': '왼쪽 정렬',
+    'editor_align_center_tooltip': '가운데 정렬',
+    'editor_align_right_tooltip': '오른쪽 정렬',
+
+    // Thumbnail Style (24 keys)
+    'thumbnail_dialog_title': '썸네일 스타일 커스터마이징',
+    'thumbnail_dialog_subtitle': 'AI 썸네일 스타일과 보정 값을 조정해 사용자 취향을 반영하세요.',
+    'style_select_title': '스타일 선택',
+    'detail_adjust_title': '상세 조정',
+    'brightness_label': '밝기',
+    'contrast_label': '대비',
+    'saturation_label': '포화도',
+    'blur_radius_label': '블러 반경',
+    'overlay_color_label': '오버레이 색상',
+    'overlay_opacity_label': '오버레이 투명도',
+    'auto_optimization_title': '자동 최적화',
+    'auto_optimization_subtitle': '분석 결과 기반으로 프롬프트를 자동 보정합니다',
+    'manual_keyword_title': '사용자 지정 키워드',
+    'manual_keyword_subtitle': 'AI 프롬프트에 항상 포함될 키워드를 최대 5개까지 추가할 수 있습니다.',
+    'keyword_label': '수동 키워드',
+    'keyword_hint': '예: 파스텔 톤, 야경',
+    'keyword_add_button': '추가',
+    'keyword_required': '키워드를 입력해 주세요.',
+    'keyword_max_length': '키워드는 24자 이내로 입력해 주세요.',
+    'keyword_duplicate': '이미 추가된 키워드입니다.',
+    'keyword_max_count': '키워드는 최대 5개까지 등록할 수 있습니다.',
+    'keyword_save_failed': '키워드를 저장하지 못했습니다. 다시 시도해 주세요.',
+    'keyword_empty_list': '등록된 키워드가 없습니다.',
+    'keyword_clear_all': '모두 삭제',
+    'style_chibi': '3등신 만화',
+    'style_cute': '귀여운',
+    'style_realistic': '사실적',
+    'style_cartoon': '만화',
+    'style_watercolor': '수채화',
+    'style_oil': '유화',
+    'style_sketch': '스케치',
+    'style_digital': '디지털 아트',
+    'style_vintage': '빈티지',
+    'style_modern': '모던',
+
+    // Memory Notification Settings (25 keys)
+    'memory_notification_settings_title': '회상 알림 설정',
+    'memory_notification_settings_loading': '설정을 불러오는 중...',
+    'memory_notification_settings_load_error': '설정을 불러오는데 실패했습니다',
+    'memory_notification_permission_granted': '알림 권한이 허용되었습니다',
+    'memory_notification_permission_denied': '알림 권한이 거부되었습니다',
+    'memory_notification_scheduled': '회상 알림이 설정되었습니다',
+    'memory_notification_schedule_error': '알림 설정 중 오류가 발생했습니다',
+    'memory_notification_toggle_title': '회상 알림',
+    'memory_notification_toggle_description': '과거 일기를 회상하도록 알림을 받습니다',
+    'memory_notification_time_title': '알림 시간',
+    'memory_notification_time_label': '알림 받을 시간',
+    'memory_notification_types_title': '알림 유형',
+    'memory_notification_yesterday_title': '어제의 기록',
+    'memory_notification_yesterday_description': '어제 작성한 일기를 회상합니다',
+    'memory_notification_one_week_ago_title': '일주일 전의 기록',
+    'memory_notification_one_week_ago_description': '일주일 전 작성한 일기를 회상합니다',
+    'memory_notification_one_month_ago_title': '한달 전의 기록',
+    'memory_notification_one_month_ago_description': '한달 전 작성한 일기를 회상합니다',
+    'memory_notification_one_year_ago_title': '1년 전의 기록',
+    'memory_notification_one_year_ago_description': '1년 전 작성한 일기를 회상합니다',
+    'memory_notification_past_today_title': '과거의 오늘',
+    'memory_notification_past_today_description': '작년, 재작년 같은 날의 기록을 회상합니다',
+    'memory_notification_permission_title': '알림 권한',
+    'memory_notification_permission_granted_status': '알림 권한이 허용되었습니다',
+    'memory_notification_permission_required': '알림 권한이 필요합니다',
+    'memory_notification_permission_request_button': '권한 요청',
+    'memory_notification_time_selection_title': '알림 시간 선택',
+    'cancel_button': '취소',
+    'confirm_button': '확인',
+
+    // Diary List (21 keys)
+    'my_diary': '내 일기',
+    'back_tooltip': '뒤로가기',
+    'calendar_tooltip': '캘린더 보기',
+    'filter_tooltip': '필터',
+    'sort_tooltip': '정렬',
+    'new_diary_fab': '새 일기 작성',
+    'delete_title': '일기 삭제',
+    'delete_message': '이 일기를 삭제하시겠습니까?\n삭제된 일기는 복구할 수 없습니다.',
+    'delete_button': '삭제',
+    'sort_dialog_title': '정렬 기준',
+    'sort_date_desc': '최신순',
+    'sort_date_asc': '오래된순',
+    'sort_title_asc': '제목순 (A-Z)',
+    'sort_title_desc': '제목순 (Z-A)',
+    'sort_mood': '기분순',
+    'sort_weather': '날씨순',
+    'error_load_diaries': '일기를 불러올 수 없습니다',
+    'error_unknown': '알 수 없는 오류가 발생했습니다',
+    'empty_diaries_title': '아직 작성한 일기가 없습니다',
+    'empty_diaries_subtitle': '첫 번째 일기를 작성해보세요',
+    'empty_diaries_action': '일기 작성하기',
+
+    // Statistics (7 keys)
+    'statistics_title': '일기 통계',
+    'date_range_tooltip': '날짜 범위 선택',
+    'period_title': '분석 기간',
+    'preset_week': '최근 1주',
+    'preset_month': '최근 1개월',
+    'preset_quarter': '최근 3개월',
+    'preset_year': '최근 1년',
+
+    // Backup & Restore (49 keys)
+    'backup_section_title': '백업 및 복원',
+    'create_backup_button': '백업 생성',
+    'restore_from_file_button': '파일에서 복원',
+    'auto_backup_title': '자동 백업',
+    'backup_interval_label': '백업 주기: ',
+    'interval_daily': '매일',
+    'interval_3days': '3일마다',
+    'interval_weekly': '주간',
+    'interval_biweekly': '2주마다',
+    'interval_monthly': '월간',
+    'max_backups_label': '최대 백업 수: ',
+    'max_3': '3개',
+    'max_5': '5개',
+    'max_10': '10개',
+    'max_20': '20개',
+    'no_backups_title': '백업이 없습니다',
+    'no_backups_subtitle': '첫 번째 백업을 생성해보세요',
+    'available_backups_title': '사용 가능한 백업',
+    'created_date_label': '생성일',
+    'size_label': '크기',
+    'includes_label': '포함',
+    'includes_settings': '설정',
+    'includes_profile': '프로필',
+    'includes_diary': '일기',
+    'restore_action': '복원',
+    'delete_action': '삭제',
+    'backup_success': '백업이 성공적으로 생성되었습니다.',
+    'backup_failed': '백업 생성에 실패했습니다.',
+    'backup_error': '백업 생성 중 오류가 발생했습니다',
+    'restore_success': '복원이 성공적으로 완료되었습니다.',
+    'restore_failed': '복원에 실패했습니다.',
+    'restore_error': '복원 중 오류가 발생했습니다',
+    'delete_success': '백업이 삭제되었습니다.',
+    'delete_failed': '백업 삭제에 실패했습니다.',
+    'delete_error': '백업 삭제 중 오류가 발생했습니다',
+    'load_error_backup': '데이터 로드 중 오류가 발생했습니다',
+    'file_picker_error': '파일 선택 중 오류가 발생했습니다',
+    'auto_backup_update_error': '자동 백업 설정 업데이트 중 오류가 발생했습니다',
+    'interval_update_error': '백업 주기 설정 중 오류가 발생했습니다',
+    'max_backups_update_error': '최대 백업 수 설정 중 오류가 발생했습니다',
+    'restore_confirm_title': '데이터 복원',
+    'restore_confirm_message': '현재 데이터가 백업 데이터로 덮어씌워집니다.\n이 작업은 되돌릴 수 없습니다.\n\n계속하시겠습니까?',
+    'delete_confirm_title': '백업 삭제',
+    'delete_confirm_message': '백업을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.',
+    'count_suffix': '개',
+
+    // Calendar (16 keys)
+    'calendar': '캘린더',
+    'back': '뒤로가기',
+    'diary_statistics': '일기 통계',
+    'weekly_view': '주간 보기',
+    'monthly_view': '월간 보기',
+    'today': '오늘',
+    'write_new_diary': '새 일기 작성',
+    'calendar_legend_multiple_entries': '주황색 점은 2개 이상의 일기가 있습니다.',
+    'please_select_date': '날짜를 선택해주세요',
+    'diary_count': '{count}개의 일기',
+    'no_diary_on_this_day': '이 날에는 일기가 없습니다',
+    'write_diary': '일기 작성하기',
+    'diary_search_hint': '일기 검색...',
+    'clear_search_tooltip': '검색 취소',
+    'today_with_date': '오늘 ({month}월 {day}일)',
+    'yesterday_with_date': '어제 ({month}월 {day}일)',
+    'tomorrow_with_date': '내일 ({month}월 {day}일)',
+    'full_date': '{year}년 {month}월 {day}일',
+
+    // Statistics Widget (25 keys)
+    'stats_overall_title': '전체 통계',
+    'stats_total_diaries': '총 일기 수',
+    'stats_total_diaries_unit': '{count}개',
+    'stats_current_streak': '현재 연속',
+    'stats_current_streak_unit': '{count}일',
+    'stats_longest_streak': '최장 연속',
+    'stats_longest_streak_unit': '{count}일',
+    'stats_daily_average': '일평균',
+    'stats_daily_average_unit': '{count}개',
+    'stats_most_active_day': '가장 활발한 요일',
+    'stats_most_active_day_unit': '{day}요일',
+    'stats_most_active_month': '가장 활발한 월',
+    'stats_monthly_frequency': '월별 작성 빈도',
+    'stats_weekly_frequency': '주별 작성 빈도',
+    'stats_no_data': '데이터가 없습니다',
+    'stats_count_unit': '{count}개',
+    'stats_content_length_title': '일기 길이 통계',
+    'stats_average_characters': '평균 글자 수',
+    'stats_characters_unit': '{count}자',
+    'stats_average_words': '평균 단어 수',
+    'stats_words_unit': '{count}개',
+    'stats_max_characters': '최대 글자 수',
+    'stats_min_characters': '최소 글자 수',
+    'stats_writing_time_title': '작성 시간대 통계',
+    'stats_time_count_unit': '{count}회',
+
+    // Generation Count Widget (3 keys)
+    'ai_image_generation': 'AI 이미지 생성',
+    'remaining_count_label': '남은 횟수: ',
+    'count_times': '회',
+
+    // Memory Screen (14 keys)
+    'memory_title': '회상',
+    'memory_back_tooltip': '뒤로가기',
+    'memory_notifications_tooltip': '알림 설정',
+    'memory_filter_tooltip': '필터',
+    'memory_refresh_tooltip': '새로고침',
+    'memory_loading': '회상을 불러오는 중...',
+    'memory_load_failed': '회상을 불러오는데 실패했습니다',
+    'memory_unknown_error': '알 수 없는 오류가 발생했습니다',
+    'memory_retry_button': '다시 시도',
+    'memory_empty_title': '아직 회상할 일기가 없습니다',
+    'memory_empty_description': '일기를 작성하면 과거 기록을 회상할 수 있습니다',
+    'memory_write_diary_button': '일기 작성하기',
+    'memory_bookmarked': '{title}을(를) 북마크했습니다',
+    'memory_bookmark_removed': '{title} 북마크를 해제했습니다',
+
+    // App Intro Features (16 keys)
+    'feature_ocr_title': 'OCR 텍스트 추출',
+    'feature_ocr_desc': '종이에 적은 기록을 촬영해 텍스트로 곧바로 변환해요.',
+    'feature_voice_title': '음성 녹음',
+    'feature_voice_desc': '말로 남긴 하루를 자연스럽게 일기로 전환합니다.',
+    'feature_emotion_title': '감정 분석',
+    'feature_emotion_desc': '일기에 담긴 감정을 스스로 정리하고 통계로 보여줘요.',
+    'feature_ai_image_title': 'AI 이미지 생성',
+    'feature_ai_image_desc': '일기 분위기에 맞는 감성 배경 이미지를 만들어 드려요.',
+    'feature_search_title': '일기 검색',
+    'feature_search_desc': '키워드와 날짜로 원하는 일기를 빠르게 찾아요.',
+    'feature_backup_title': '백업 파일 관리',
+    'feature_backup_desc': '백업 파일을 내보내고 다시 불러와 언제든 안전하게 보관해요.',
+    'feature_pin_title': 'PIN 보안',
+    'feature_pin_desc': 'PIN 잠금으로 개인 일기를 안전하게 지켜 드립니다.',
+    'feature_privacy_title': '배경 화면 숨김',
+    'feature_privacy_desc': '백그라운드에서도 화면을 흐리게 처리해 사생활을 보호해요.',
+
+    // Emotion Arrow
+    'emotion_arrow': '→',
+
+    // Emotion Names
+    'emotion_joy': '기쁨',
+    'emotion_default': '기본',
+    'emotion_sadness': '슬픔',
+    'emotion_anger': '화남',
+    'emotion_fear': '두려움',
+    'emotion_surprise': '놀람',
+    'emotion_disgust': '혐오',
+    'emotion_anticipation': '기대',
+    'emotion_trust': '신뢰',
+
+    // Privacy Policy Content
+    'privacy_policy_content': '''EveryDiary 개인정보 처리방침
+
+1. 개인정보의 처리 목적
+EveryDiary(이하 "앱")는 다음의 목적을 위하여 개인정보를 처리합니다.
+
+- 일기 작성 및 관리 서비스 제공
+- 앱 사용자 설정 및 맞춤 기능 제공
+- 서비스 개선 및 사용자 경험 향상
+
+2. 수집하는 개인정보 항목
+앱은 다음의 개인정보를 수집합니다:
+
+- 사용자 이름 (선택 사항)
+- PIN 잠금 설정 정보 (선택 사항)
+- 일기 내용 및 관련 데이터 (로컬 저장)
+- 앱 설정 정보
+
+3. 개인정보의 보유 및 이용 기간
+앱은 사용자가 직접 삭제하거나 앱을 삭제할 때까지 개인정보를 보유합니다.
+
+모든 데이터는 사용자의 기기에 로컬로 저장되며, 외부 서버로 전송되지 않습니다.
+
+4. 개인정보의 제3자 제공
+앱은 사용자의 개인정보를 제3자에게 제공하지 않습니다.
+
+5. 개인정보의 파기
+사용자가 앱을 삭제하거나 데이터를 삭제하면 모든 개인정보가 즉시 파기됩니다.
+
+6. 개인정보 자동 수집 장치의 설치·운영 및 거부에 관한 사항
+앱은 쿠키나 유사한 추적 기술을 사용하지 않습니다.
+
+7. 개인정보 보호책임자
+개인정보 관련 문의사항이 있으시면 아래로 연락해 주시기 바랍니다:
+이메일: support@everydiary.app
+
+8. 개인정보 처리방침 변경
+본 개인정보 처리방침은 법령 및 정책에 따라 변경될 수 있으며, 변경 시 앱 내에서 공지됩니다.
+
+시행일자: 2025년 1월 1일''',
+
+    // Terms of Service Content
+    'terms_of_service_content': '''EveryDiary 이용약관
+
+제1조 (목적)
+본 약관은 EveryDiary(이하 "앱")의 이용과 관련하여 앱 운영자와 사용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+
+제2조 (정의)
+1. "앱"이란 사용자가 일기를 작성하고 관리할 수 있는 모바일 애플리케이션을 의미합니다.
+2. "사용자"란 본 약관에 따라 앱을 사용하는 자를 의미합니다.
+3. "콘텐츠"란 사용자가 앱을 통해 작성하는 일기 및 관련 데이터를 의미합니다.
+
+제3조 (약관의 효력 및 변경)
+1. 본 약관은 앱을 다운로드하고 사용하는 모든 사용자에게 적용됩니다.
+2. 본 약관은 필요한 경우 변경될 수 있으며, 변경된 약관은 앱 내에서 공지됩니다.
+
+제4조 (서비스의 제공)
+1. 앱은 사용자에게 일기 작성, 관리, 백업 등의 기능을 제공합니다.
+2. 앱은 무료로 제공되며, 일부 기능은 인앱 구매를 통해 이용할 수 있습니다.
+
+제5조 (사용자의 의무)
+1. 사용자는 본 약관 및 관련 법령을 준수해야 합니다.
+2. 사용자는 앱을 불법적인 목적으로 사용해서는 안 됩니다.
+3. 사용자는 자신의 계정 정보 및 PIN 번호를 안전하게 관리할 책임이 있습니다.
+
+제6조 (콘텐츠의 관리)
+1. 사용자가 작성한 콘텐츠는 사용자의 기기에 로컬로 저장됩니다.
+2. 사용자는 자신이 작성한 콘텐츠에 대한 모든 권리와 책임을 갖습니다.
+3. 앱 운영자는 사용자의 콘텐츠에 접근하지 않으며, 이를 제3자에게 제공하지 않습니다.
+
+제7조 (서비스의 중단)
+앱 운영자는 다음의 경우 서비스 제공을 중단할 수 있습니다:
+1. 시스템 유지보수가 필요한 경우
+2. 불가항력적인 사유가 발생한 경우
+
+제8조 (면책조항)
+1. 앱 운영자는 사용자의 기기 오류, 데이터 손실 등으로 인한 손해에 대해 책임을 지지 않습니다.
+2. 사용자는 정기적으로 백업을 수행하여 데이터 손실을 방지해야 합니다.
+
+제9조 (분쟁 해결)
+본 약관과 관련된 분쟁은 대한민국 법률에 따라 해결됩니다.
+
+시행일자: 2025년 1월 1일''',
+  };
+
+  // ============== 영어 ==============
+  static const Map<String, String> _english = {
+    // Common
+    'app_name': 'EveryDiary',
+    'ok': 'OK',
+    'cancel': 'Cancel',
+    'save': 'Save',
+    'delete': 'Delete',
+    'edit': 'Edit',
+    'close': 'Close',
+    'yes': 'Yes',
+    'no': 'No',
+
+    // Settings
+    'settings': 'Settings',
+    'settings_reset': 'Reset Settings',
+    'app_settings': 'App Settings',
+    'thumbnail_style': 'Thumbnail Style',
+    'thumbnail_style_subtitle': 'Set AI thumbnail style and keywords',
+    'theme': 'Theme',
+    'font_size': 'Font Size',
+    'language': 'Language',
+    'language_select': 'Select Language',
+    'security_management': 'EveryDiary Security & Management',
+    'username': 'Username',
+    'username_not_set': 'Not set',
+    'pin_lock': 'PIN Lock',
+    'pin_lock_enabled': 'PIN required on app launch',
+    'pin_lock_disabled': 'Disabled',
+    'pin_change': 'Change PIN',
+    'pin_change_subtitle': 'Enter current PIN and set new PIN',
+    'recovery_question': 'Emergency Recovery Question',
+    'recovery_question_set': 'Set',
+    'recovery_question_not_set': 'Not set',
+
+    // PIN Related
+    'pin_setup': 'PIN Lock Setup',
+    'pin_new': 'New PIN (4 digits)',
+    'pin_confirm': 'Confirm PIN',
+    'pin_current': 'Current PIN',
+    'pin_change_title': 'Change PIN',
+    'pin_disable': 'Disable PIN Lock',
+    'pin_disable_message': 'Disabling PIN lock will no longer require authentication on app launch.',
+    'pin_disable_button': 'Disable',
+    'pin_error_length': 'Please enter 4 digits',
+    'pin_error_mismatch': 'PINs do not match',
+    'pin_error_new_mismatch': 'New PINs do not match',
+    'pin_enabled_message': 'PIN lock has been enabled.',
+    'pin_disabled_message': 'PIN lock has been disabled.',
+    'pin_changed_message': 'PIN has been changed.',
+    'pin_change_failed': 'Failed to change PIN',
+
+    // Recovery Question
+    'recovery_question_setup': 'Emergency Recovery Question Setup',
+    'recovery_question_label': 'Security Question',
+    'recovery_question_hint': 'e.g., My secret place?',
+    'recovery_answer': 'Answer',
+    'recovery_answer_confirm': 'Confirm Answer',
+    'recovery_question_error_empty': 'Please enter a security question',
+    'recovery_answer_error_empty': 'Please enter an answer',
+    'recovery_answer_error_mismatch': 'Answers do not match',
+    'recovery_question_saved': 'Emergency recovery question has been saved.',
+    'recovery_question_deleted': 'Emergency recovery question has been deleted.',
+    'recovery_question_delete': 'Delete',
+
+    // Username
+    'username_change': 'Change Username',
+    'username_label': 'Name',
+    'username_hint': 'e.g., John Doe',
+    'username_error_empty': 'Please enter a name',
+    'username_updated': 'Username has been updated.',
+
+    // Theme
+    'theme_system': 'System',
+    'theme_light': 'Light Mode',
+    'theme_dark': 'Dark Mode',
+
+    // Font Size
+    'font_small': 'Small',
+    'font_medium': 'Medium',
+    'font_large': 'Large',
+    'font_extra_large': 'Extra Large',
+
+    // Image Generation
+    'image_generation_count': 'AI Image Generation Count',
+    'image_generation_description': 'Create more amazing diary images generated by AI!',
+    'watch_ad_for_3_times': 'Watch Ad for 3 Times',
+    'watch_ad_subtitle': 'Get it for free by watching a short ad',
+    'ad_loading': 'Loading Ad...',
+    'ad_wait': 'Please wait',
+    'or_purchase': 'Or Purchase',
+
+    // Purchase
+    'purchase_10_times': '10 Times',
+    'purchase_30_times': '30 Times',
+    'purchase_100_times': '100 Times',
+    'purchase_popular': 'Popular',
+    'purchase_best_value': 'Best Value',
+
+    // Date Display
+    'date_today': 'Today',
+    'date_yesterday': 'Yesterday',
+
+    // Notifications
+    'notifications': 'Notifications',
+    'daily_reminder': 'Daily Diary Reminder',
+    'daily_reminder_subtitle': 'Reminds you to write in your diary every day',
+    'reminder_time': 'Reminder Time',
+
+    // Data Management
+    'data_management': 'Data Management',
+
+    // Info
+    'info': 'Information',
+    'app_version': 'App Version',
+    'privacy_policy': 'Privacy Policy',
+    'privacy_policy_subtitle': 'Check our privacy policy',
+    'terms_of_service': 'Terms of Service',
+    'terms_of_service_subtitle': 'Check our terms of service',
+
+    // ===== NEW TRANSLATIONS =====
+
+    // Onboarding (14 keys)
+    'welcome_title': 'Welcome to EveryDiary!',
+    'setup_subtitle': 'Please set up your name and lock options for the app.',
+    'name_label': 'Name',
+    'name_hint': 'e.g., John Smith',
+    'name_required': 'Please enter your name',
+    'name_max_length': 'Name must be 24 characters or less',
+    'pin_lock_title': 'Use PIN lock on app launch',
+    'pin_lock_subtitle': 'Require a 4-digit PIN when opening the app.',
+    'pin_label': 'PIN (4 digits)',
+    'pin_required': 'Please enter 4 digits',
+    'pin_numbers_only': 'Only numbers are allowed',
+    'pin_confirm_label': 'Confirm PIN',
+    'pin_mismatch': 'PINs do not match',
+    'start_button': 'Get Started',
+    'setup_save_failed': 'Failed to save settings',
+
+    // Home Screen (11 keys)
+    'home_greeting': 'Hello, {name}! 👋',
+    'home_subtitle': 'Record today\'s moments and preserve emotions with AI images.',
+    'quick_actions_title': 'Quick Actions',
+    'new_diary': 'Write New Entry',
+    'view_diaries': 'View My Diaries',
+    'statistics_action': 'Diary Statistics',
+    'memory_notifications': 'Memory Notifications',
+    'app_intro_title': 'App Introduction',
+    'fallback_features_title': 'EveryDiary Key Features',
+    'fallback_features_list': 'OCR · Voice Recording · Emotion Analysis · AI Images · Backup · PIN Security · Screen Privacy',
+    'diary_author': 'Diary Author',
+
+    // Error Page (4 keys)
+    'error_title': 'Error',
+    'page_not_found': 'Page Not Found',
+    'page_not_found_subtitle': 'The page you requested does not exist',
+    'back_to_home': 'Back to Home',
+
+    // Privacy & Terms (2 keys)
+    'privacy_policy_title': 'Privacy Policy',
+    'terms_of_service_title': 'Terms of Service',
+
+    // Diary Write Screen (49 keys)
+    'diary_write_title': 'Write Diary',
+    'save_tooltip': 'Save',
+    'thumbnail_style_tooltip': 'Thumbnail Style Settings',
+    'exit_without_save_title': 'Exit without saving?',
+    'exit_without_save_message': 'Your changes will not be saved.',
+    'exit': 'Exit',
+    'title_label': 'Title',
+    'title_hint': 'Enter today\'s diary title',
+    'title_required': 'Please enter a title',
+    'date_label': 'Date',
+    'emotion_analysis_label': 'Emotion Analysis',
+    'emotion_analyzing': 'Analyzing emotions...',
+    'weather_label': 'Weather',
+    'weather_hint': 'Select weather',
+    'weather_sunny': 'Sunny',
+    'weather_cloudy': 'Cloudy',
+    'weather_rainy': 'Rainy',
+    'weather_snowy': 'Snowy',
+    'weather_windy': 'Windy',
+    'weather_foggy': 'Foggy',
+    'weather_hot': 'Hot',
+    'weather_cold': 'Cold',
+    'weather_other': 'Other',
+    'ocr_button': 'OCR',
+    'voice_recording_button': 'Voice Recording',
+    'save_button': 'Save Diary',
+    'saved_success': 'Diary has been saved.',
+    'save_failed': 'Failed to save',
+    'diary_not_found': 'Diary not found',
+    'load_error': 'An error occurred while loading the diary',
+    'load_timeout': 'Loading timeout. Please try again.',
+    'retry': 'Retry',
+    'text_add_error': 'An error occurred while adding text',
+    'thumbnail_empty_content': 'Cannot generate thumbnail because content is empty.',
+    'thumbnail_no_diary': 'No diary being edited, skipping regeneration.',
+    'thumbnail_regenerating': 'Regenerating thumbnail. Please wait.',
+    'ocr_success': 'Text recognition complete',
+    'ocr_cancelled': 'Text recognition cancelled',
+    'ocr_unavailable': 'OCR feature is unavailable',
+    'camera_permission_error': 'Cannot access camera. Please check permissions.',
+    'camera_permission_required': 'Camera permission is required.',
+    'voice_error': 'Voice recording error',
+    'voice_text_added': 'Voice text has been added.',
+    'voice_text_add_failed': 'Failed to add voice text.',
+    'invalid_diary_id': 'Invalid diary ID',
+    'content_placeholder': 'Enter content here...',
+    'characters': 'characters',
+    'diary_content_placeholder': 'Record today\'s story...',
+    'editor_undo_tooltip': 'Undo',
+    'editor_redo_tooltip': 'Redo',
+    'editor_bold_tooltip': 'Bold',
+    'editor_italic_tooltip': 'Italic',
+    'editor_underline_tooltip': 'Underline',
+    'editor_bulleted_list_tooltip': 'Bulleted List',
+    'editor_numbered_list_tooltip': 'Numbered List',
+    'editor_align_left_tooltip': 'Align Left',
+    'editor_align_center_tooltip': 'Align Center',
+    'editor_align_right_tooltip': 'Align Right',
+
+    // Thumbnail Style (24 keys)
+    'thumbnail_dialog_title': 'Customize Thumbnail Style',
+    'thumbnail_dialog_subtitle': 'Adjust AI thumbnail style and correction values to reflect your preferences.',
+    'style_select_title': 'Select Style',
+    'detail_adjust_title': 'Fine Tuning',
+    'brightness_label': 'Brightness',
+    'contrast_label': 'Contrast',
+    'saturation_label': 'Saturation',
+    'blur_radius_label': 'Blur Radius',
+    'overlay_color_label': 'Overlay Color',
+    'overlay_opacity_label': 'Overlay Opacity',
+    'auto_optimization_title': 'Auto Optimization',
+    'auto_optimization_subtitle': 'Automatically corrects prompts based on analysis results',
+    'manual_keyword_title': 'Custom Keywords',
+    'manual_keyword_subtitle': 'Add up to 5 keywords that will always be included in AI prompts.',
+    'keyword_label': 'Manual Keyword',
+    'keyword_hint': 'e.g., Pastel tone, Night view',
+    'keyword_add_button': 'Add',
+    'keyword_required': 'Please enter a keyword.',
+    'keyword_max_length': 'Keyword must be within 24 characters.',
+    'keyword_duplicate': 'This keyword has already been added.',
+    'keyword_max_count': 'You can register up to 5 keywords.',
+    'keyword_save_failed': 'Failed to save keyword. Please try again.',
+    'keyword_empty_list': 'No keywords registered.',
+    'keyword_clear_all': 'Clear All',
+
+    // Thumbnail Styles (10 keys)
+    'style_chibi': 'Chibi Cartoon',
+    'style_cute': 'Cute',
+    'style_realistic': 'Realistic',
+    'style_cartoon': 'Cartoon',
+    'style_watercolor': 'Watercolor',
+    'style_oil': 'Oil Painting',
+    'style_sketch': 'Sketch',
+    'style_digital': 'Digital Art',
+    'style_vintage': 'Vintage',
+    'style_modern': 'Modern',
+
+    // Memory Notification Settings (25 keys)
+    'memory_notification_settings_title': 'Memory Notification Settings',
+    'memory_notification_settings_loading': 'Loading settings...',
+    'memory_notification_settings_load_error': 'Failed to load settings',
+    'memory_notification_permission_granted': 'Notification permission granted',
+    'memory_notification_permission_denied': 'Notification permission denied',
+    'memory_notification_scheduled': 'Memory notifications have been scheduled',
+    'memory_notification_schedule_error': 'Error occurred while setting up notifications',
+    'memory_notification_toggle_title': 'Memory Notifications',
+    'memory_notification_toggle_description': 'Receive notifications to reminisce about past diary entries',
+    'memory_notification_time_title': 'Notification Time',
+    'memory_notification_time_label': 'When to receive notifications',
+    'memory_notification_types_title': 'Notification Types',
+    'memory_notification_yesterday_title': 'Yesterday\'s Memories',
+    'memory_notification_yesterday_description': 'Reminisce about yesterday\'s diary',
+    'memory_notification_one_week_ago_title': 'One Week Ago',
+    'memory_notification_one_week_ago_description': 'Reminisce about diary from a week ago',
+    'memory_notification_one_month_ago_title': 'One Month Ago',
+    'memory_notification_one_month_ago_description': 'Reminisce about diary from a month ago',
+    'memory_notification_one_year_ago_title': 'One Year Ago',
+    'memory_notification_one_year_ago_description': 'Reminisce about diary from a year ago',
+    'memory_notification_past_today_title': 'This Day in the Past',
+    'memory_notification_past_today_description': 'Reminisce about diary entries from the same day in past years',
+    'memory_notification_permission_title': 'Notification Permission',
+    'memory_notification_permission_granted_status': 'Notification permission granted',
+    'memory_notification_permission_required': 'Notification permission required',
+    'memory_notification_permission_request_button': 'Request Permission',
+    'memory_notification_time_selection_title': 'Select Notification Time',
+    'cancel_button': 'Cancel',
+    'confirm_button': 'Confirm',
+
+    // Diary List (21 keys)
+    'my_diary': 'My Diary',
+    'back_tooltip': 'Back',
+    'calendar_tooltip': 'Calendar View',
+    'filter_tooltip': 'Filter',
+    'sort_tooltip': 'Sort',
+    'new_diary_fab': 'New Diary Entry',
+    'delete_title': 'Delete Diary',
+    'delete_message': 'Are you sure you want to delete this diary?\nDeleted diaries cannot be recovered.',
+    'delete_button': 'Delete',
+    'sort_dialog_title': 'Sort By',
+    'sort_date_desc': 'Newest First',
+    'sort_date_asc': 'Oldest First',
+    'sort_title_asc': 'Title (A-Z)',
+    'sort_title_desc': 'Title (Z-A)',
+    'sort_mood': 'By Mood',
+    'sort_weather': 'By Weather',
+    'error_load_diaries': 'Unable to load diaries',
+    'error_unknown': 'An unknown error occurred',
+    'empty_diaries_title': 'No diaries yet',
+    'empty_diaries_subtitle': 'Write your first diary entry',
+    'empty_diaries_action': 'Write Diary',
+
+    // Statistics (7 keys)
+    'statistics_title': 'Diary Statistics',
+    'date_range_tooltip': 'Select Date Range',
+    'period_title': 'Analysis Period',
+    'preset_week': 'Last 1 Week',
+    'preset_month': 'Last 1 Month',
+    'preset_quarter': 'Last 3 Months',
+    'preset_year': 'Last 1 Year',
+
+    // Backup & Restore (49 keys)
+    'backup_section_title': 'Backup & Restore',
+    'create_backup_button': 'Create Backup',
+    'restore_from_file_button': 'Restore from File',
+    'auto_backup_title': 'Auto Backup',
+    'backup_interval_label': 'Backup Interval: ',
+    'interval_daily': 'Daily',
+    'interval_3days': 'Every 3 Days',
+    'interval_weekly': 'Weekly',
+    'interval_biweekly': 'Bi-weekly',
+    'interval_monthly': 'Monthly',
+    'max_backups_label': 'Max Backups: ',
+    'max_3': '3',
+    'max_5': '5',
+    'max_10': '10',
+    'max_20': '20',
+    'no_backups_title': 'No backups available',
+    'no_backups_subtitle': 'Create your first backup',
+    'available_backups_title': 'Available Backups',
+    'created_date_label': 'Created',
+    'size_label': 'Size',
+    'includes_label': 'Includes',
+    'includes_settings': 'Settings',
+    'includes_profile': 'Profile',
+    'includes_diary': 'Diary',
+    'restore_action': 'Restore',
+    'delete_action': 'Delete',
+    'backup_success': 'Backup created successfully.',
+    'backup_failed': 'Failed to create backup.',
+    'backup_error': 'An error occurred while creating backup',
+    'restore_success': 'Restore completed successfully.',
+    'restore_failed': 'Failed to restore.',
+    'restore_error': 'An error occurred during restore',
+    'delete_success': 'Backup has been deleted.',
+    'delete_failed': 'Failed to delete backup.',
+    'delete_error': 'An error occurred while deleting backup',
+    'load_error_backup': 'An error occurred while loading data',
+    'file_picker_error': 'An error occurred while selecting file',
+    'auto_backup_update_error': 'An error occurred while updating auto backup settings',
+    'interval_update_error': 'An error occurred while setting backup interval',
+    'max_backups_update_error': 'An error occurred while setting max backups',
+    'restore_confirm_title': 'Restore Data',
+    'restore_confirm_message': 'Current data will be overwritten with backup data.\nThis action cannot be undone.\n\nContinue?',
+    'delete_confirm_title': 'Delete Backup',
+    'delete_confirm_message': 'Are you sure you want to delete this backup?\nThis action cannot be undone.',
+    'count_suffix': '',
+
+    // Calendar (16 keys)
+    'calendar': 'Calendar',
+    'back': 'Back',
+    'diary_statistics': 'Diary Statistics',
+    'weekly_view': 'Weekly View',
+    'monthly_view': 'Monthly View',
+    'today': 'Today',
+    'write_new_diary': 'Write New Diary',
+    'calendar_legend_multiple_entries': 'Orange dots indicate 2 or more diary entries.',
+    'please_select_date': 'Please select a date',
+    'diary_count': '{count} diaries',
+    'no_diary_on_this_day': 'No diary entries on this day',
+    'write_diary': 'Write Diary',
+    'diary_search_hint': 'Search diary...',
+    'clear_search_tooltip': 'Clear search',
+    'today_with_date': 'Today ({month}/{day})',
+    'yesterday_with_date': 'Yesterday ({month}/{day})',
+    'tomorrow_with_date': 'Tomorrow ({month}/{day})',
+    'full_date': '{month}/{day}/{year}',
+
+    // Statistics Widget (25 keys)
+    'stats_overall_title': 'Overall Statistics',
+    'stats_total_diaries': 'Total Diaries',
+    'stats_total_diaries_unit': '{count}',
+    'stats_current_streak': 'Current Streak',
+    'stats_current_streak_unit': '{count} days',
+    'stats_longest_streak': 'Longest Streak',
+    'stats_longest_streak_unit': '{count} days',
+    'stats_daily_average': 'Daily Average',
+    'stats_daily_average_unit': '{count}',
+    'stats_most_active_day': 'Most Active Day',
+    'stats_most_active_day_unit': '{day}',
+    'stats_most_active_month': 'Most Active Month',
+    'stats_monthly_frequency': 'Monthly Frequency',
+    'stats_weekly_frequency': 'Weekly Frequency',
+    'stats_no_data': 'No data available',
+    'stats_count_unit': '{count}',
+    'stats_content_length_title': 'Content Length Statistics',
+    'stats_average_characters': 'Average Characters',
+    'stats_characters_unit': '{count} chars',
+    'stats_average_words': 'Average Words',
+    'stats_words_unit': '{count}',
+    'stats_max_characters': 'Max Characters',
+    'stats_min_characters': 'Min Characters',
+    'stats_writing_time_title': 'Writing Time Statistics',
+    'stats_time_count_unit': '{count} times',
+
+    // Generation Count Widget (3 keys)
+    'ai_image_generation': 'AI Image Generation',
+    'remaining_count_label': 'Remaining: ',
+    'count_times': 'times',
+
+    // Memory Screen (14 keys)
+    'memory_title': 'Memories',
+    'memory_back_tooltip': 'Back',
+    'memory_notifications_tooltip': 'Notification Settings',
+    'memory_filter_tooltip': 'Filter',
+    'memory_refresh_tooltip': 'Refresh',
+    'memory_loading': 'Loading memories...',
+    'memory_load_failed': 'Failed to load memories',
+    'memory_unknown_error': 'An unknown error occurred',
+    'memory_retry_button': 'Retry',
+    'memory_empty_title': 'No memories yet',
+    'memory_empty_description': 'Write diary entries to reminisce about past moments',
+    'memory_write_diary_button': 'Write Diary',
+    'memory_bookmarked': 'Bookmarked {title}',
+    'memory_bookmark_removed': 'Removed bookmark from {title}',
+
+    // App Intro Features (16 keys)
+    'feature_ocr_title': 'OCR Text Extraction',
+    'feature_ocr_desc': 'Capture handwritten notes and instantly convert them to text.',
+    'feature_voice_title': 'Voice Recording',
+    'feature_voice_desc': 'Transform your spoken thoughts into journal entries naturally.',
+    'feature_emotion_title': 'Emotion Analysis',
+    'feature_emotion_desc': 'Organize emotions from your entries and view them as statistics.',
+    'feature_ai_image_title': 'AI Image Generation',
+    'feature_ai_image_desc': 'Create emotional background images that match your diary mood.',
+    'feature_search_title': 'Diary Search',
+    'feature_search_desc': 'Quickly find entries by keywords and dates.',
+    'feature_backup_title': 'Backup File Management',
+    'feature_backup_desc': 'Export and import backup files to keep your data safe.',
+    'feature_pin_title': 'PIN Security',
+    'feature_pin_desc': 'Protect your personal diary with PIN lock security.',
+    'feature_privacy_title': 'Privacy Screen',
+    'feature_privacy_desc': 'Blur screen in background to protect your privacy.',
+
+    // Emotion Arrow
+    'emotion_arrow': '→',
+
+    // Emotion Names
+    'emotion_joy': 'Joy',
+    'emotion_default': 'Default',
+    'emotion_sadness': 'Sadness',
+    'emotion_anger': 'Anger',
+    'emotion_fear': 'Fear',
+    'emotion_surprise': 'Surprise',
+    'emotion_disgust': 'Disgust',
+    'emotion_anticipation': 'Anticipation',
+    'emotion_trust': 'Trust',
+
+    // Privacy Policy Content
+    'privacy_policy_content': '''EveryDiary Privacy Policy
+
+1. Purpose of Processing Personal Information
+EveryDiary (hereinafter referred to as "the App") processes personal information for the following purposes:
+
+- Providing diary writing and management services
+- Providing user settings and customized features
+- Improving services and enhancing user experience
+
+2. Personal Information Items Collected
+The App collects the following personal information:
+
+- Username (optional)
+- PIN lock settings (optional)
+- Diary content and related data (stored locally)
+- App settings information
+
+3. Retention and Use Period of Personal Information
+The App retains personal information until the user deletes it directly or uninstalls the app.
+
+All data is stored locally on the user's device and is not transmitted to external servers.
+
+4. Provision of Personal Information to Third Parties
+The App does not provide users' personal information to third parties.
+
+5. Destruction of Personal Information
+When a user uninstalls the app or deletes data, all personal information is immediately destroyed.
+
+6. Installation, Operation, and Rejection of Automatic Personal Information Collection Devices
+The App does not use cookies or similar tracking technologies.
+
+7. Personal Information Protection Officer
+If you have any questions regarding personal information, please contact us at:
+Email: support@everydiary.app
+
+8. Changes to Privacy Policy
+This Privacy Policy may be changed in accordance with laws and policies, and changes will be announced within the app.
+
+Effective Date: January 1, 2025''',
+
+    // Terms of Service Content
+    'terms_of_service_content': '''EveryDiary Terms of Service
+
+Article 1 (Purpose)
+These Terms are intended to stipulate the rights, obligations, and responsibilities of the app operator and users regarding the use of EveryDiary (hereinafter referred to as "the App").
+
+Article 2 (Definitions)
+1. "App" means a mobile application that allows users to write and manage diaries.
+2. "User" means a person who uses the App in accordance with these Terms.
+3. "Content" means diary entries and related data that users create through the App.
+
+Article 3 (Effect and Amendment of Terms)
+1. These Terms apply to all users who download and use the App.
+2. These Terms may be amended as necessary, and amended terms will be announced within the App.
+
+Article 4 (Provision of Services)
+1. The App provides users with features such as diary writing, management, and backup.
+2. The App is provided free of charge, and some features may be available through in-app purchases.
+
+Article 5 (User Obligations)
+1. Users must comply with these Terms and relevant laws.
+2. Users must not use the App for illegal purposes.
+3. Users are responsible for safely managing their account information and PIN number.
+
+Article 6 (Content Management)
+1. Content created by users is stored locally on the user's device.
+2. Users have all rights and responsibilities for the content they create.
+3. The app operator does not access users' content and does not provide it to third parties.
+
+Article 7 (Service Interruption)
+The app operator may suspend service provision in the following cases:
+1. When system maintenance is required
+2. In case of force majeure
+
+Article 8 (Disclaimer)
+1. The app operator is not responsible for damages due to device errors, data loss, etc.
+2. Users should perform regular backups to prevent data loss.
+
+Article 9 (Dispute Resolution)
+Disputes related to these Terms shall be resolved in accordance with the laws of the Republic of Korea.
+
+Effective Date: January 1, 2025''',
+  };
+
+  // ============== 일본어 ==============
+  static const Map<String, String> _japanese = {
+    // 共通
+    'app_name': 'EveryDiary',
+    'ok': 'OK',
+    'cancel': 'キャンセル',
+    'save': '保存',
+    'delete': '削除',
+    'edit': '編集',
+    'close': '閉じる',
+    'yes': 'はい',
+    'no': 'いいえ',
+
+    // 設定
+    'settings': '設定',
+    'settings_reset': '設定をリセット',
+    'app_settings': 'アプリ設定',
+    'thumbnail_style': 'サムネイルスタイル',
+    'thumbnail_style_subtitle': 'AIサムネイルスタイルとキーワードを設定',
+    'theme': 'テーマ',
+    'font_size': 'フォントサイズ',
+    'language': '言語',
+    'language_select': '言語選択',
+    'security_management': 'EveryDiaryセキュリティと管理',
+    'username': 'ユーザー名',
+    'username_not_set': '未設定',
+    'pin_lock': 'PINロック',
+    'pin_lock_enabled': 'アプリ起動時にPIN要求',
+    'pin_lock_disabled': '無効',
+    'pin_change': 'PIN変更',
+    'pin_change_subtitle': '現在のPINを入力して新しいPINに変更',
+    'recovery_question': '緊急復旧質問',
+    'recovery_question_set': '設定済み',
+    'recovery_question_not_set': '未設定',
+
+    // PIN関連
+    'pin_setup': 'PINロック設定',
+    'pin_new': '新しいPIN（4桁の数字）',
+    'pin_confirm': 'PIN確認',
+    'pin_current': '現在のPIN',
+    'pin_change_title': 'PIN変更',
+    'pin_disable': 'PINロック解除',
+    'pin_disable_message': 'PINロックを無効にすると、アプリ起動時の認証が不要になります。',
+    'pin_disable_button': '無効化',
+    'pin_error_length': '4桁の数字を入力してください',
+    'pin_error_mismatch': 'PINが一致しません',
+    'pin_error_new_mismatch': '新しいPINが一致しません',
+    'pin_enabled_message': 'PINロックが有効になりました。',
+    'pin_disabled_message': 'PINロックが無効になりました。',
+    'pin_changed_message': 'PINが変更されました。',
+    'pin_change_failed': 'PINの変更に失敗しました',
+
+    // 復旧質問
+    'recovery_question_setup': '緊急復旧質問設定',
+    'recovery_question_label': 'セキュリティ質問',
+    'recovery_question_hint': '例：私だけが知っている場所は？',
+    'recovery_answer': '答え',
+    'recovery_answer_confirm': '答えの確認',
+    'recovery_question_error_empty': 'セキュリティ質問を入力してください',
+    'recovery_answer_error_empty': '答えを入力してください',
+    'recovery_answer_error_mismatch': '答えが一致しません',
+    'recovery_question_saved': '緊急復旧質問が保存されました。',
+    'recovery_question_deleted': '緊急復旧質問が削除されました。',
+    'recovery_question_delete': '削除',
+
+    // ユーザー名
+    'username_change': 'ユーザー名変更',
+    'username_label': '名前',
+    'username_hint': '例：山田太郎',
+    'username_error_empty': '名前を入力してください',
+    'username_updated': 'ユーザー名が更新されました。',
+
+    // テーマ
+    'theme_system': 'システム設定',
+    'theme_light': 'ライト',
+    'theme_dark': 'ダーク',
+
+    // フォントサイズ
+    'font_small': '小',
+    'font_medium': '中',
+    'font_large': '大',
+    'font_extra_large': '特大',
+
+    // 画像生成
+    'image_generation_count': 'AI画像生成回数',
+    'image_generation_description': 'AIが生成する素晴らしい日記画像をもっと作りましょう！',
+    'watch_ad_for_3_times': '広告を見て3回ゲット',
+    'watch_ad_subtitle': '短い広告を見て無料でゲット',
+    'ad_loading': '広告読み込み中...',
+    'ad_wait': 'しばらくお待ちください',
+    'or_purchase': 'または購入',
+
+    // 購入
+    'purchase_10_times': '10回',
+    'purchase_30_times': '30回',
+    'purchase_100_times': '100回',
+    'purchase_popular': '人気',
+    'purchase_best_value': '最もお得',
+
+    // 日付表示
+    'date_today': '今日',
+    'date_yesterday': '昨日',
+
+    // 通知
+    'notifications': '通知',
+    'daily_reminder': '日記作成リマインダー',
+    'daily_reminder_subtitle': '毎日日記を書くことをお知らせします',
+    'reminder_time': 'リマインダー時間',
+
+    // データ管理
+    'data_management': 'データ管理',
+
+    // 情報
+    'info': '情報',
+    'app_version': 'アプリバージョン',
+    'privacy_policy': 'プライバシーポリシー',
+    'privacy_policy_subtitle': 'プライバシーポリシーを確認',
+    'terms_of_service': '利用規約',
+    'terms_of_service_subtitle': 'サービス利用規約を確認',
+
+    // ===== NEW TRANSLATIONS =====
+
+    // Onboarding (14 keys)
+    'welcome_title': 'EveryDiaryへようこそ！',
+    'setup_subtitle': 'アプリで使用する名前とロックオプションを設定してください。',
+    'name_label': '名前',
+    'name_hint': '例：山田太郎',
+    'name_required': '名前を入力してください',
+    'name_max_length': '名前は24文字以内で入力してください',
+    'pin_lock_title': 'アプリ起動時にPINロックを使用',
+    'pin_lock_subtitle': 'アプリを開く際に4桁のPINを入力するように設定します。',
+    'pin_label': 'PIN（4桁の数字）',
+    'pin_required': '4桁の数字を入力してください',
+    'pin_numbers_only': '数字のみ入力できます',
+    'pin_confirm_label': 'PIN確認',
+    'pin_mismatch': 'PINが一致しません',
+    'start_button': '始める',
+    'setup_save_failed': '設定の保存に失敗しました',
+
+    // Home Screen (11 keys)
+    'home_greeting': '{name}さん、こんにちは 👋',
+    'home_subtitle': '今日の瞬間を記録し、AI画像で感情を残しましょう。',
+    'quick_actions_title': 'クイックアクション',
+    'new_diary': '新しい日記を書く',
+    'view_diaries': '日記を見る',
+    'statistics_action': '日記統計',
+    'memory_notifications': '思い出通知設定',
+    'app_intro_title': 'アプリ紹介',
+    'fallback_features_title': 'EveryDiary主な機能',
+    'fallback_features_list': 'OCR · 音声録音 · 感情分析 · AI画像 · バックアップ · PINセキュリティ · 画面プライバシー',
+    'diary_author': '日記作成者',
+
+    // Error Page (4 keys)
+    'error_title': 'エラー',
+    'page_not_found': 'ページが見つかりません',
+    'page_not_found_subtitle': 'リクエストされたページは存在しません',
+    'back_to_home': 'ホームに戻る',
+
+    // Privacy & Terms (2 keys)
+    'privacy_policy_title': 'プライバシーポリシー',
+    'terms_of_service_title': '利用規約',
+
+    // Diary Write Screen (49 keys)
+    'diary_write_title': '日記作成',
+    'save_tooltip': '保存',
+    'thumbnail_style_tooltip': 'サムネイルスタイル設定',
+    'exit_without_save_title': '保存せずに終了しますか？',
+    'exit_without_save_message': '作成中の内容は保存されません。',
+    'exit': '終了',
+    'title_label': 'タイトル',
+    'title_hint': '今日の日記タイトルを入力',
+    'title_required': 'タイトルを入力してください',
+    'date_label': '日付',
+    'emotion_analysis_label': '感情分析',
+    'emotion_analyzing': '感情を分析中...',
+    'weather_label': '天気',
+    'weather_hint': '天気を選択',
+    'weather_sunny': '晴れ',
+    'weather_cloudy': '曇り',
+    'weather_rainy': '雨',
+    'weather_snowy': '雪',
+    'weather_windy': '風',
+    'weather_foggy': '霧',
+    'weather_hot': '猛暑',
+    'weather_cold': '寒波',
+    'weather_other': 'その他',
+    'ocr_button': 'OCR',
+    'voice_recording_button': '音声録音',
+    'save_button': '日記を保存',
+    'saved_success': '日記が保存されました。',
+    'save_failed': '保存失敗',
+    'diary_not_found': '日記が見つかりません',
+    'load_error': '日記の読み込み中にエラーが発生しました',
+    'load_timeout': '日記の読み込みがタイムアウトしました。もう一度お試しください。',
+    'retry': '再試行',
+    'text_add_error': 'テキスト追加中にエラーが発生しました',
+    'thumbnail_empty_content': '内容が空のためサムネイルを生成できません。',
+    'thumbnail_no_diary': '編集中の日記がないため再生成をスキップします。',
+    'thumbnail_regenerating': 'サムネイルを再生成中です。お待ちください。',
+    'ocr_success': 'テキスト認識完了',
+    'ocr_cancelled': 'テキスト認識がキャンセルされました',
+    'ocr_unavailable': 'OCR機能を使用できません',
+    'camera_permission_error': 'カメラにアクセスできません。権限を確認してください。',
+    'camera_permission_required': 'カメラ権限が必要です。',
+    'voice_error': '音声録音エラー',
+    'voice_text_added': '音声テキストが追加されました。',
+    'voice_text_add_failed': '音声テキストの追加に失敗しました。',
+    'invalid_diary_id': '無効な日記IDです',
+    'content_placeholder': 'ここに内容を入力してください...',
+    'characters': '文字',
+    'diary_content_placeholder': '今日の物語を記録してみてください...',
+    'editor_undo_tooltip': '元に戻す',
+    'editor_redo_tooltip': 'やり直す',
+    'editor_bold_tooltip': '太字',
+    'editor_italic_tooltip': '斜体',
+    'editor_underline_tooltip': '下線',
+    'editor_bulleted_list_tooltip': '箇条書きリスト',
+    'editor_numbered_list_tooltip': '番号付きリスト',
+    'editor_align_left_tooltip': '左揃え',
+    'editor_align_center_tooltip': '中央揃え',
+    'editor_align_right_tooltip': '右揃え',
+
+    // Thumbnail Style (24 keys)
+    'thumbnail_dialog_title': 'サムネイルスタイルのカスタマイズ',
+    'thumbnail_dialog_subtitle': 'AIサムネイルスタイルと補正値を調整して好みを反映させます。',
+    'style_select_title': 'スタイル選択',
+    'detail_adjust_title': '詳細調整',
+    'brightness_label': '明るさ',
+    'contrast_label': 'コントラスト',
+    'saturation_label': '彩度',
+    'blur_radius_label': 'ぼかし半径',
+    'overlay_color_label': 'オーバーレイ色',
+    'overlay_opacity_label': 'オーバーレイ透明度',
+    'auto_optimization_title': '自動最適化',
+    'auto_optimization_subtitle': '分析結果に基づいてプロンプトを自動補正します',
+    'manual_keyword_title': 'カスタムキーワード',
+    'manual_keyword_subtitle': 'AIプロンプトに常に含まれるキーワードを最大5個まで追加できます。',
+    'keyword_label': '手動キーワード',
+    'keyword_hint': '例：パステルトーン、夜景',
+    'keyword_add_button': '追加',
+    'keyword_required': 'キーワードを入力してください。',
+    'keyword_max_length': 'キーワードは24文字以内で入力してください。',
+    'keyword_duplicate': '既に追加されたキーワードです。',
+    'keyword_max_count': 'キーワードは最大5個まで登録できます。',
+    'keyword_save_failed': 'キーワードを保存できませんでした。もう一度お試しください。',
+    'keyword_empty_list': '登録されたキーワードがありません。',
+    'keyword_clear_all': 'すべて削除',
+
+    // Thumbnail Styles (10 keys)
+    'style_chibi': '3等身漫画',
+    'style_cute': 'かわいい',
+    'style_realistic': 'リアル',
+    'style_cartoon': '漫画',
+    'style_watercolor': '水彩画',
+    'style_oil': '油絵',
+    'style_sketch': 'スケッチ',
+    'style_digital': 'デジタルアート',
+    'style_vintage': 'ビンテージ',
+    'style_modern': 'モダン',
+
+    // Memory Notification Settings (25 keys)
+    'memory_notification_settings_title': '思い出通知設定',
+    'memory_notification_settings_loading': '設定を読み込み中...',
+    'memory_notification_settings_load_error': '設定の読み込みに失敗しました',
+    'memory_notification_permission_granted': '通知権限が許可されました',
+    'memory_notification_permission_denied': '通知権限が拒否されました',
+    'memory_notification_scheduled': '思い出通知が設定されました',
+    'memory_notification_schedule_error': '通知設定中にエラーが発生しました',
+    'memory_notification_toggle_title': '思い出通知',
+    'memory_notification_toggle_description': '過去の日記を思い出すための通知を受け取ります',
+    'memory_notification_time_title': '通知時刻',
+    'memory_notification_time_label': '通知を受け取る時刻',
+    'memory_notification_types_title': '通知タイプ',
+    'memory_notification_yesterday_title': '昨日の記録',
+    'memory_notification_yesterday_description': '昨日書いた日記を思い出します',
+    'memory_notification_one_week_ago_title': '一週間前の記録',
+    'memory_notification_one_week_ago_description': '一週間前に書いた日記を思い出します',
+    'memory_notification_one_month_ago_title': '一ヶ月前の記録',
+    'memory_notification_one_month_ago_description': '一ヶ月前に書いた日記を思い出します',
+    'memory_notification_one_year_ago_title': '一年前の記録',
+    'memory_notification_one_year_ago_description': '一年前に書いた日記を思い出します',
+    'memory_notification_past_today_title': '過去の今日',
+    'memory_notification_past_today_description': '昨年、一昨年の同じ日の記録を思い出します',
+    'memory_notification_permission_title': '通知権限',
+    'memory_notification_permission_granted_status': '通知権限が許可されました',
+    'memory_notification_permission_required': '通知権限が必要です',
+    'memory_notification_permission_request_button': '権限をリクエスト',
+    'memory_notification_time_selection_title': '通知時刻を選択',
+    'cancel_button': 'キャンセル',
+    'confirm_button': '確認',
+
+    // Diary List (21 keys)
+    'my_diary': '私の日記',
+    'back_tooltip': '戻る',
+    'calendar_tooltip': 'カレンダー表示',
+    'filter_tooltip': 'フィルター',
+    'sort_tooltip': '並び替え',
+    'new_diary_fab': '新しい日記を作成',
+    'delete_title': '日記削除',
+    'delete_message': 'この日記を削除しますか？\n削除した日記は復元できません。',
+    'delete_button': '削除',
+    'sort_dialog_title': '並び替え基準',
+    'sort_date_desc': '最新順',
+    'sort_date_asc': '古い順',
+    'sort_title_asc': 'タイトル順（A-Z）',
+    'sort_title_desc': 'タイトル順（Z-A）',
+    'sort_mood': '気分順',
+    'sort_weather': '天気順',
+    'error_load_diaries': '日記を読み込めません',
+    'error_unknown': '不明なエラーが発生しました',
+    'empty_diaries_title': 'まだ日記がありません',
+    'empty_diaries_subtitle': '最初の日記を書いてみましょう',
+    'empty_diaries_action': '日記を書く',
+
+    // Statistics (7 keys)
+    'statistics_title': '日記統計',
+    'date_range_tooltip': '日付範囲選択',
+    'period_title': '分析期間',
+    'preset_week': '最近1週間',
+    'preset_month': '最近1ヶ月',
+    'preset_quarter': '最近3ヶ月',
+    'preset_year': '最近1年',
+
+    // Backup & Restore (49 keys)
+    'backup_section_title': 'バックアップと復元',
+    'create_backup_button': 'バックアップ作成',
+    'restore_from_file_button': 'ファイルから復元',
+    'auto_backup_title': '自動バックアップ',
+    'backup_interval_label': 'バックアップ周期: ',
+    'interval_daily': '毎日',
+    'interval_3days': '3日ごと',
+    'interval_weekly': '週間',
+    'interval_biweekly': '2週間ごと',
+    'interval_monthly': '月間',
+    'max_backups_label': '最大バックアップ数: ',
+    'max_3': '3個',
+    'max_5': '5個',
+    'max_10': '10個',
+    'max_20': '20個',
+    'no_backups_title': 'バックアップがありません',
+    'no_backups_subtitle': '最初のバックアップを作成してみましょう',
+    'available_backups_title': '利用可能なバックアップ',
+    'created_date_label': '作成日',
+    'size_label': 'サイズ',
+    'includes_label': '含む',
+    'includes_settings': '設定',
+    'includes_profile': 'プロフィール',
+    'includes_diary': '日記',
+    'restore_action': '復元',
+    'delete_action': '削除',
+    'backup_success': 'バックアップが正常に作成されました。',
+    'backup_failed': 'バックアップの作成に失敗しました。',
+    'backup_error': 'バックアップ作成中にエラーが発生しました',
+    'restore_success': '復元が正常に完了しました。',
+    'restore_failed': '復元に失敗しました。',
+    'restore_error': '復元中にエラーが発生しました',
+    'delete_success': 'バックアップが削除されました。',
+    'delete_failed': 'バックアップの削除に失敗しました。',
+    'delete_error': 'バックアップ削除中にエラーが発生しました',
+    'load_error_backup': 'データ読み込み中にエラーが発生しました',
+    'file_picker_error': 'ファイル選択中にエラーが発生しました',
+    'auto_backup_update_error': '自動バックアップ設定の更新中にエラーが発生しました',
+    'interval_update_error': 'バックアップ周期設定中にエラーが発生しました',
+    'max_backups_update_error': '最大バックアップ数設定中にエラーが発生しました',
+    'restore_confirm_title': 'データ復元',
+    'restore_confirm_message': '現在のデータがバックアップデータで上書きされます。\nこの操作は元に戻せません。\n\n続けますか？',
+    'delete_confirm_title': 'バックアップ削除',
+    'delete_confirm_message': 'バックアップを削除しますか？\nこの操作は元に戻せません。',
+    'count_suffix': '個',
+
+    // Calendar (16 keys)
+    'calendar': 'カレンダー',
+    'back': '戻る',
+    'diary_statistics': '日記統計',
+    'weekly_view': '週間表示',
+    'monthly_view': '月間表示',
+    'today': '今日',
+    'write_new_diary': '新しい日記を作成',
+    'calendar_legend_multiple_entries': 'オレンジ色の点は2件以上の日記があります。',
+    'please_select_date': '日付を選択してください',
+    'diary_count': '{count}件の日記',
+    'no_diary_on_this_day': 'この日には日記がありません',
+    'write_diary': '日記を書く',
+    'diary_search_hint': '日記を検索...',
+    'clear_search_tooltip': '検索をクリア',
+    'today_with_date': '今日（{month}月{day}日）',
+    'yesterday_with_date': '昨日（{month}月{day}日）',
+    'tomorrow_with_date': '明日（{month}月{day}日）',
+    'full_date': '{year}年{month}月{day}日',
+
+    // Statistics Widget (25 keys)
+    'stats_overall_title': '全体統計',
+    'stats_total_diaries': '総日記数',
+    'stats_total_diaries_unit': '{count}件',
+    'stats_current_streak': '現在の連続',
+    'stats_current_streak_unit': '{count}日',
+    'stats_longest_streak': '最長連続',
+    'stats_longest_streak_unit': '{count}日',
+    'stats_daily_average': '1日平均',
+    'stats_daily_average_unit': '{count}件',
+    'stats_most_active_day': '最も活発な曜日',
+    'stats_most_active_day_unit': '{day}曜日',
+    'stats_most_active_month': '最も活発な月',
+    'stats_monthly_frequency': '月別作成頻度',
+    'stats_weekly_frequency': '週別作成頻度',
+    'stats_no_data': 'データがありません',
+    'stats_count_unit': '{count}件',
+    'stats_content_length_title': '日記の長さ統計',
+    'stats_average_characters': '平均文字数',
+    'stats_characters_unit': '{count}文字',
+    'stats_average_words': '平均単語数',
+    'stats_words_unit': '{count}個',
+    'stats_max_characters': '最大文字数',
+    'stats_min_characters': '最小文字数',
+    'stats_writing_time_title': '作成時間帯統計',
+    'stats_time_count_unit': '{count}回',
+
+    // Generation Count Widget (3 keys)
+    'ai_image_generation': 'AI画像生成',
+    'remaining_count_label': '残り回数: ',
+    'count_times': '回',
+
+    // Memory Screen (14 keys)
+    'memory_title': '思い出',
+    'memory_back_tooltip': '戻る',
+    'memory_notifications_tooltip': '通知設定',
+    'memory_filter_tooltip': 'フィルター',
+    'memory_refresh_tooltip': '更新',
+    'memory_loading': '思い出を読み込んでいます...',
+    'memory_load_failed': '思い出の読み込みに失敗しました',
+    'memory_unknown_error': '不明なエラーが発生しました',
+    'memory_retry_button': '再試行',
+    'memory_empty_title': 'まだ思い出がありません',
+    'memory_empty_description': '日記を書いて過去の記録を振り返りましょう',
+    'memory_write_diary_button': '日記を書く',
+    'memory_bookmarked': '{title}をブックマークしました',
+    'memory_bookmark_removed': '{title}のブックマークを解除しました',
+
+    // App Intro Features (16 keys)
+    'feature_ocr_title': 'OCRテキスト抽出',
+    'feature_ocr_desc': '紙に書いた記録を撮影してすぐにテキストに変換します。',
+    'feature_voice_title': '音声録音',
+    'feature_voice_desc': '言葉で残した一日を自然に日記に変換します。',
+    'feature_emotion_title': '感情分析',
+    'feature_emotion_desc': '日記に込められた感情を自分で整理し、統計で表示します。',
+    'feature_ai_image_title': 'AI画像生成',
+    'feature_ai_image_desc': '日記の雰囲気に合った感情的な背景画像を作成します。',
+    'feature_search_title': '日記検索',
+    'feature_search_desc': 'キーワードと日付で希望の日記を素早く探せます。',
+    'feature_backup_title': 'バックアップファイル管理',
+    'feature_backup_desc': 'バックアップファイルをエクスポートして再度読み込み、いつでも安全に保管します。',
+    'feature_pin_title': 'PINセキュリティ',
+    'feature_pin_desc': 'PINロックで個人の日記を安全に守ります。',
+    'feature_privacy_title': '背景画面隠し',
+    'feature_privacy_desc': 'バックグラウンドでも画面をぼかして処理し、プライバシーを保護します。',
+
+    // Emotion Arrow
+    'emotion_arrow': '→',
+
+    // Emotion Names
+    'emotion_joy': '喜び',
+    'emotion_default': 'デフォルト',
+    'emotion_sadness': '悲しみ',
+    'emotion_anger': '怒り',
+    'emotion_fear': '恐れ',
+    'emotion_surprise': '驚き',
+    'emotion_disgust': '嫌悪',
+    'emotion_anticipation': '期待',
+    'emotion_trust': '信頼',
+
+    // Privacy Policy Content
+    'privacy_policy_content': '''EveryDiary プライバシーポリシー
+
+1. 個人情報の処理目的
+EveryDiary（以下「アプリ」）は、以下の目的のために個人情報を処理します。
+
+- 日記作成・管理サービスの提供
+- ユーザー設定とカスタマイズ機能の提供
+- サービス改善とユーザーエクスペリエンスの向上
+
+2. 収集する個人情報項目
+アプリは以下の個人情報を収集します：
+
+- ユーザー名（任意）
+- PINロック設定情報（任意）
+- 日記内容および関連データ（ローカル保存）
+- アプリ設定情報
+
+3. 個人情報の保有・利用期間
+アプリは、ユーザーが直接削除するか、アプリをアンインストールするまで個人情報を保有します。
+
+すべてのデータはユーザーのデバイスにローカルに保存され、外部サーバーに送信されません。
+
+4. 個人情報の第三者提供
+アプリはユーザーの個人情報を第三者に提供しません。
+
+5. 個人情報の破棄
+ユーザーがアプリを削除するか、データを削除すると、すべての個人情報は直ちに破棄されます。
+
+6. 個人情報自動収集装置の設置・運営および拒否に関する事項
+アプリはCookieや類似の追跡技術を使用しません。
+
+7. 個人情報保護責任者
+個人情報に関するお問い合わせは、以下までご連絡ください：
+メール: support@everydiary.app
+
+8. プライバシーポリシーの変更
+本プライバシーポリシーは法令および方針に従って変更される場合があり、変更時にはアプリ内で通知されます。
+
+施行日: 2025年1月1日''',
+
+    // Terms of Service Content
+    'terms_of_service_content': '''EveryDiary 利用規約
+
+第1条（目的）
+本規約は、EveryDiary（以下「アプリ」）の利用に関して、アプリ運営者とユーザーの権利、義務、責任事項を規定することを目的とします。
+
+第2条（定義）
+1. 「アプリ」とは、ユーザーが日記を作成・管理できるモバイルアプリケーションを意味します。
+2. 「ユーザー」とは、本規約に従ってアプリを使用する者を意味します。
+3. 「コンテンツ」とは、ユーザーがアプリを通じて作成する日記および関連データを意味します。
+
+第3条（規約の効力および変更）
+1. 本規約は、アプリをダウンロードして使用するすべてのユーザーに適用されます。
+2. 本規約は必要に応じて変更される場合があり、変更された規約はアプリ内で通知されます。
+
+第4条（サービスの提供）
+1. アプリは、ユーザーに日記作成、管理、バックアップなどの機能を提供します。
+2. アプリは無料で提供され、一部の機能はアプリ内購入を通じて利用できます。
+
+第5条（ユーザーの義務）
+1. ユーザーは本規約および関連法令を遵守しなければなりません。
+2. ユーザーはアプリを違法な目的で使用してはなりません。
+3. ユーザーは自分のアカウント情報およびPIN番号を安全に管理する責任があります。
+
+第6条（コンテンツの管理）
+1. ユーザーが作成したコンテンツは、ユーザーのデバイスにローカルに保存されます。
+2. ユーザーは自分が作成したコンテンツに対するすべての権利と責任を持ちます。
+3. アプリ運営者はユーザーのコンテンツにアクセスせず、第三者に提供しません。
+
+第7条（サービスの中断）
+アプリ運営者は以下の場合にサービス提供を中断できます：
+1. システムメンテナンスが必要な場合
+2. 不可抗力の事由が発生した場合
+
+第8条（免責条項）
+1. アプリ運営者は、ユーザーのデバイスエラー、データ損失などによる損害について責任を負いません。
+2. ユーザーは定期的にバックアップを実行してデータ損失を防止する必要があります。
+
+第9条（紛争解決）
+本規約に関連する紛争は、大韓民国の法律に従って解決されます。
+
+施行日: 2025年1月1日''',
+  };
+
+  // ============== 중국어 (간체) ==============
+  static const Map<String, String> _chineseSimplified = {
+    // 通用
+    'app_name': 'EveryDiary',
+    'ok': '确定',
+    'cancel': '取消',
+    'save': '保存',
+    'delete': '删除',
+    'edit': '编辑',
+    'close': '关闭',
+    'yes': '是',
+    'no': '否',
+
+    // 设置
+    'settings': '设置',
+    'settings_reset': '重置设置',
+    'app_settings': '应用设置',
+    'thumbnail_style': '缩略图样式',
+    'thumbnail_style_subtitle': '设置AI缩略图样式和关键词',
+    'theme': '主题',
+    'font_size': '字体大小',
+    'language': '语言',
+    'language_select': '选择语言',
+    'security_management': 'EveryDiary安全与管理',
+    'username': '用户名',
+    'username_not_set': '未设置',
+    'pin_lock': 'PIN锁定',
+    'pin_lock_enabled': '应用启动时需要PIN',
+    'pin_lock_disabled': '已禁用',
+    'pin_change': '更改PIN',
+    'pin_change_subtitle': '输入当前PIN并设置新PIN',
+    'recovery_question': '紧急恢复问题',
+    'recovery_question_set': '已设置',
+    'recovery_question_not_set': '未设置',
+
+    // PIN相关
+    'pin_setup': 'PIN锁定设置',
+    'pin_new': '新PIN（4位数字）',
+    'pin_confirm': '确认PIN',
+    'pin_current': '当前PIN',
+    'pin_change_title': '更改PIN',
+    'pin_disable': '禁用PIN锁定',
+    'pin_disable_message': '禁用PIN锁定后，应用启动时将不再需要身份验证。',
+    'pin_disable_button': '禁用',
+    'pin_error_length': '请输入4位数字',
+    'pin_error_mismatch': 'PIN不匹配',
+    'pin_error_new_mismatch': '新PIN不匹配',
+    'pin_enabled_message': 'PIN锁定已启用。',
+    'pin_disabled_message': 'PIN锁定已禁用。',
+    'pin_changed_message': 'PIN已更改。',
+    'pin_change_failed': 'PIN更改失败',
+
+    // 恢复问题
+    'recovery_question_setup': '紧急恢复问题设置',
+    'recovery_question_label': '安全问题',
+    'recovery_question_hint': '例如：只有我知道的地方？',
+    'recovery_answer': '答案',
+    'recovery_answer_confirm': '确认答案',
+    'recovery_question_error_empty': '请输入安全问题',
+    'recovery_answer_error_empty': '请输入答案',
+    'recovery_answer_error_mismatch': '答案不匹配',
+    'recovery_question_saved': '紧急恢复问题已保存。',
+    'recovery_question_deleted': '紧急恢复问题已删除。',
+    'recovery_question_delete': '删除',
+
+    // 用户名
+    'username_change': '更改用户名',
+    'username_label': '姓名',
+    'username_hint': '例如：张三',
+    'username_error_empty': '请输入姓名',
+    'username_updated': '用户名已更新。',
+
+    // 主题
+    'theme_system': '系统设置',
+    'theme_light': '浅色',
+    'theme_dark': '深色',
+
+    // 字体大小
+    'font_small': '小',
+    'font_medium': '中',
+    'font_large': '大',
+    'font_extra_large': '超大',
+
+    // 图像生成
+    'image_generation_count': 'AI图像生成次数',
+    'image_generation_description': '创建更多由AI生成的精美日记图像！',
+    'watch_ad_for_3_times': '观看广告获得3次',
+    'watch_ad_subtitle': '观看短广告免费获取',
+    'ad_loading': '广告加载中...',
+    'ad_wait': '请稍候',
+    'or_purchase': '或购买',
+
+    // 购买
+    'purchase_10_times': '10次',
+    'purchase_30_times': '30次',
+    'purchase_100_times': '100次',
+    'purchase_popular': '热门',
+    'purchase_best_value': '最划算',
+
+    // 日期显示
+    'date_today': '今天',
+    'date_yesterday': '昨天',
+
+    // 通知
+    'notifications': '通知',
+    'daily_reminder': '日记提醒',
+    'daily_reminder_subtitle': '每天提醒您写日记',
+    'reminder_time': '提醒时间',
+
+    // 数据管理
+    'data_management': '数据管理',
+
+    // 信息
+    'info': '信息',
+    'app_version': '应用版本',
+    'privacy_policy': '隐私政策',
+    'privacy_policy_subtitle': '查看我们的隐私政策',
+    'terms_of_service': '服务条款',
+    'terms_of_service_subtitle': '查看我们的服务条款',
+
+    // ===== NEW TRANSLATIONS =====
+
+    // Onboarding (14 keys)
+    'welcome_title': '欢迎来到EveryDiary！',
+    'setup_subtitle': '请先设置应用中使用的姓名和锁定选项。',
+    'name_label': '姓名',
+    'name_hint': '例如：张三',
+    'name_required': '请输入姓名',
+    'name_max_length': '姓名必须在24个字符以内',
+    'pin_lock_title': '应用启动时使用PIN锁定',
+    'pin_lock_subtitle': '设置打开应用时输入4位PIN。',
+    'pin_label': 'PIN（4位数字）',
+    'pin_required': '请输入4位数字',
+    'pin_numbers_only': '只能输入数字',
+    'pin_confirm_label': '确认PIN',
+    'pin_mismatch': 'PIN不匹配',
+    'start_button': '开始',
+    'setup_save_failed': '设置保存失败',
+
+    // Home Screen (11 keys)
+    'home_greeting': '{name}，您好 👋',
+    'home_subtitle': '记录今天的瞬间，用AI图像保留情感。',
+    'quick_actions_title': '快速操作',
+    'new_diary': '写新日记',
+    'view_diaries': '查看我的日记',
+    'statistics_action': '日记统计',
+    'memory_notifications': '回忆通知设置',
+    'app_intro_title': '应用介绍',
+    'fallback_features_title': 'EveryDiary主要功能',
+    'fallback_features_list': 'OCR · 语音录制 · 情感分析 · AI图像 · 备份管理 · PIN安全 · 屏幕隐私',
+    'diary_author': '日记作者',
+
+    // Error Page (4 keys)
+    'error_title': '错误',
+    'page_not_found': '找不到页面',
+    'page_not_found_subtitle': '您请求的页面不存在',
+    'back_to_home': '返回主页',
+
+    // Privacy & Terms (2 keys)
+    'privacy_policy_title': '隐私政策',
+    'terms_of_service_title': '服务条款',
+
+    // Diary Write Screen (49 keys)
+    'diary_write_title': '写日记',
+    'save_tooltip': '保存',
+    'thumbnail_style_tooltip': '缩略图样式设置',
+    'exit_without_save_title': '不保存退出吗？',
+    'exit_without_save_message': '正在编写的内容将不会保存。',
+    'exit': '退出',
+    'title_label': '标题',
+    'title_hint': '输入今天的日记标题',
+    'title_required': '请输入标题',
+    'date_label': '日期',
+    'emotion_analysis_label': '情感分析',
+    'emotion_analyzing': '正在分析情感...',
+    'weather_label': '天气',
+    'weather_hint': '选择天气',
+    'weather_sunny': '晴',
+    'weather_cloudy': '阴',
+    'weather_rainy': '雨',
+    'weather_snowy': '雪',
+    'weather_windy': '风',
+    'weather_foggy': '雾',
+    'weather_hot': '酷暑',
+    'weather_cold': '寒冷',
+    'weather_other': '其他',
+    'ocr_button': 'OCR',
+    'voice_recording_button': '语音录制',
+    'save_button': '保存日记',
+    'saved_success': '日记已保存。',
+    'save_failed': '保存失败',
+    'diary_not_found': '找不到日记',
+    'load_error': '加载日记时发生错误',
+    'load_timeout': '日记加载超时。请重试。',
+    'retry': '重试',
+    'text_add_error': '添加文本时发生错误',
+    'thumbnail_empty_content': '内容为空，无法生成缩略图。',
+    'thumbnail_no_diary': '没有正在编辑的日记，跳过重新生成。',
+    'thumbnail_regenerating': '正在重新生成缩略图。请稍候。',
+    'ocr_success': '文字识别完成',
+    'ocr_cancelled': '文字识别已取消',
+    'ocr_unavailable': 'OCR功能不可用',
+    'camera_permission_error': '无法访问相机。请检查权限。',
+    'camera_permission_required': '需要相机权限。',
+    'voice_error': '语音录制错误',
+    'voice_text_added': '语音文本已添加。',
+    'voice_text_add_failed': '语音文本添加失败。',
+    'invalid_diary_id': '无效的日记ID',
+    'content_placeholder': '在此输入内容...',
+    'characters': '字',
+    'diary_content_placeholder': '记录今天的故事...',
+    'editor_undo_tooltip': '撤销',
+    'editor_redo_tooltip': '重做',
+    'editor_bold_tooltip': '粗体',
+    'editor_italic_tooltip': '斜体',
+    'editor_underline_tooltip': '下划线',
+    'editor_bulleted_list_tooltip': '项目符号列表',
+    'editor_numbered_list_tooltip': '编号列表',
+    'editor_align_left_tooltip': '左对齐',
+    'editor_align_center_tooltip': '居中对齐',
+    'editor_align_right_tooltip': '右对齐',
+
+    // Thumbnail Style (24 keys)
+    'thumbnail_dialog_title': '自定义缩略图样式',
+    'thumbnail_dialog_subtitle': '调整AI缩略图样式和校正值以反映您的偏好。',
+    'style_select_title': '选择样式',
+    'detail_adjust_title': '详细调整',
+    'brightness_label': '亮度',
+    'contrast_label': '对比度',
+    'saturation_label': '饱和度',
+    'blur_radius_label': '模糊半径',
+    'overlay_color_label': '叠加颜色',
+    'overlay_opacity_label': '叠加不透明度',
+    'auto_optimization_title': '自动优化',
+    'auto_optimization_subtitle': '根据分析结果自动校正提示',
+    'manual_keyword_title': '自定义关键词',
+    'manual_keyword_subtitle': '添加最多5个始终包含在AI提示中的关键词。',
+    'keyword_label': '手动关键词',
+    'keyword_hint': '例如：柔和色调，夜景',
+    'keyword_add_button': '添加',
+    'keyword_required': '请输入关键词。',
+    'keyword_max_length': '关键词必须在24个字符以内。',
+    'keyword_duplicate': '此关键词已添加。',
+    'keyword_max_count': '最多可注册5个关键词。',
+    'keyword_save_failed': '无法保存关键词。请重试。',
+    'keyword_empty_list': '没有注册的关键词。',
+    'keyword_clear_all': '全部清除',
+
+    // Thumbnail Styles (10 keys)
+    'style_chibi': '三头身漫画',
+    'style_cute': '可爱',
+    'style_realistic': '写实',
+    'style_cartoon': '卡通',
+    'style_watercolor': '水彩',
+    'style_oil': '油画',
+    'style_sketch': '素描',
+    'style_digital': '数字艺术',
+    'style_vintage': '复古',
+    'style_modern': '现代',
+
+    // Memory Notification Settings (25 keys)
+    'memory_notification_settings_title': '回忆通知设置',
+    'memory_notification_settings_loading': '正在加载设置...',
+    'memory_notification_settings_load_error': '加载设置失败',
+    'memory_notification_permission_granted': '通知权限已授予',
+    'memory_notification_permission_denied': '通知权限被拒绝',
+    'memory_notification_scheduled': '回忆通知已设置',
+    'memory_notification_schedule_error': '设置通知时发生错误',
+    'memory_notification_toggle_title': '回忆通知',
+    'memory_notification_toggle_description': '接收通知以回忆过去的日记',
+    'memory_notification_time_title': '通知时间',
+    'memory_notification_time_label': '接收通知的时间',
+    'memory_notification_types_title': '通知类型',
+    'memory_notification_yesterday_title': '昨天的记录',
+    'memory_notification_yesterday_description': '回忆昨天写的日记',
+    'memory_notification_one_week_ago_title': '一周前的记录',
+    'memory_notification_one_week_ago_description': '回忆一周前写的日记',
+    'memory_notification_one_month_ago_title': '一个月前的记录',
+    'memory_notification_one_month_ago_description': '回忆一个月前写的日记',
+    'memory_notification_one_year_ago_title': '一年前的记录',
+    'memory_notification_one_year_ago_description': '回忆一年前写的日记',
+    'memory_notification_past_today_title': '过去的今天',
+    'memory_notification_past_today_description': '回忆去年、前年同一天的记录',
+    'memory_notification_permission_title': '通知权限',
+    'memory_notification_permission_granted_status': '通知权限已授予',
+    'memory_notification_permission_required': '需要通知权限',
+    'memory_notification_permission_request_button': '请求权限',
+    'memory_notification_time_selection_title': '选择通知时间',
+    'cancel_button': '取消',
+    'confirm_button': '确认',
+
+    // Diary List (21 keys)
+    'my_diary': '我的日记',
+    'back_tooltip': '返回',
+    'calendar_tooltip': '日历视图',
+    'filter_tooltip': '筛选',
+    'sort_tooltip': '排序',
+    'new_diary_fab': '写新日记',
+    'delete_title': '删除日记',
+    'delete_message': '确定要删除此日记吗？\n已删除的日记无法恢复。',
+    'delete_button': '删除',
+    'sort_dialog_title': '排序依据',
+    'sort_date_desc': '最新优先',
+    'sort_date_asc': '最早优先',
+    'sort_title_asc': '标题（A-Z）',
+    'sort_title_desc': '标题（Z-A）',
+    'sort_mood': '按心情',
+    'sort_weather': '按天气',
+    'error_load_diaries': '无法加载日记',
+    'error_unknown': '发生未知错误',
+    'empty_diaries_title': '还没有日记',
+    'empty_diaries_subtitle': '写下您的第一篇日记',
+    'empty_diaries_action': '写日记',
+
+    // Statistics (7 keys)
+    'statistics_title': '日记统计',
+    'date_range_tooltip': '选择日期范围',
+    'period_title': '分析期间',
+    'preset_week': '最近1周',
+    'preset_month': '最近1个月',
+    'preset_quarter': '最近3个月',
+    'preset_year': '最近1年',
+
+    // Backup & Restore (49 keys)
+    'backup_section_title': '备份与恢复',
+    'create_backup_button': '创建备份',
+    'restore_from_file_button': '从文件恢复',
+    'auto_backup_title': '自动备份',
+    'backup_interval_label': '备份周期：',
+    'interval_daily': '每天',
+    'interval_3days': '每3天',
+    'interval_weekly': '每周',
+    'interval_biweekly': '每两周',
+    'interval_monthly': '每月',
+    'max_backups_label': '最大备份数：',
+    'max_3': '3个',
+    'max_5': '5个',
+    'max_10': '10个',
+    'max_20': '20个',
+    'no_backups_title': '没有备份',
+    'no_backups_subtitle': '创建您的第一个备份',
+    'available_backups_title': '可用备份',
+    'created_date_label': '创建日期',
+    'size_label': '大小',
+    'includes_label': '包含',
+    'includes_settings': '设置',
+    'includes_profile': '个人资料',
+    'includes_diary': '日记',
+    'restore_action': '恢复',
+    'delete_action': '删除',
+    'backup_success': '备份创建成功。',
+    'backup_failed': '备份创建失败。',
+    'backup_error': '创建备份时发生错误',
+    'restore_success': '恢复成功完成。',
+    'restore_failed': '恢复失败。',
+    'restore_error': '恢复过程中发生错误',
+    'delete_success': '备份已删除。',
+    'delete_failed': '备份删除失败。',
+    'delete_error': '删除备份时发生错误',
+    'load_error_backup': '加载数据时发生错误',
+    'file_picker_error': '选择文件时发生错误',
+    'auto_backup_update_error': '更新自动备份设置时发生错误',
+    'interval_update_error': '设置备份周期时发生错误',
+    'max_backups_update_error': '设置最大备份数时发生错误',
+    'restore_confirm_title': '恢复数据',
+    'restore_confirm_message': '当前数据将被备份数据覆盖。\n此操作无法撤消。\n\n继续吗？',
+    'delete_confirm_title': '删除备份',
+    'delete_confirm_message': '确定要删除此备份吗？\n此操作无法撤消。',
+    'count_suffix': '个',
+
+    // Calendar (16 keys)
+    'calendar': '日历',
+    'back': '返回',
+    'diary_statistics': '日记统计',
+    'weekly_view': '周视图',
+    'monthly_view': '月视图',
+    'today': '今天',
+    'write_new_diary': '撰写新日记',
+    'calendar_legend_multiple_entries': '橙色圆点表示有2篇或更多日记。',
+    'please_select_date': '请选择日期',
+    'diary_count': '{count}篇日记',
+    'no_diary_on_this_day': '这一天没有日记',
+    'write_diary': '写日记',
+    'diary_search_hint': '搜索日记...',
+    'clear_search_tooltip': '清除搜索',
+    'today_with_date': '今天（{month}月{day}日）',
+    'yesterday_with_date': '昨天（{month}月{day}日）',
+    'tomorrow_with_date': '明天（{month}月{day}日）',
+    'full_date': '{year}年{month}月{day}日',
+
+    // Statistics Widget (25 keys)
+    'stats_overall_title': '整体统计',
+    'stats_total_diaries': '总日记数',
+    'stats_total_diaries_unit': '{count}篇',
+    'stats_current_streak': '当前连续',
+    'stats_current_streak_unit': '{count}天',
+    'stats_longest_streak': '最长连续',
+    'stats_longest_streak_unit': '{count}天',
+    'stats_daily_average': '日平均',
+    'stats_daily_average_unit': '{count}篇',
+    'stats_most_active_day': '最活跃的星期',
+    'stats_most_active_day_unit': '星期{day}',
+    'stats_most_active_month': '最活跃的月份',
+    'stats_monthly_frequency': '月度写作频率',
+    'stats_weekly_frequency': '周度写作频率',
+    'stats_no_data': '暂无数据',
+    'stats_count_unit': '{count}篇',
+    'stats_content_length_title': '日记长度统计',
+    'stats_average_characters': '平均字数',
+    'stats_characters_unit': '{count}字',
+    'stats_average_words': '平均词数',
+    'stats_words_unit': '{count}个',
+    'stats_max_characters': '最大字数',
+    'stats_min_characters': '最小字数',
+    'stats_writing_time_title': '写作时段统计',
+    'stats_time_count_unit': '{count}次',
+
+    // Generation Count Widget (3 keys)
+    'ai_image_generation': 'AI图像生成',
+    'remaining_count_label': '剩余次数: ',
+    'count_times': '次',
+
+    // Memory Screen (14 keys)
+    'memory_title': '回忆',
+    'memory_back_tooltip': '返回',
+    'memory_notifications_tooltip': '通知设置',
+    'memory_filter_tooltip': '筛选',
+    'memory_refresh_tooltip': '刷新',
+    'memory_loading': '正在加载回忆...',
+    'memory_load_failed': '加载回忆失败',
+    'memory_unknown_error': '发生未知错误',
+    'memory_retry_button': '重试',
+    'memory_empty_title': '暂无回忆',
+    'memory_empty_description': '写下日记以回顾过去的记录',
+    'memory_write_diary_button': '写日记',
+    'memory_bookmarked': '已收藏 {title}',
+    'memory_bookmark_removed': '已取消收藏 {title}',
+
+    // App Intro Features (16 keys)
+    'feature_ocr_title': 'OCR文字提取',
+    'feature_ocr_desc': '拍摄纸上记录，立即转换为文本。',
+    'feature_voice_title': '语音录音',
+    'feature_voice_desc': '将您说的话自然地转换为日记。',
+    'feature_emotion_title': '情绪分析',
+    'feature_emotion_desc': '整理日记中的情绪并以统计形式呈现。',
+    'feature_ai_image_title': 'AI图像生成',
+    'feature_ai_image_desc': '创建与日记氛围相匹配的情感背景图像。',
+    'feature_search_title': '日记搜索',
+    'feature_search_desc': '通过关键词和日期快速查找日记。',
+    'feature_backup_title': '备份文件管理',
+    'feature_backup_desc': '导出和导入备份文件，随时安全保存。',
+    'feature_pin_title': 'PIN安全',
+    'feature_pin_desc': '通过PIN锁定安全保护您的个人日记。',
+    'feature_privacy_title': '背景屏幕隐藏',
+    'feature_privacy_desc': '在后台模糊处理屏幕以保护隐私。',
+
+    // Emotion Arrow
+    'emotion_arrow': '→',
+
+    // Emotion Names
+    'emotion_joy': '快乐',
+    'emotion_default': '默认',
+    'emotion_sadness': '悲伤',
+    'emotion_anger': '愤怒',
+    'emotion_fear': '恐惧',
+    'emotion_surprise': '惊讶',
+    'emotion_disgust': '厌恶',
+    'emotion_anticipation': '期待',
+    'emotion_trust': '信任',
+
+    // Privacy Policy Content
+    'privacy_policy_content': '''EveryDiary 隐私政策
+
+1. 个人信息处理目的
+EveryDiary（以下简称"应用程序"）为以下目的处理个人信息：
+
+- 提供日记写作和管理服务
+- 提供用户设置和自定义功能
+- 改进服务和提升用户体验
+
+2. 收集的个人信息项目
+应用程序收集以下个人信息：
+
+- 用户名（可选）
+- PIN锁定设置信息（可选）
+- 日记内容及相关数据（本地存储）
+- 应用程序设置信息
+
+3. 个人信息的保留和使用期限
+应用程序保留个人信息，直到用户直接删除或卸载应用程序。
+
+所有数据都在用户设备上本地存储，不会传输到外部服务器。
+
+4. 向第三方提供个人信息
+应用程序不会向第三方提供用户的个人信息。
+
+5. 个人信息的销毁
+当用户卸载应用程序或删除数据时，所有个人信息将立即销毁。
+
+6. 自动收集个人信息装置的安装、操作及拒绝
+应用程序不使用Cookie或类似的跟踪技术。
+
+7. 个人信息保护负责人
+如有个人信息相关问题，请联系我们：
+电子邮件: support@everydiary.app
+
+8. 隐私政策的变更
+本隐私政策可能根据法律法规和政策进行变更，变更时将在应用程序内通知。
+
+生效日期: 2025年1月1日''',
+
+    // Terms of Service Content
+    'terms_of_service_content': '''EveryDiary 服务条款
+
+第1条（目的）
+本条款旨在规定应用程序运营者和用户关于使用EveryDiary（以下简称"应用程序"）的权利、义务和责任事项。
+
+第2条（定义）
+1. "应用程序"是指允许用户编写和管理日记的移动应用程序。
+2. "用户"是指根据本条款使用应用程序的人。
+3. "内容"是指用户通过应用程序创建的日记和相关数据。
+
+第3条（条款的效力和修改）
+1. 本条款适用于所有下载和使用应用程序的用户。
+2. 本条款可根据需要进行修改，修改后的条款将在应用程序内通知。
+
+第4条（服务提供）
+1. 应用程序为用户提供日记编写、管理、备份等功能。
+2. 应用程序免费提供，部分功能可通过应用内购买使用。
+
+第5条（用户义务）
+1. 用户必须遵守本条款和相关法律。
+2. 用户不得将应用程序用于非法目的。
+3. 用户有责任安全管理其账户信息和PIN码。
+
+第6条（内容管理）
+1. 用户创建的内容存储在用户设备的本地。
+2. 用户对其创建的内容拥有所有权利和责任。
+3. 应用程序运营者不访问用户内容，也不向第三方提供。
+
+第7条（服务中断）
+应用程序运营者可在以下情况下中断服务提供：
+1. 需要系统维护时
+2. 发生不可抗力情况时
+
+第8条（免责条款）
+1. 应用程序运营者对用户设备错误、数据丢失等造成的损害不承担责任。
+2. 用户应定期执行备份以防止数据丢失。
+
+第9条（争议解决）
+与本条款相关的争议应根据大韩民国法律解决。
+
+生效日期: 2025年1月1日''',
+  };
+
+  // ============== 중국어 (번체) ==============
+  static const Map<String, String> _chineseTraditional = {
+    // 通用
+    'app_name': 'EveryDiary',
+    'ok': '確定',
+    'cancel': '取消',
+    'save': '儲存',
+    'delete': '刪除',
+    'edit': '編輯',
+    'close': '關閉',
+    'yes': '是',
+    'no': '否',
+
+    // 設定
+    'settings': '設定',
+    'settings_reset': '重置設定',
+    'app_settings': '應用程式設定',
+    'thumbnail_style': '縮圖樣式',
+    'thumbnail_style_subtitle': '設定AI縮圖樣式和關鍵字',
+    'theme': '主題',
+    'font_size': '字體大小',
+    'language': '語言',
+    'language_select': '選擇語言',
+    'security_management': 'EveryDiary安全與管理',
+    'username': '使用者名稱',
+    'username_not_set': '未設定',
+    'pin_lock': 'PIN鎖定',
+    'pin_lock_enabled': '應用程式啟動時需要PIN',
+    'pin_lock_disabled': '已停用',
+    'pin_change': '變更PIN',
+    'pin_change_subtitle': '輸入目前PIN並設定新PIN',
+    'recovery_question': '緊急復原問題',
+    'recovery_question_set': '已設定',
+    'recovery_question_not_set': '未設定',
+
+    // PIN相關
+    'pin_setup': 'PIN鎖定設定',
+    'pin_new': '新PIN（4位數字）',
+    'pin_confirm': '確認PIN',
+    'pin_current': '目前PIN',
+    'pin_change_title': '變更PIN',
+    'pin_disable': '停用PIN鎖定',
+    'pin_disable_message': '停用PIN鎖定後，應用程式啟動時將不再需要驗證。',
+    'pin_disable_button': '停用',
+    'pin_error_length': '請輸入4位數字',
+    'pin_error_mismatch': 'PIN不符',
+    'pin_error_new_mismatch': '新PIN不符',
+    'pin_enabled_message': 'PIN鎖定已啟用。',
+    'pin_disabled_message': 'PIN鎖定已停用。',
+    'pin_changed_message': 'PIN已變更。',
+    'pin_change_failed': 'PIN變更失敗',
+
+    // 復原問題
+    'recovery_question_setup': '緊急復原問題設定',
+    'recovery_question_label': '安全問題',
+    'recovery_question_hint': '例如：只有我知道的地方？',
+    'recovery_answer': '答案',
+    'recovery_answer_confirm': '確認答案',
+    'recovery_question_error_empty': '請輸入安全問題',
+    'recovery_answer_error_empty': '請輸入答案',
+    'recovery_answer_error_mismatch': '答案不符',
+    'recovery_question_saved': '緊急復原問題已儲存。',
+    'recovery_question_deleted': '緊急復原問題已刪除。',
+    'recovery_question_delete': '刪除',
+
+    // 使用者名稱
+    'username_change': '變更使用者名稱',
+    'username_label': '姓名',
+    'username_hint': '例如：張三',
+    'username_error_empty': '請輸入姓名',
+    'username_updated': '使用者名稱已更新。',
+
+    // 主題
+    'theme_system': '系統設定',
+    'theme_light': '淺色',
+    'theme_dark': '深色',
+
+    // 字體大小
+    'font_small': '小',
+    'font_medium': '中',
+    'font_large': '大',
+    'font_extra_large': '超大',
+
+    // 圖像生成
+    'image_generation_count': 'AI圖像生成次數',
+    'image_generation_description': '創建更多由AI生成的精美日記圖像！',
+    'watch_ad_for_3_times': '觀看廣告獲得3次',
+    'watch_ad_subtitle': '觀看短廣告免費獲取',
+    'ad_loading': '廣告載入中...',
+    'ad_wait': '請稍候',
+    'or_purchase': '或購買',
+
+    // 購買
+    'purchase_10_times': '10次',
+    'purchase_30_times': '30次',
+    'purchase_100_times': '100次',
+    'purchase_popular': '熱門',
+    'purchase_best_value': '最划算',
+
+    // 日期顯示
+    'date_today': '今天',
+    'date_yesterday': '昨天',
+
+    // 通知
+    'notifications': '通知',
+    'daily_reminder': '日記提醒',
+    'daily_reminder_subtitle': '每天提醒您寫日記',
+    'reminder_time': '提醒時間',
+
+    // 資料管理
+    'data_management': '資料管理',
+
+    // 資訊
+    'info': '資訊',
+    'app_version': '應用程式版本',
+    'privacy_policy': '隱私權政策',
+    'privacy_policy_subtitle': '查看我們的隱私權政策',
+    'terms_of_service': '服務條款',
+    'terms_of_service_subtitle': '查看我們的服務條款',
+
+    // ===== NEW TRANSLATIONS =====
+
+    // Onboarding (14 keys)
+    'welcome_title': '歡迎來到EveryDiary！',
+    'setup_subtitle': '請先設定應用程式中使用的姓名和鎖定選項。',
+    'name_label': '姓名',
+    'name_hint': '例如：張三',
+    'name_required': '請輸入姓名',
+    'name_max_length': '姓名必須在24個字元以內',
+    'pin_lock_title': '應用程式啟動時使用PIN鎖定',
+    'pin_lock_subtitle': '設定開啟應用程式時輸入4位PIN。',
+    'pin_label': 'PIN（4位數字）',
+    'pin_required': '請輸入4位數字',
+    'pin_numbers_only': '只能輸入數字',
+    'pin_confirm_label': '確認PIN',
+    'pin_mismatch': 'PIN不符',
+    'start_button': '開始',
+    'setup_save_failed': '設定儲存失敗',
+
+    // Home Screen (11 keys)
+    'home_greeting': '{name}，您好 👋',
+    'home_subtitle': '記錄今天的瞬間，用AI圖像保留情感。',
+    'quick_actions_title': '快速操作',
+    'new_diary': '寫新日記',
+    'view_diaries': '查看我的日記',
+    'statistics_action': '日記統計',
+    'memory_notifications': '回憶通知設定',
+    'app_intro_title': '應用程式介紹',
+    'fallback_features_title': 'EveryDiary主要功能',
+    'fallback_features_list': 'OCR · 語音錄製 · 情感分析 · AI圖像 · 備份管理 · PIN安全 · 螢幕隱私',
+    'diary_author': '日記作者',
+
+    // Error Page (4 keys)
+    'error_title': '錯誤',
+    'page_not_found': '找不到頁面',
+    'page_not_found_subtitle': '您請求的頁面不存在',
+    'back_to_home': '返回主頁',
+
+    // Privacy & Terms (2 keys)
+    'privacy_policy_title': '隱私權政策',
+    'terms_of_service_title': '服務條款',
+
+    // Diary Write Screen (49 keys)
+    'diary_write_title': '寫日記',
+    'save_tooltip': '儲存',
+    'thumbnail_style_tooltip': '縮圖樣式設定',
+    'exit_without_save_title': '不儲存退出嗎？',
+    'exit_without_save_message': '正在編寫的內容將不會儲存。',
+    'exit': '退出',
+    'title_label': '標題',
+    'title_hint': '輸入今天的日記標題',
+    'title_required': '請輸入標題',
+    'date_label': '日期',
+    'emotion_analysis_label': '情感分析',
+    'emotion_analyzing': '正在分析情感...',
+    'weather_label': '天氣',
+    'weather_hint': '選擇天氣',
+    'weather_sunny': '晴',
+    'weather_cloudy': '陰',
+    'weather_rainy': '雨',
+    'weather_snowy': '雪',
+    'weather_windy': '風',
+    'weather_foggy': '霧',
+    'weather_hot': '酷暑',
+    'weather_cold': '寒冷',
+    'weather_other': '其他',
+    'ocr_button': 'OCR',
+    'voice_recording_button': '語音錄製',
+    'save_button': '儲存日記',
+    'saved_success': '日記已儲存。',
+    'save_failed': '儲存失敗',
+    'diary_not_found': '找不到日記',
+    'load_error': '載入日記時發生錯誤',
+    'load_timeout': '日記載入逾時。請重試。',
+    'retry': '重試',
+    'text_add_error': '新增文字時發生錯誤',
+    'thumbnail_empty_content': '內容為空，無法產生縮圖。',
+    'thumbnail_no_diary': '沒有正在編輯的日記，跳過重新產生。',
+    'thumbnail_regenerating': '正在重新產生縮圖。請稍候。',
+    'ocr_success': '文字辨識完成',
+    'ocr_cancelled': '文字辨識已取消',
+    'ocr_unavailable': 'OCR功能不可用',
+    'camera_permission_error': '無法存取相機。請檢查權限。',
+    'camera_permission_required': '需要相機權限。',
+    'voice_error': '語音錄製錯誤',
+    'voice_text_added': '語音文字已新增。',
+    'voice_text_add_failed': '語音文字新增失敗。',
+    'invalid_diary_id': '無效的日記ID',
+    'content_placeholder': '在此輸入內容...',
+    'characters': '字',
+    'diary_content_placeholder': '記錄今天的故事...',
+    'editor_undo_tooltip': '復原',
+    'editor_redo_tooltip': '重做',
+    'editor_bold_tooltip': '粗體',
+    'editor_italic_tooltip': '斜體',
+    'editor_underline_tooltip': '底線',
+    'editor_bulleted_list_tooltip': '項目符號清單',
+    'editor_numbered_list_tooltip': '編號清單',
+    'editor_align_left_tooltip': '靠左對齊',
+    'editor_align_center_tooltip': '置中對齊',
+    'editor_align_right_tooltip': '靠右對齊',
+
+    // Thumbnail Style (24 keys)
+    'thumbnail_dialog_title': '自訂縮圖樣式',
+    'thumbnail_dialog_subtitle': '調整AI縮圖樣式和校正值以反映您的偏好。',
+    'style_select_title': '選擇樣式',
+    'detail_adjust_title': '詳細調整',
+    'brightness_label': '亮度',
+    'contrast_label': '對比度',
+    'saturation_label': '飽和度',
+    'blur_radius_label': '模糊半徑',
+    'overlay_color_label': '疊加顏色',
+    'overlay_opacity_label': '疊加不透明度',
+    'auto_optimization_title': '自動最佳化',
+    'auto_optimization_subtitle': '根據分析結果自動校正提示',
+    'manual_keyword_title': '自訂關鍵字',
+    'manual_keyword_subtitle': '新增最多5個始終包含在AI提示中的關鍵字。',
+    'keyword_label': '手動關鍵字',
+    'keyword_hint': '例如：柔和色調，夜景',
+    'keyword_add_button': '新增',
+    'keyword_required': '請輸入關鍵字。',
+    'keyword_max_length': '關鍵字必須在24個字元以內。',
+    'keyword_duplicate': '此關鍵字已新增。',
+    'keyword_max_count': '最多可註冊5個關鍵字。',
+    'keyword_save_failed': '無法儲存關鍵字。請重試。',
+    'keyword_empty_list': '沒有註冊的關鍵字。',
+    'keyword_clear_all': '全部清除',
+
+    // Thumbnail Styles (10 keys)
+    'style_chibi': '三頭身漫畫',
+    'style_cute': '可愛',
+    'style_realistic': '寫實',
+    'style_cartoon': '卡通',
+    'style_watercolor': '水彩',
+    'style_oil': '油畫',
+    'style_sketch': '素描',
+    'style_digital': '數位藝術',
+    'style_vintage': '復古',
+    'style_modern': '現代',
+
+    // Diary List (21 keys)
+    'my_diary': '我的日記',
+    'back_tooltip': '返回',
+    'calendar_tooltip': '日曆檢視',
+    'filter_tooltip': '篩選',
+    'sort_tooltip': '排序',
+    'new_diary_fab': '寫新日記',
+    'delete_title': '刪除日記',
+    'delete_message': '確定要刪除此日記嗎？\n已刪除的日記無法復原。',
+    'delete_button': '刪除',
+    'sort_dialog_title': '排序依據',
+    'sort_date_desc': '最新優先',
+    'sort_date_asc': '最早優先',
+    'sort_title_asc': '標題（A-Z）',
+    'sort_title_desc': '標題（Z-A）',
+    'sort_mood': '按心情',
+    'sort_weather': '按天氣',
+    'error_load_diaries': '無法載入日記',
+    'error_unknown': '發生未知錯誤',
+    'empty_diaries_title': '還沒有日記',
+    'empty_diaries_subtitle': '寫下您的第一篇日記',
+    'empty_diaries_action': '寫日記',
+
+    // Statistics (7 keys)
+    'statistics_title': '日記統計',
+    'date_range_tooltip': '選擇日期範圍',
+    'period_title': '分析期間',
+    'preset_week': '最近1週',
+    'preset_month': '最近1個月',
+    'preset_quarter': '最近3個月',
+    'preset_year': '最近1年',
+
+    // Backup & Restore (49 keys)
+    'backup_section_title': '備份與復原',
+    'create_backup_button': '建立備份',
+    'restore_from_file_button': '從檔案復原',
+    'auto_backup_title': '自動備份',
+    'backup_interval_label': '備份週期：',
+    'interval_daily': '每天',
+    'interval_3days': '每3天',
+    'interval_weekly': '每週',
+    'interval_biweekly': '每兩週',
+    'interval_monthly': '每月',
+    'max_backups_label': '最大備份數：',
+    'max_3': '3個',
+    'max_5': '5個',
+    'max_10': '10個',
+    'max_20': '20個',
+    'no_backups_title': '沒有備份',
+    'no_backups_subtitle': '建立您的第一個備份',
+    'available_backups_title': '可用備份',
+    'created_date_label': '建立日期',
+    'size_label': '大小',
+    'includes_label': '包含',
+    'includes_settings': '設定',
+    'includes_profile': '個人資料',
+    'includes_diary': '日記',
+    'restore_action': '復原',
+    'delete_action': '刪除',
+    'backup_success': '備份建立成功。',
+    'backup_failed': '備份建立失敗。',
+    'backup_error': '建立備份時發生錯誤',
+    'restore_success': '復原成功完成。',
+    'restore_failed': '復原失敗。',
+    'restore_error': '復原過程中發生錯誤',
+    'delete_success': '備份已刪除。',
+    'delete_failed': '備份刪除失敗。',
+    'delete_error': '刪除備份時發生錯誤',
+    'load_error_backup': '載入資料時發生錯誤',
+    'file_picker_error': '選擇檔案時發生錯誤',
+    'auto_backup_update_error': '更新自動備份設定時發生錯誤',
+    'interval_update_error': '設定備份週期時發生錯誤',
+    'max_backups_update_error': '設定最大備份數時發生錯誤',
+    'restore_confirm_title': '復原資料',
+    'restore_confirm_message': '目前資料將被備份資料覆蓋。\n此操作無法撤銷。\n\n繼續嗎？',
+    'delete_confirm_title': '刪除備份',
+    'delete_confirm_message': '確定要刪除此備份嗎？\n此操作無法撤銷。',
+    'count_suffix': '個',
+
+    // Calendar (16 keys)
+    'calendar': '日曆',
+    'back': '返回',
+    'diary_statistics': '日記統計',
+    'weekly_view': '週視圖',
+    'monthly_view': '月視圖',
+    'today': '今天',
+    'write_new_diary': '撰寫新日記',
+    'calendar_legend_multiple_entries': '橙色圓點表示有2篇或更多日記。',
+    'please_select_date': '請選擇日期',
+    'diary_count': '{count}篇日記',
+    'no_diary_on_this_day': '這一天沒有日記',
+    'write_diary': '寫日記',
+    'diary_search_hint': '搜尋日記...',
+    'clear_search_tooltip': '清除搜尋',
+    'today_with_date': '今天（{month}月{day}日）',
+    'yesterday_with_date': '昨天（{month}月{day}日）',
+    'tomorrow_with_date': '明天（{month}月{day}日）',
+    'full_date': '{year}年{month}月{day}日',
+
+    // Statistics Widget (25 keys)
+    'stats_overall_title': '整體統計',
+    'stats_total_diaries': '總日記數',
+    'stats_total_diaries_unit': '{count}篇',
+    'stats_current_streak': '當前連續',
+    'stats_current_streak_unit': '{count}天',
+    'stats_longest_streak': '最長連續',
+    'stats_longest_streak_unit': '{count}天',
+    'stats_daily_average': '日平均',
+    'stats_daily_average_unit': '{count}篇',
+    'stats_most_active_day': '最活躍的星期',
+    'stats_most_active_day_unit': '星期{day}',
+    'stats_most_active_month': '最活躍的月份',
+    'stats_monthly_frequency': '月度寫作頻率',
+    'stats_weekly_frequency': '週度寫作頻率',
+    'stats_no_data': '暫無數據',
+    'stats_count_unit': '{count}篇',
+    'stats_content_length_title': '日記長度統計',
+    'stats_average_characters': '平均字數',
+    'stats_characters_unit': '{count}字',
+    'stats_average_words': '平均詞數',
+    'stats_words_unit': '{count}個',
+    'stats_max_characters': '最大字數',
+    'stats_min_characters': '最小字數',
+    'stats_writing_time_title': '寫作時段統計',
+    'stats_time_count_unit': '{count}次',
+
+    // Generation Count Widget (3 keys)
+    'ai_image_generation': 'AI圖像生成',
+    'remaining_count_label': '剩餘次數: ',
+    'count_times': '次',
+
+    // Memory Screen (14 keys)
+    'memory_title': '回憶',
+    'memory_back_tooltip': '返回',
+    'memory_notifications_tooltip': '通知設定',
+    'memory_filter_tooltip': '篩選',
+    'memory_refresh_tooltip': '重新整理',
+    'memory_loading': '正在載入回憶...',
+    'memory_load_failed': '載入回憶失敗',
+    'memory_unknown_error': '發生未知錯誤',
+    'memory_retry_button': '重試',
+    'memory_empty_title': '暫無回憶',
+    'memory_empty_description': '寫下日記以回顧過去的記錄',
+    'memory_write_diary_button': '寫日記',
+    'memory_bookmarked': '已收藏 {title}',
+    'memory_bookmark_removed': '已取消收藏 {title}',
+
+    // App Intro Features (16 keys)
+    'feature_ocr_title': 'OCR文字提取',
+    'feature_ocr_desc': '拍攝紙上記錄，立即轉換為文字。',
+    'feature_voice_title': '語音錄音',
+    'feature_voice_desc': '將您說的話自然地轉換為日記。',
+    'feature_emotion_title': '情緒分析',
+    'feature_emotion_desc': '整理日記中的情緒並以統計形式呈現。',
+    'feature_ai_image_title': 'AI圖像生成',
+    'feature_ai_image_desc': '創建與日記氛圍相匹配的情感背景圖像。',
+    'feature_search_title': '日記搜尋',
+    'feature_search_desc': '透過關鍵詞和日期快速查找日記。',
+    'feature_backup_title': '備份檔案管理',
+    'feature_backup_desc': '匯出和匯入備份檔案，隨時安全保存。',
+    'feature_pin_title': 'PIN安全',
+    'feature_pin_desc': '透過PIN鎖定安全保護您的個人日記。',
+    'feature_privacy_title': '背景螢幕隱藏',
+    'feature_privacy_desc': '在背景模糊處理螢幕以保護隱私。',
+
+    // Emotion Arrow
+    'emotion_arrow': '→',
+
+    // Emotion Names
+    'emotion_joy': '快樂',
+    'emotion_default': '預設',
+    'emotion_sadness': '悲傷',
+    'emotion_anger': '憤怒',
+    'emotion_fear': '恐懼',
+    'emotion_surprise': '驚訝',
+    'emotion_disgust': '厭惡',
+    'emotion_anticipation': '期待',
+    'emotion_trust': '信任',
+
+    // Privacy Policy Content
+    'privacy_policy_content': '''EveryDiary 隱私政策
+
+1. 個人資訊處理目的
+EveryDiary（以下簡稱「應用程式」）為以下目的處理個人資訊：
+
+- 提供日記撰寫和管理服務
+- 提供使用者設定和自訂功能
+- 改進服務和提升使用者體驗
+
+2. 收集的個人資訊項目
+應用程式收集以下個人資訊：
+
+- 使用者名稱（可選）
+- PIN鎖定設定資訊（可選）
+- 日記內容及相關資料（本地儲存）
+- 應用程式設定資訊
+
+3. 個人資訊的保留和使用期限
+應用程式保留個人資訊，直到使用者直接刪除或解除安裝應用程式。
+
+所有資料都在使用者裝置上本地儲存，不會傳輸到外部伺服器。
+
+4. 向第三方提供個人資訊
+應用程式不會向第三方提供使用者的個人資訊。
+
+5. 個人資訊的銷毀
+當使用者解除安裝應用程式或刪除資料時，所有個人資訊將立即銷毀。
+
+6. 自動收集個人資訊裝置的安裝、操作及拒絕
+應用程式不使用Cookie或類似的追蹤技術。
+
+7. 個人資訊保護負責人
+如有個人資訊相關問題，請聯絡我們：
+電子郵件: support@everydiary.app
+
+8. 隱私政策的變更
+本隱私政策可能根據法律法規和政策進行變更，變更時將在應用程式內通知。
+
+生效日期: 2025年1月1日''',
+
+    // Terms of Service Content
+    'terms_of_service_content': '''EveryDiary 服務條款
+
+第1條（目的）
+本條款旨在規定應用程式營運者和使用者關於使用EveryDiary（以下簡稱「應用程式」）的權利、義務和責任事項。
+
+第2條（定義）
+1. 「應用程式」是指允許使用者撰寫和管理日記的行動應用程式。
+2. 「使用者」是指根據本條款使用應用程式的人。
+3. 「內容」是指使用者透過應用程式建立的日記和相關資料。
+
+第3條（條款的效力和修改）
+1. 本條款適用於所有下載和使用應用程式的使用者。
+2. 本條款可根據需要進行修改，修改後的條款將在應用程式內通知。
+
+第4條（服務提供）
+1. 應用程式為使用者提供日記撰寫、管理、備份等功能。
+2. 應用程式免費提供，部分功能可透過應用程式內購買使用。
+
+第5條（使用者義務）
+1. 使用者必須遵守本條款和相關法律。
+2. 使用者不得將應用程式用於非法目的。
+3. 使用者有責任安全管理其帳戶資訊和PIN碼。
+
+第6條（內容管理）
+1. 使用者建立的內容儲存在使用者裝置的本地。
+2. 使用者對其建立的內容擁有所有權利和責任。
+3. 應用程式營運者不存取使用者內容，也不向第三方提供。
+
+第7條（服務中斷）
+應用程式營運者可在以下情況下中斷服務提供：
+1. 需要系統維護時
+2. 發生不可抗力情況時
+
+第8條（免責條款）
+1. 應用程式營運者對使用者裝置錯誤、資料遺失等造成的損害不承擔責任。
+2. 使用者應定期執行備份以防止資料遺失。
+
+第9條（爭議解決）
+與本條款相關的爭議應根據大韓民國法律解決。
+
+生效日期: 2025年1月1日''',
+  };
+}

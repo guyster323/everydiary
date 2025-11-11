@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/providers/localization_provider.dart';
 
 /// 일기 검색바 위젯
-class DiarySearchBar extends StatefulWidget {
+class DiarySearchBar extends ConsumerStatefulWidget {
   final void Function(String) onSearchChanged;
   final String initialValue;
-  final String hintText;
 
   const DiarySearchBar({
     super.key,
     required this.onSearchChanged,
     this.initialValue = '',
-    this.hintText = '일기 검색...',
   });
 
   @override
-  State<DiarySearchBar> createState() => _DiarySearchBarState();
+  ConsumerState<DiarySearchBar> createState() => _DiarySearchBarState();
 }
 
-class _DiarySearchBarState extends State<DiarySearchBar> {
+class _DiarySearchBarState extends ConsumerState<DiarySearchBar> {
   late TextEditingController _controller;
   bool _isSearching = false;
 
@@ -50,6 +51,8 @@ class _DiarySearchBarState extends State<DiarySearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -77,7 +80,7 @@ class _DiarySearchBarState extends State<DiarySearchBar> {
             child: TextField(
               controller: _controller,
               decoration: InputDecoration(
-                hintText: widget.hintText,
+                hintText: l10n.get('diary_search_hint'),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 hintStyle: TextStyle(
@@ -97,7 +100,7 @@ class _DiarySearchBarState extends State<DiarySearchBar> {
             IconButton(
               icon: const Icon(Icons.clear),
               onPressed: _clearSearch,
-              tooltip: '검색 취소',
+              tooltip: l10n.get('clear_search_tooltip'),
               iconSize: 20,
             ),
         ],

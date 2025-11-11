@@ -26,6 +26,32 @@ enum ImageStyle {
   const ImageStyle(this.displayName, this.promptSuffix);
   final String displayName;
   final String promptSuffix;
+
+  /// Get localization key for this style
+  String get localizationKey {
+    switch (this) {
+      case ImageStyle.chibi:
+        return 'style_chibi';
+      case ImageStyle.cute:
+        return 'style_cute';
+      case ImageStyle.realistic:
+        return 'style_realistic';
+      case ImageStyle.cartoon:
+        return 'style_cartoon';
+      case ImageStyle.watercolor:
+        return 'style_watercolor';
+      case ImageStyle.oil:
+        return 'style_oil';
+      case ImageStyle.sketch:
+        return 'style_sketch';
+      case ImageStyle.digital:
+        return 'style_digital';
+      case ImageStyle.vintage:
+        return 'style_vintage';
+      case ImageStyle.modern:
+        return 'style_modern';
+    }
+  }
 }
 
 /// 사용자 커스터마이징 설정 모델

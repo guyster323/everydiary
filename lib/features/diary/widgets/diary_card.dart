@@ -2,14 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../../../shared/models/attachment.dart';
 import '../../../shared/models/diary_entry.dart';
 
 /// 일기 카드 위젯
-class DiaryCard extends StatelessWidget {
+class DiaryCard extends ConsumerWidget {
   final DiaryEntry diary;
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
@@ -28,7 +30,9 @@ class DiaryCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
+
     return CustomCard(
       onTap: onTap,
       child: Padding(
@@ -37,7 +41,7 @@ class DiaryCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 헤더 (날짜, 기분, 날씨)
-            _buildHeader(context),
+            _buildHeader(context, ref),
             const SizedBox(height: 12),
 
             // 제목
@@ -63,13 +67,13 @@ class DiaryCard extends StatelessWidget {
   }
 
   /// 헤더 (날짜, 기분, 날씨)
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         // 날짜
         Expanded(
           child: Text(
-            _formatDate(diary.date),
+            _formatDate(context, ref, diary.date),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w600,
               color: Theme.of(context).colorScheme.primary,
@@ -311,8 +315,9 @@ class DiaryCard extends StatelessWidget {
   }
 
   /// 날짜 포맷팅
-  String _formatDate(String dateString) {
+  String _formatDate(BuildContext context, WidgetRef ref, String dateString) {
     try {
+      final l10n = ref.read(localizationProvider);
       final date = DateTime.parse(dateString);
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
@@ -320,11 +325,13 @@ class DiaryCard extends StatelessWidget {
       final diaryDate = DateTime(date.year, date.month, date.day);
 
       if (diaryDate == today) {
-        return '오늘';
+        return l10n.get('date_today');
       } else if (diaryDate == yesterday) {
-        return '어제';
+        return l10n.get('date_yesterday');
       } else {
-        return DateFormat('M월 d일 (E)', 'ko_KR').format(date);
+        // Get current locale from context
+        final locale = Localizations.localeOf(context);
+        return DateFormat('M월 d일 (E)', locale.toString()).format(date);
       }
     } catch (e) {
       return dateString;

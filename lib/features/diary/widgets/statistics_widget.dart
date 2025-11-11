@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/custom_card.dart';
 import '../services/calendar_service.dart';
 
 /// 일기 통계 표시 위젯
-class StatisticsWidget extends StatelessWidget {
+class StatisticsWidget extends ConsumerWidget {
   final CalendarService calendarService;
   final DateTime startDate;
   final DateTime endDate;
@@ -18,39 +20,40 @@ class StatisticsWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 전체 통계 요약
-        _buildOverallStatsCard(context),
+        _buildOverallStatsCard(context, ref),
 
         const SizedBox(height: 16),
 
         // 월별/주별 통계
         Row(
           children: [
-            Expanded(child: _buildMonthlyStatsCard(context)),
+            Expanded(child: _buildMonthlyStatsCard(context, ref)),
             const SizedBox(width: 12),
-            Expanded(child: _buildWeeklyStatsCard(context)),
+            Expanded(child: _buildWeeklyStatsCard(context, ref)),
           ],
         ),
 
         const SizedBox(height: 16),
 
         // 일기 길이 통계
-        _buildContentLengthStatsCard(context),
+        _buildContentLengthStatsCard(context, ref),
 
         const SizedBox(height: 16),
 
         // 작성 시간대 통계
-        _buildWritingTimeStatsCard(context),
+        _buildWritingTimeStatsCard(context, ref),
       ],
     );
   }
 
   /// 전체 통계 요약 카드
-  Widget _buildOverallStatsCard(BuildContext context) {
+  Widget _buildOverallStatsCard(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final overallStats = calendarService.getOverallStats();
 
     return CustomCard(
@@ -60,7 +63,7 @@ class StatisticsWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '전체 통계',
+              l10n.get('stats_overall_title'),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryBlue,
@@ -72,8 +75,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '총 일기 수',
-                    '${overallStats['totalDiaries']}개',
+                    ref,
+                    l10n.get('stats_total_diaries'),
+                    l10n.get('stats_total_diaries_unit').replaceAll('{count}', '${overallStats['totalDiaries']}'),
                     Icons.book,
                     AppTheme.primaryBlue,
                   ),
@@ -81,8 +85,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '현재 연속',
-                    '${overallStats['currentStreak']}일',
+                    ref,
+                    l10n.get('stats_current_streak'),
+                    l10n.get('stats_current_streak_unit').replaceAll('{count}', '${overallStats['currentStreak']}'),
                     Icons.local_fire_department,
                     AppTheme.secondaryBeige,
                   ),
@@ -95,8 +100,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '최장 연속',
-                    '${overallStats['longestStreak']}일',
+                    ref,
+                    l10n.get('stats_longest_streak'),
+                    l10n.get('stats_longest_streak_unit').replaceAll('{count}', '${overallStats['longestStreak']}'),
                     Icons.trending_up,
                     AppTheme.positiveGreen,
                   ),
@@ -104,8 +110,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '일평균',
-                    '${overallStats['averagePerDay'].toStringAsFixed(1)}개',
+                    ref,
+                    l10n.get('stats_daily_average'),
+                    l10n.get('stats_daily_average_unit').replaceAll('{count}', (overallStats['averagePerDay'] as num).toStringAsFixed(1)),
                     Icons.calendar_today,
                     AppTheme.infoBlue,
                   ),
@@ -118,8 +125,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '가장 활발한 요일',
-                    '${overallStats['mostActiveDay']}요일',
+                    ref,
+                    l10n.get('stats_most_active_day'),
+                    l10n.get('stats_most_active_day_unit').replaceAll('{day}', '${overallStats['mostActiveDay']}'),
                     Icons.schedule,
                     AppTheme.warningOrange,
                   ),
@@ -127,7 +135,8 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '가장 활발한 월',
+                    ref,
+                    l10n.get('stats_most_active_month'),
                     '${overallStats['mostActiveMonth']}',
                     Icons.calendar_month,
                     AppTheme.neutralGray,
@@ -142,7 +151,8 @@ class StatisticsWidget extends StatelessWidget {
   }
 
   /// 월별 통계 카드
-  Widget _buildMonthlyStatsCard(BuildContext context) {
+  Widget _buildMonthlyStatsCard(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final monthlyStats = calendarService.getMonthlyFrequencyStats(
       startDate,
       endDate,
@@ -155,7 +165,7 @@ class StatisticsWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '월별 작성 빈도',
+              l10n.get('stats_monthly_frequency'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryBlue,
@@ -163,7 +173,7 @@ class StatisticsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (monthlyStats.isEmpty)
-              const Text('데이터가 없습니다')
+              Text(l10n.get('stats_no_data'))
             else
               ...monthlyStats.entries.take(6).map((entry) {
                 final month = entry.key;
@@ -187,7 +197,7 @@ class StatisticsWidget extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '$count개',
+                          l10n.get('stats_count_unit').replaceAll('{count}', '$count'),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppTheme.primaryBlue,
@@ -206,7 +216,8 @@ class StatisticsWidget extends StatelessWidget {
   }
 
   /// 주별 통계 카드
-  Widget _buildWeeklyStatsCard(BuildContext context) {
+  Widget _buildWeeklyStatsCard(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final weeklyStats = calendarService.getWeeklyFrequencyStats(
       startDate,
       endDate,
@@ -219,7 +230,7 @@ class StatisticsWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '주별 작성 빈도',
+              l10n.get('stats_weekly_frequency'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryBlue,
@@ -227,7 +238,7 @@ class StatisticsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (weeklyStats.isEmpty)
-              const Text('데이터가 없습니다')
+              Text(l10n.get('stats_no_data'))
             else
               ...weeklyStats.entries.take(6).map((entry) {
                 final week = entry.key;
@@ -248,7 +259,7 @@ class StatisticsWidget extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '$count개',
+                          l10n.get('stats_count_unit').replaceAll('{count}', '$count'),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppTheme.secondaryBeige,
@@ -267,7 +278,8 @@ class StatisticsWidget extends StatelessWidget {
   }
 
   /// 일기 길이 통계 카드
-  Widget _buildContentLengthStatsCard(BuildContext context) {
+  Widget _buildContentLengthStatsCard(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final lengthStats = calendarService.getContentLengthStats(
       startDate,
       endDate,
@@ -280,7 +292,7 @@ class StatisticsWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '일기 길이 통계',
+              l10n.get('stats_content_length_title'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryBlue,
@@ -292,8 +304,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '평균 글자 수',
-                    '${lengthStats['averageCharacters']}자',
+                    ref,
+                    l10n.get('stats_average_characters'),
+                    l10n.get('stats_characters_unit').replaceAll('{count}', '${lengthStats['averageCharacters']}'),
                     Icons.text_fields,
                     AppTheme.infoBlue,
                   ),
@@ -301,8 +314,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '평균 단어 수',
-                    '${lengthStats['averageWords']}개',
+                    ref,
+                    l10n.get('stats_average_words'),
+                    l10n.get('stats_words_unit').replaceAll('{count}', '${lengthStats['averageWords']}'),
                     Icons.format_list_bulleted,
                     AppTheme.positiveGreen,
                   ),
@@ -315,8 +329,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '최대 글자 수',
-                    '${lengthStats['maxCharacters']}자',
+                    ref,
+                    l10n.get('stats_max_characters'),
+                    l10n.get('stats_characters_unit').replaceAll('{count}', '${lengthStats['maxCharacters']}'),
                     Icons.trending_up,
                     AppTheme.warningOrange,
                   ),
@@ -324,8 +339,9 @@ class StatisticsWidget extends StatelessWidget {
                 Expanded(
                   child: _buildStatItem(
                     context,
-                    '최소 글자 수',
-                    '${lengthStats['minCharacters']}자',
+                    ref,
+                    l10n.get('stats_min_characters'),
+                    l10n.get('stats_characters_unit').replaceAll('{count}', '${lengthStats['minCharacters']}'),
                     Icons.trending_down,
                     AppTheme.neutralGray,
                   ),
@@ -339,7 +355,8 @@ class StatisticsWidget extends StatelessWidget {
   }
 
   /// 작성 시간대 통계 카드
-  Widget _buildWritingTimeStatsCard(BuildContext context) {
+  Widget _buildWritingTimeStatsCard(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final timeStats = calendarService.getWritingTimeStats(startDate, endDate);
 
     // 가장 활발한 시간대 5개 찾기
@@ -354,7 +371,7 @@ class StatisticsWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '작성 시간대 통계',
+              l10n.get('stats_writing_time_title'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppTheme.primaryBlue,
@@ -362,7 +379,7 @@ class StatisticsWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (topTimes.isEmpty)
-              const Text('데이터가 없습니다')
+              Text(l10n.get('stats_no_data'))
             else
               ...topTimes.map((entry) {
                 final time = entry.key;
@@ -396,7 +413,7 @@ class StatisticsWidget extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          '$count회',
+                          l10n.get('stats_time_count_unit').replaceAll('{count}', '$count'),
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: AppTheme.primaryBlue,
@@ -417,6 +434,7 @@ class StatisticsWidget extends StatelessWidget {
   /// 통계 항목 위젯
   Widget _buildStatItem(
     BuildContext context,
+    WidgetRef ref,
     String label,
     String value,
     IconData icon,

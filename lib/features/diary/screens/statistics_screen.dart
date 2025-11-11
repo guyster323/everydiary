@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/layout/responsive_widgets.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../../../shared/services/database_service.dart';
@@ -96,22 +97,25 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return Scaffold(
       appBar: CustomAppBar(
-        title: '일기 통계',
+        title: l10n.get('statistics_title'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
             // 통계 화면에서는 항상 루트로 이동
             context.go('/');
           },
+          tooltip: l10n.get('back_tooltip'),
         ),
         actions: [
           // 날짜 범위 선택 버튼
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: _selectDateRange,
-            tooltip: '날짜 범위 선택',
+            tooltip: l10n.get('date_range_tooltip'),
           ),
         ],
       ),
@@ -142,6 +146,8 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
 
   /// 기간 선택 위젯
   Widget _buildPeriodSelector() {
+    final l10n = ref.read(localizationProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -158,7 +164,7 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '분석 기간',
+                l10n.get('period_title'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -181,13 +187,13 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _buildPresetButton('최근 1주', 'week'),
+                _buildPresetButton(l10n.get('preset_week'), 'week'),
                 const SizedBox(width: 8),
-                _buildPresetButton('최근 1개월', 'month'),
+                _buildPresetButton(l10n.get('preset_month'), 'month'),
                 const SizedBox(width: 8),
-                _buildPresetButton('최근 3개월', 'quarter'),
+                _buildPresetButton(l10n.get('preset_quarter'), 'quarter'),
                 const SizedBox(width: 8),
-                _buildPresetButton('최근 1년', 'year'),
+                _buildPresetButton(l10n.get('preset_year'), 'year'),
               ],
             ),
           ),

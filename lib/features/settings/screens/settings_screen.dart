@@ -6,8 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/animations/animations.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/providers/app_profile_provider.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/pin_lock_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../models/settings_enums.dart';
@@ -37,52 +39,61 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final settings = ref.watch(settingsProvider);
     final profileState = ref.watch(appProfileProvider);
     final pinState = ref.watch(pinLockProvider);
+    final l10n = ref.watch(localizationProvider);
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '설정',
-        actions: [
-          IconButton(
-            onPressed: _showResetDialog,
-            icon: const Icon(Icons.refresh),
-            tooltip: '설정 초기화',
-          ),
-        ],
-      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          context.go('/');
+        }
+      },
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: l10n.get('settings'),
+          actions: [
+            IconButton(
+              onPressed: _showResetDialog,
+              icon: const Icon(Icons.refresh),
+              tooltip: l10n.get('settings_reset'),
+            ),
+          ],
+        ),
       body: ResponsiveWrapper(
         child: ScrollAnimations.scrollReveal(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // 앱 설정 섹션
+              // 앱 설정 섹션 - 언어를 맨 위로
               SettingsSection(
-                title: '앱 설정',
+                title: l10n.get('app_settings'),
                 children: [
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.language,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: l10n.get('language'),
+                    subtitle: _getLanguageDisplayName(settings.language, l10n),
+                    onTap: () => _showLanguageSelector(),
+                  ),
                   SettingsTile(
                     leading: Icon(
                       Icons.image_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '썸네일 스타일',
-                    subtitle: 'AI 썸네일 스타일과 키워드를 설정합니다',
+                    title: l10n.get('thumbnail_style'),
+                    subtitle: l10n.get('thumbnail_style_subtitle'),
                     onTap: () => _showThumbnailStyleSelector(),
                   ),
-                  SettingsTile(
-                    leading: Icon(
-                      Icons.analytics_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: '썸네일 품질 리포트',
-                    subtitle: 'AI 생성 품질 지표와 회귀 테스트를 확인합니다',
-                    onTap: _openThumbnailMonitoring,
-                  ),
+                  // 테스트 기능 제거: 썸네일 품질 리포트 항목 삭제
                   SettingsTile(
                     leading: Icon(
                       Icons.palette_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '테마',
-                    subtitle: _getThemeDisplayName(settings.themeMode),
+                    title: l10n.get('theme'),
+                    subtitle: _getThemeDisplayName(settings.themeMode, l10n),
                     onTap: () => _showThemeSelector(),
                   ),
                   SettingsTile(
@@ -90,18 +101,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icons.text_fields,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '폰트 크기',
-                    subtitle: _getFontSizeDisplayName(settings.fontSize),
+                    title: l10n.get('font_size'),
+                    subtitle: _getFontSizeDisplayName(settings.fontSize, l10n),
                     onTap: () => _showFontSizeSelector(),
-                  ),
-                  SettingsTile(
-                    leading: Icon(
-                      Icons.language,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: '언어',
-                    subtitle: _getLanguageDisplayName(settings.language),
-                    onTap: () => _showLanguageSelector(),
                   ),
                 ],
               ),
@@ -109,36 +111,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 24),
 
               SettingsSection(
-                title: 'EveryDiary 보안 및 관리',
+                title: l10n.get('security_management'),
                 children: [
                   SettingsTile(
                     leading: Icon(
                       Icons.person_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '사용자 이름',
+                    title: l10n.get('username'),
                     subtitle: profileState.userName?.isNotEmpty == true
                         ? profileState.userName
-                        : '설정되지 않음',
-                    onTap: () => _editUserName(context, profileState),
+                        : l10n.get('username_not_set'),
+                    onTap: () => _editUserName(context, profileState, l10n),
                   ),
                   SettingsTile(
                     leading: Icon(
                       Icons.lock_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: 'PIN 잠금',
+                    title: l10n.get('pin_lock'),
                     subtitle: pinState.isPinEnabled
-                        ? '앱 실행 시 PIN 요구'
-                        : '사용 안 함',
+                        ? l10n.get('pin_lock_enabled')
+                        : l10n.get('pin_lock_disabled'),
                     trailing: Switch.adaptive(
                       value: pinState.isPinEnabled,
                       onChanged: _pinActionInProgress
                           ? null
-                          : (value) => _handlePinToggle(context, value),
+                          : (value) => _handlePinToggle(context, value, l10n),
                     ),
                     onTap: () =>
-                        _handlePinToggle(context, !pinState.isPinEnabled),
+                        _handlePinToggle(context, !pinState.isPinEnabled, l10n),
                   ),
                   if (pinState.isPinEnabled)
                     SettingsTile(
@@ -146,27 +148,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         Icons.password,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      title: 'PIN 변경',
-                      subtitle: '현재 PIN을 입력하고 새 PIN으로 변경합니다',
-                      onTap: () => _changePin(context),
+                      title: l10n.get('change_pin'),
+                      subtitle: l10n.get('change_pin_subtitle'),
+                      onTap: () => _changePin(context, l10n),
                     ),
                   SettingsTile(
                     leading: Icon(
                       Icons.help_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '비상 복구 질문',
+                    title: l10n.get('recovery_question'),
                     subtitle: pinState.recoveryQuestion != null
-                        ? '설정됨'
-                        : '설정되지 않음',
-                    onTap: () => _configureRecoveryQuestion(context, pinState),
+                        ? l10n.get('recovery_question_set')
+                        : l10n.get('recovery_question_not_set'),
+                    onTap: () => _configureRecoveryQuestion(context, pinState, l10n),
                   ),
                   if (!kIsWeb && !Platform.isAndroid)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       child: Text(
-                        'iOS에서는 시스템 제한으로 화면 캡처 차단 기능이 완전하게 지원되지 않습니다. '
-                        'PIN 잠금은 계속 적용되며, 중요한 정보는 수동으로 보호해 주세요.',
+                        l10n.get('ios_security_warning'),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -179,15 +180,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               // 알림 설정 섹션
               SettingsSection(
-                title: '알림',
+                title: l10n.get('notifications'),
                 children: [
                   SettingsTile(
                     leading: Icon(
                       Icons.notifications_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '일기 작성 알림',
-                    subtitle: '매일 일기 작성을 알려드립니다',
+                    title: l10n.get('diary_reminder'),
+                    subtitle: l10n.get('diary_reminder_subtitle'),
                     trailing: Switch(
                       value: settings.dailyReminder,
                       onChanged: (value) {
@@ -202,7 +203,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icons.schedule,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '알림 시간',
+                    title: l10n.get('reminder_time'),
                     subtitle: _formatTime(settings.reminderTime),
                     onTap: () => _selectReminderTime(),
                   ),
@@ -216,67 +217,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 24),
 
-              // 접근성 설정 섹션
-              SettingsSection(
-                title: '접근성',
-                children: [
-                  SettingsTile(
-                    leading: Icon(
-                      Icons.contrast_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: '고대비 모드',
-                    subtitle: '텍스트와 배경의 대비를 높입니다',
-                    trailing: Switch(
-                      value: settings.highContrast,
-                      onChanged: (value) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setHighContrast(value);
-                      },
-                    ),
-                  ),
-                  SettingsTile(
-                    leading: Icon(
-                      Icons.volume_up_outlined,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: '텍스트 읽기',
-                    subtitle: '일기 내용을 음성으로 읽어드립니다',
-                    trailing: Switch(
-                      value: settings.textToSpeech,
-                      onChanged: (value) {
-                        ref
-                            .read(settingsProvider.notifier)
-                            .setTextToSpeech(value);
-                      },
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
               // 정보 섹션
               SettingsSection(
-                title: '정보',
+                title: l10n.get('info'),
                 children: [
                   SettingsTile(
                     leading: Icon(
                       Icons.info_outline,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '앱 버전',
+                    title: l10n.get('app_version'),
                     subtitle: '1.0.0',
-                    onTap: () => _showAppInfo(),
+                    onTap: () => _showAppInfo(l10n),
                   ),
                   SettingsTile(
                     leading: Icon(
                       Icons.privacy_tip_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '개인정보 처리방침',
-                    subtitle: '개인정보 보호 정책을 확인하세요',
+                    title: l10n.get('privacy_policy'),
+                    subtitle: l10n.get('privacy_policy_subtitle'),
                     onTap: () => _showPrivacyPolicy(),
                   ),
                   SettingsTile(
@@ -284,8 +244,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Icons.description_outlined,
                       color: Theme.of(context).colorScheme.primary,
                     ),
-                    title: '이용약관',
-                    subtitle: '서비스 이용약관을 확인하세요',
+                    title: l10n.get('terms_of_service'),
+                    subtitle: l10n.get('terms_of_service_subtitle'),
                     onTap: () => _showTermsOfService(),
                   ),
                 ],
@@ -296,12 +256,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 
   Future<void> _editUserName(
     BuildContext context,
     AppProfileState profileState,
+    AppLocalizations l10n,
   ) async {
     final controller = TextEditingController(text: profileState.userName ?? '');
     String? error;
@@ -313,14 +275,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('사용자 이름 변경'),
+              title: Text(l10n.get('change_username')),
               content: TextField(
                 controller: controller,
                 autofocus: true,
                 maxLength: 24,
                 decoration: InputDecoration(
-                  labelText: '이름',
-                  hintText: '예: 홍길동',
+                  labelText: l10n.get('name'),
+                  hintText: l10n.get('username_hint'),
                   errorText: error,
                 ),
                 textInputAction: TextInputAction.done,
@@ -329,18 +291,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
+                  child: Text(l10n.get('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final trimmed = controller.text.trim();
                     if (trimmed.isEmpty) {
-                      setState(() => error = '이름을 입력해 주세요');
+                      setState(() => error = l10n.get('username_required'));
                       return;
                     }
                     Navigator.of(context).pop(trimmed);
                   },
-                  child: const Text('저장'),
+                  child: Text(l10n.get('save')),
                 ),
               ],
             );
@@ -353,12 +315,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(appProfileProvider.notifier).updateUserName(newName);
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('사용자 이름이 업데이트되었습니다.')),
+        SnackBar(content: Text(l10n.get('username_updated'))),
       );
     }
   }
 
-  Future<void> _handlePinToggle(BuildContext context, bool enable) async {
+  Future<void> _handlePinToggle(BuildContext context, bool enable, AppLocalizations l10n) async {
     if (_pinActionInProgress) return;
     setState(() => _pinActionInProgress = true);
 
@@ -368,7 +330,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     try {
       if (enable) {
-        final newPin = await _promptForNewPin(context);
+        final newPin = await _promptForNewPin(context, l10n);
         if (newPin == null) {
           return;
         }
@@ -376,10 +338,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await profileNotifier.setPinEnabled(true);
         if (!mounted) return;
         messenger.showSnackBar(
-          const SnackBar(content: Text('PIN 잠금이 활성화되었습니다.')),
+          SnackBar(content: Text(l10n.get('pin_enabled'))),
         );
       } else {
-        final confirmed = await _confirmDisablePin(context);
+        final confirmed = await _confirmDisablePin(context, l10n);
         if (!confirmed) {
           return;
         }
@@ -387,13 +349,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         await profileNotifier.setPinEnabled(false);
         if (!mounted) return;
         messenger.showSnackBar(
-          const SnackBar(content: Text('PIN 잠금이 비활성화되었습니다.')),
+          SnackBar(content: Text(l10n.get('pin_disabled'))),
         );
       }
     } catch (error) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('PIN 설정 중 오류가 발생했습니다: $error')),
+        SnackBar(content: Text(l10n.get('pin_error').replaceAll('{error}', error.toString()))),
       );
     } finally {
       if (mounted) {
@@ -402,14 +364,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _changePin(BuildContext context) async {
+  Future<void> _changePin(BuildContext context, AppLocalizations l10n) async {
     if (_pinActionInProgress) return;
     setState(() => _pinActionInProgress = true);
 
     final messenger = ScaffoldMessenger.of(context);
 
     try {
-      final result = await _promptForPinChange(context);
+      final result = await _promptForPinChange(context, l10n);
       if (result == null) {
         return;
       }
@@ -417,10 +379,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           .read(pinLockProvider.notifier)
           .changePin(currentPin: result.currentPin, newPin: result.newPin);
       if (!mounted) return;
-      messenger.showSnackBar(const SnackBar(content: Text('PIN이 변경되었습니다.')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.get('pin_changed'))));
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('PIN 변경에 실패했습니다: $error')));
+      messenger.showSnackBar(SnackBar(content: Text(l10n.get('pin_change_failed').replaceAll('{error}', error.toString()))));
     } finally {
       if (mounted) {
         setState(() => _pinActionInProgress = false);
@@ -431,6 +393,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _configureRecoveryQuestion(
     BuildContext context,
     PinLockState pinState,
+    AppLocalizations l10n,
   ) async {
     if (_pinActionInProgress) return;
     setState(() => _pinActionInProgress = true);
@@ -452,23 +415,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return StatefulBuilder(
             builder: (context, setStateDialog) {
               return AlertDialog(
-                title: const Text('비상 복구 질문 설정'),
+                title: Text(l10n.get('recovery_question_setup')),
                 content: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       TextField(
                         controller: questionController,
-                        decoration: const InputDecoration(
-                          labelText: '보안 질문',
-                          hintText: '예: 나만 아는 장소는?',
+                        decoration: InputDecoration(
+                          labelText: l10n.get('security_question'),
+                          hintText: l10n.get('security_question_hint'),
                         ),
                         textInputAction: TextInputAction.next,
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: answerController,
-                        decoration: const InputDecoration(labelText: '답변'),
+                        decoration: InputDecoration(labelText: l10n.get('answer')),
                         obscureText: false,
                         textInputAction: TextInputAction.next,
                       ),
@@ -476,7 +439,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       TextField(
                         controller: confirmController,
                         decoration: InputDecoration(
-                          labelText: '답변 확인',
+                          labelText: l10n.get('confirm_answer'),
                           errorText: error,
                         ),
                         obscureText: false,
@@ -488,11 +451,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   if (pinState.recoveryQuestion != null)
                     TextButton(
                       onPressed: () => Navigator.of(context).pop('cleared'),
-                      child: const Text('삭제'),
+                      child: Text(l10n.get('delete')),
                     ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('취소'),
+                    child: Text(l10n.get('cancel')),
                   ),
                   ElevatedButton(
                     onPressed: () {
@@ -501,15 +464,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       final confirm = confirmController.text.trim();
 
                       if (question.isEmpty) {
-                        setStateDialog(() => error = '보안 질문을 입력해 주세요');
+                        setStateDialog(() => error = l10n.get('security_question_required'));
                         return;
                       }
                       if (answer.isEmpty) {
-                        setStateDialog(() => error = '답변을 입력해 주세요');
+                        setStateDialog(() => error = l10n.get('answer_required'));
                         return;
                       }
                       if (answer != confirm) {
-                        setStateDialog(() => error = '답변이 일치하지 않습니다');
+                        setStateDialog(() => error = l10n.get('answers_mismatch'));
                         return;
                       }
 
@@ -517,7 +480,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         context,
                       ).pop({'question': question, 'answer': answer});
                     },
-                    child: const Text('저장'),
+                    child: Text(l10n.get('save')),
                   ),
                 ],
               );
@@ -537,12 +500,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .read(pinLockProvider.notifier)
             .setRecoveryQuestion(question: question, answer: answer);
         messenger.showSnackBar(
-          const SnackBar(content: Text('비상 복구 질문이 저장되었습니다.')),
+          SnackBar(content: Text(l10n.get('recovery_question_saved'))),
         );
       } else if (dialogResult == 'cleared') {
         await ref.read(pinLockProvider.notifier).clearRecoveryQuestion();
         messenger.showSnackBar(
-          const SnackBar(content: Text('비상 복구 질문이 삭제되었습니다.')),
+          SnackBar(content: Text(l10n.get('recovery_question_deleted'))),
         );
       }
     } finally {
@@ -555,7 +518,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<String?> _promptForNewPin(BuildContext context) async {
+  Future<String?> _promptForNewPin(BuildContext context, AppLocalizations l10n) async {
     final pinController = TextEditingController();
     final confirmController = TextEditingController();
     String? error;
@@ -566,7 +529,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('PIN 잠금 설정'),
+              title: Text(l10n.get('pin_lock_setup')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -579,8 +542,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     autocorrect: false,
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
-                    decoration: const InputDecoration(
-                      labelText: '새 PIN (4자리 숫자)',
+                    decoration: InputDecoration(
+                      labelText: l10n.get('new_pin_4_digits'),
                       counterText: '',
                     ),
                   ),
@@ -595,7 +558,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
                     decoration: InputDecoration(
-                      labelText: 'PIN 확인',
+                      labelText: l10n.get('confirm_pin'),
                       counterText: '',
                       errorText: error,
                     ),
@@ -605,23 +568,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
+                  child: Text(l10n.get('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     final pin = pinController.text.trim();
                     final confirm = confirmController.text.trim();
                     if (pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
-                      setState(() => error = '4자리 숫자를 입력해 주세요');
+                      setState(() => error = l10n.get('pin_4_digits_required'));
                       return;
                     }
                     if (pin != confirm) {
-                      setState(() => error = 'PIN이 일치하지 않습니다');
+                      setState(() => error = l10n.get('pins_mismatch'));
                       return;
                     }
                     Navigator.of(context).pop(pin);
                   },
-                  child: const Text('저장'),
+                  child: Text(l10n.get('save')),
                 ),
               ],
             );
@@ -633,20 +596,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return result;
   }
 
-  Future<bool> _confirmDisablePin(BuildContext context) async {
+  Future<bool> _confirmDisablePin(BuildContext context, AppLocalizations l10n) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('PIN 잠금 해제'),
-        content: const Text('PIN 잠금을 비활성화하면 앱 실행 시 인증이 필요하지 않습니다.'),
+        title: Text(l10n.get('disable_pin_lock')),
+        content: Text(l10n.get('disable_pin_lock_message')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
+            child: Text(l10n.get('cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('비활성화'),
+            child: Text(l10n.get('disable')),
           ),
         ],
       ),
@@ -657,6 +620,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<({String currentPin, String newPin})?> _promptForPinChange(
     BuildContext context,
+    AppLocalizations l10n,
   ) async {
     final currentController = TextEditingController();
     final newController = TextEditingController();
@@ -669,7 +633,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('PIN 변경'),
+              title: Text(l10n.get('change_pin')),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -682,8 +646,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     autocorrect: false,
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
-                    decoration: const InputDecoration(
-                      labelText: '현재 PIN',
+                    decoration: InputDecoration(
+                      labelText: l10n.get('current_pin'),
                       counterText: '',
                     ),
                   ),
@@ -697,8 +661,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     autocorrect: false,
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
-                    decoration: const InputDecoration(
-                      labelText: '새 PIN',
+                    decoration: InputDecoration(
+                      labelText: l10n.get('new_pin'),
                       counterText: '',
                     ),
                   ),
@@ -713,7 +677,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     smartDashesType: SmartDashesType.disabled,
                     smartQuotesType: SmartQuotesType.disabled,
                     decoration: InputDecoration(
-                      labelText: '새 PIN 확인',
+                      labelText: l10n.get('confirm_new_pin'),
                       counterText: '',
                       errorText: error,
                     ),
@@ -723,7 +687,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('취소'),
+                  child: Text(l10n.get('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -731,23 +695,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     final newPin = newController.text.trim();
                     final confirm = confirmController.text.trim();
                     if (current.length != 4 || newPin.length != 4) {
-                      setState(() => error = '4자리 PIN을 입력해 주세요');
+                      setState(() => error = l10n.get('pin_4_digits_input'));
                       return;
                     }
                     if (!RegExp(r'^\d{4}$').hasMatch(newPin) ||
                         !RegExp(r'^\d{4}$').hasMatch(current)) {
-                      setState(() => error = '숫자만 입력해 주세요');
+                      setState(() => error = l10n.get('numbers_only'));
                       return;
                     }
                     if (newPin != confirm) {
-                      setState(() => error = '새 PIN이 일치하지 않습니다');
+                      setState(() => error = l10n.get('new_pins_mismatch'));
                       return;
                     }
                     Navigator.of(
                       context,
                     ).pop((currentPin: current, newPin: newPin));
                   },
-                  child: const Text('변경'),
+                  child: Text(l10n.get('change')),
                 ),
               ],
             );
@@ -766,56 +730,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _openThumbnailMonitoring() {
-    context.push('/settings/thumbnail-monitoring');
-  }
+  // 테스트 기능 제거됨
 
-  String _getThemeDisplayName(ThemeMode themeMode) {
+  String _getThemeDisplayName(ThemeMode themeMode, AppLocalizations l10n) {
     switch (themeMode) {
       case ThemeMode.system:
-        return '시스템 설정';
+        return l10n.get('theme_system');
       case ThemeMode.light:
-        return '라이트 모드';
+        return l10n.get('theme_light');
       case ThemeMode.dark:
-        return '다크 모드';
+        return l10n.get('theme_dark');
     }
   }
 
-  String _getFontSizeDisplayName(FontSize fontSize) {
+  String _getFontSizeDisplayName(FontSize fontSize, AppLocalizations l10n) {
     switch (fontSize) {
       case FontSize.small:
-        return '작게';
+        return l10n.get('font_size_small');
       case FontSize.medium:
-        return '보통';
+        return l10n.get('font_size_medium');
       case FontSize.large:
-        return '크게';
+        return l10n.get('font_size_large');
       case FontSize.extraLarge:
-        return '매우 크게';
+        return l10n.get('font_size_extra_large');
     }
   }
 
-  String _getLanguageDisplayName(Language language) {
+  String _getLanguageDisplayName(Language language, AppLocalizations l10n) {
     switch (language) {
       case Language.korean:
-        return '한국어';
+        return l10n.get('language_korean');
       case Language.english:
-        return 'English';
+        return l10n.get('language_english');
       case Language.japanese:
-        return '日本語';
+        return l10n.get('language_japanese');
       case Language.chineseSimplified:
-        return '简体中文';
+        return l10n.get('language_chinese_simplified');
       case Language.chineseTraditional:
-        return '繁體中文';
-      case Language.spanish:
-        return 'Español';
-      case Language.french:
-        return 'Français';
-      case Language.german:
-        return 'Deutsch';
-      case Language.russian:
-        return 'Русский';
-      case Language.arabic:
-        return 'العربية';
+        return l10n.get('language_chinese_traditional');
     }
   }
 
@@ -856,17 +808,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  void _showAppInfo() {
+  void _showAppInfo(AppLocalizations l10n) {
     showAboutDialog(
       context: context,
       applicationName: 'EveryDiary',
       applicationVersion: '1.0.0',
       applicationIcon: const Icon(Icons.book_outlined, size: 48),
       children: [
-        const Text('일기를 통해 마음을 정리하고 성장하는 앱입니다.'),
+        Text(l10n.get('app_description')),
         const SizedBox(height: 16),
-        const Text('개발: EveryDiary Team'),
-        const Text('문의: support@everydiary.com'),
+        Text(l10n.get('app_developer')),
+        Text(l10n.get('app_contact')),
       ],
     );
   }
@@ -882,15 +834,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showResetDialog() {
+    final l10n = ref.read(localizationProvider);
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('설정 초기화'),
-        content: const Text('모든 설정을 기본값으로 초기화하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
+        title: Text(l10n.get('settings_reset')),
+        content: Text(l10n.get('settings_reset_message')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.get('cancel')),
           ),
           TextButton(
             onPressed: () {
@@ -898,9 +851,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ref.read(settingsProvider.notifier).resetSettings();
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('설정이 초기화되었습니다')));
+              ).showSnackBar(SnackBar(content: Text(l10n.get('settings_reset_complete'))));
             },
-            child: const Text('초기화'),
+            child: Text(l10n.get('reset')),
           ),
         ],
       ),

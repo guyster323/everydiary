@@ -16,19 +16,22 @@ import '../../features/diary/screens/diary_write_screen.dart';
 import '../../features/diary/screens/statistics_screen.dart';
 import '../../features/diary/services/diary_list_service.dart';
 import '../../features/home/widgets/app_intro_section.dart';
+import '../../features/home/widgets/generation_count_widget.dart';
 import '../../features/onboarding/screens/app_setup_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../../features/security/screens/pin_unlock_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/subscription_screen.dart';
-import '../../features/settings/screens/thumbnail_monitoring_screen.dart';
+// import 제거: 썸네일 품질 리포트 화면 비활성화
 import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/diary_image_helper.dart';
 import '../../shared/services/repositories/diary_repository.dart';
 import '../config/config.dart';
 import '../constants/app_constants.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/localization_provider.dart';
 
 Future<String?> _loadLatestDiaryImagePath(Ref ref) async {
   try {
@@ -200,11 +203,16 @@ class AppRouter {
           path: 'detail/:id',
           name: 'diary-detail',
           builder: (context, state) {
-            final id = int.tryParse(state.pathParameters['id'] ?? '');
-            if (id == null) {
-              return const Scaffold(body: Center(child: Text('잘못된 일기 ID입니다')));
-            }
-            return DiaryDetailScreen(diaryId: id);
+            return Consumer(builder: (context, ref, _) {
+              final l10n = ref.watch(localizationProvider);
+              final id = int.tryParse(state.pathParameters['id'] ?? '');
+              if (id == null) {
+                return Scaffold(
+                  body: Center(child: Text(l10n.get('invalid_diary_id'))),
+                );
+              }
+              return DiaryDetailScreen(diaryId: id);
+            });
           },
         ),
         GoRoute(
@@ -232,11 +240,7 @@ class AppRouter {
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
       routes: [
-        GoRoute(
-          path: 'thumbnail-monitoring',
-          name: 'settings-thumbnail-monitoring',
-          builder: (context, state) => const ThumbnailMonitoringScreen(),
-        ),
+        // 테스트 기능 제거: 썸네일 품질 리포트 라우트 삭제
         GoRoute(
           path: 'subscription',
           name: 'settings-subscription',
@@ -245,14 +249,16 @@ class AppRouter {
         GoRoute(
           path: 'privacy-policy',
           name: 'settings-privacy-policy',
-          builder: (context, state) =>
-              const _SettingsDocumentPlaceholder(title: '개인정보 처리방침'),
+          builder: (context, state) => const _SettingsDocumentPlaceholder(
+            isPrivacyPolicy: true,
+          ),
         ),
         GoRoute(
           path: 'terms-of-service',
           name: 'settings-terms-of-service',
-          builder: (context, state) =>
-              const _SettingsDocumentPlaceholder(title: '이용약관'),
+          builder: (context, state) => const _SettingsDocumentPlaceholder(
+            isPrivacyPolicy: false,
+          ),
         ),
       ],
     ),
@@ -271,14 +277,16 @@ class AppRouter {
   ];
 }
 
-class ErrorPage extends StatelessWidget {
+class ErrorPage extends ConsumerWidget {
   const ErrorPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('오류'),
+        title: Text(l10n.get('error_title')),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -297,12 +305,12 @@ class ErrorPage extends StatelessWidget {
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
             Text(
-              '페이지를 찾을 수 없습니다',
+              l10n.get('page_not_found'),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              '요청하신 페이지가 존재하지 않습니다',
+              l10n.get('page_not_found_subtitle'),
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(
                   context,
@@ -312,7 +320,7 @@ class ErrorPage extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.go('/home'),
-              child: const Text('홈으로 돌아가기'),
+              child: Text(l10n.get('back_to_home')),
             ),
           ],
         ),
@@ -369,6 +377,7 @@ class EveryDiaryHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileState = ref.watch(appProfileProvider);
+    final l10n = ref.watch(localizationProvider);
 
     if (!profileState.isInitialized) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -377,7 +386,7 @@ class EveryDiaryHomePage extends ConsumerWidget {
     final resolvedName = profileState.userName?.trim();
     final greetingName = (resolvedName != null && resolvedName.isNotEmpty)
         ? resolvedName
-        : '일기 작성자';
+        : l10n.get('diary_author');
 
     final theme = Theme.of(context);
     final latestImageAsync = ref.watch(latestDiaryImageProvider);
@@ -437,9 +446,11 @@ class EveryDiaryHomePage extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(24),
                 children: [
-                  _HomeGreetingCard(greetingName: greetingName),
+                  _HomeGreetingCard(greetingName: greetingName, l10n: l10n),
                   const SizedBox(height: 24),
-                  _QuickActionsSection(),
+                  const GenerationCountWidget(),
+                  const SizedBox(height: 24),
+                  _QuickActionsSection(l10n: l10n),
                   const SizedBox(height: 24),
                   const AppIntroSection(),
                   const SizedBox(height: 48),
@@ -454,9 +465,13 @@ class EveryDiaryHomePage extends ConsumerWidget {
 }
 
 class _HomeGreetingCard extends StatelessWidget {
-  const _HomeGreetingCard({required this.greetingName});
+  const _HomeGreetingCard({
+    required this.greetingName,
+    required this.l10n,
+  });
 
   final String greetingName;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -471,14 +486,14 @@ class _HomeGreetingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '$greetingName님, 반가워요 👋',
+              l10n.get('home_greeting').replaceAll('{name}', greetingName),
               style: theme.textTheme.titleLarge?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '오늘의 순간을 기록하고 AI 이미지로 감정을 남겨보세요.',
+              l10n.get('home_subtitle'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer.withValues(
                   alpha: 0.8,
@@ -493,6 +508,10 @@ class _HomeGreetingCard extends StatelessWidget {
 }
 
 class _QuickActionsSection extends StatelessWidget {
+  const _QuickActionsSection({required this.l10n});
+
+  final AppLocalizations l10n;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -500,7 +519,7 @@ class _QuickActionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('빠른 작업', style: theme.textTheme.titleMedium),
+        Text(l10n.get('quick_actions_title'), style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
         Wrap(
           spacing: 12,
@@ -508,27 +527,27 @@ class _QuickActionsSection extends StatelessWidget {
           children: [
             _QuickActionButton(
               icon: Icons.edit,
-              label: '새 일기 쓰기',
+              label: l10n.get('new_diary'),
               onTap: () => context.go('/diary/write'),
             ),
             _QuickActionButton(
               icon: Icons.menu_book,
-              label: '내 일기 보기',
+              label: l10n.get('view_diaries'),
               onTap: () => context.go('/diary'),
             ),
             _QuickActionButton(
               icon: Icons.bar_chart,
-              label: '일기 통계',
+              label: l10n.get('statistics_action'),
               onTap: () => context.go('/diary/statistics'),
             ),
             _QuickActionButton(
               icon: Icons.notifications,
-              label: '추억 알림 설정',
+              label: l10n.get('memory_notifications'),
               onTap: () => context.go('/memory/notification-settings'),
             ),
             _QuickActionButton(
               icon: Icons.settings,
-              label: 'EveryDiary 설정',
+              label: l10n.get('settings'),
               onTap: () => context.go('/settings'),
             ),
           ],
@@ -562,33 +581,35 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-class _SettingsDocumentPlaceholder extends StatelessWidget {
-  const _SettingsDocumentPlaceholder({required this.title});
+class _SettingsDocumentPlaceholder extends ConsumerWidget {
+  const _SettingsDocumentPlaceholder({required this.isPrivacyPolicy});
 
-  final String title;
+  final bool isPrivacyPolicy;
+
+  String _getContent(WidgetRef ref) {
+    final l10n = ref.read(localizationProvider);
+    if (isPrivacyPolicy) {
+      return l10n.get('privacy_policy_content');
+    } else {
+      return l10n.get('terms_of_service_content');
+    }
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
+    final title = isPrivacyPolicy
+        ? l10n.get('privacy_policy_title')
+        : l10n.get('terms_of_service_title');
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: SelectableText.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text: '$title\n',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextSpan(
-                text: '콘텐츠가 준비되는 대로 업데이트될 예정입니다.',
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-          ),
-          textAlign: TextAlign.center,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: SelectableText(
+          _getContent(ref),
+          style: theme.textTheme.bodyMedium?.copyWith(height: 1.6),
         ),
       ),
     );

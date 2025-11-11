@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/generation_count_provider.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../diary/widgets/image_generation_purchase_dialog.dart';
 
 /// 이미지 생성 횟수 표시 위젯
@@ -34,6 +35,7 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
     super.build(context); // AutomaticKeepAliveClientMixin 필수
     final remainingAsync = ref.watch(remainingGenerationsProvider);
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
 
     return remainingAsync.when(
       data: (remaining) {
@@ -86,7 +88,7 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'AI 이미지 생성',
+                        l10n.get('ai_image_generation'),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: theme.colorScheme.onSurface.withValues(
                             alpha: 0.7,
@@ -97,7 +99,7 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                       Row(
                         children: [
                           Text(
-                            '남은 횟수: ',
+                            l10n.get('remaining_count_label'),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.6,
@@ -105,7 +107,7 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                             ),
                           ),
                           Text(
-                            '$remaining회',
+                            '$remaining${l10n.get('count_times')}',
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: isEmpty

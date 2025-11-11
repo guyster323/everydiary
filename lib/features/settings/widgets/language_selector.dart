@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../models/settings_enums.dart';
 import '../providers/settings_provider.dart';
 
@@ -12,50 +13,82 @@ class LanguageSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
+    final l10n = ref.watch(localizationProvider);
 
     return Container(
       padding: const EdgeInsets.all(16),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '언어 선택',
+            l10n.get('language_select'),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          _buildLanguageOption(
-            context,
-            ref,
-            Language.korean,
-            '한국어',
-            'Korean',
-            '🇰🇷',
-            settings.language == Language.korean,
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    Language.korean,
+                    '한국어',
+                    'Korean',
+                    '🇰🇷',
+                    settings.language == Language.korean,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    Language.english,
+                    'English',
+                    'English',
+                    '🇺🇸',
+                    settings.language == Language.english,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    Language.japanese,
+                    '日本語',
+                    'Japanese',
+                    '🇯🇵',
+                    settings.language == Language.japanese,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    Language.chineseSimplified,
+                    '简体中文',
+                    'Chinese (Simplified)',
+                    '🇨🇳',
+                    settings.language == Language.chineseSimplified,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageOption(
+                    context,
+                    ref,
+                    Language.chineseTraditional,
+                    '繁體中文',
+                    'Chinese (Traditional)',
+                    '🇹🇼',
+                    settings.language == Language.chineseTraditional,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
-          _buildLanguageOption(
-            context,
-            ref,
-            Language.english,
-            'English',
-            'English',
-            '🇺🇸',
-            settings.language == Language.english,
-          ),
-          const SizedBox(height: 12),
-          _buildLanguageOption(
-            context,
-            ref,
-            Language.japanese,
-            '日本語',
-            'Japanese',
-            '🇯🇵',
-            settings.language == Language.japanese,
-          ),
-          const SizedBox(height: 16),
         ],
       ),
     );

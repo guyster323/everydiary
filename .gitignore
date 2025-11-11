@@ -59,6 +59,10 @@ node_modules/
 .env.staging
 .env.production
 
+# Flutter App API Keys (절대 커밋하지 마세요!)
+.env.flutter.local
+*.env.local
+
 # Secrets and sensitive configuration
 assets/config/secrets.json
 assets/config/secrets_*.json

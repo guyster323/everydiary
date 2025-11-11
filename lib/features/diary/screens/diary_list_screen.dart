@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../../../shared/models/diary_entry.dart';
@@ -141,22 +142,24 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
   /// 일기 삭제 확인
   void _confirmDeleteDiary(DiaryEntry diary) {
+    final l10n = ref.read(localizationProvider);
+
     showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('일기 삭제'),
-        content: const Text('이 일기를 삭제하시겠습니까?\n삭제된 일기는 복구할 수 없습니다.'),
+        title: Text(l10n.get('delete_title')),
+        content: Text(l10n.get('delete_message')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.get('cancel')),
           ),
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
               await _diaryListService.deleteDiary(diary.id!);
             },
-            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.get('delete_button'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -191,14 +194,16 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
   /// 정렬 바텀시트
   Widget _buildSortBottomSheet() {
+    final l10n = ref.read(localizationProvider);
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            '정렬 기준',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            l10n.get('sort_dialog_title'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ...DiarySortOption.values.map(
@@ -225,38 +230,49 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
   /// 정렬 옵션 이름
   String _getSortOptionName(DiarySortOption option) {
+    final l10n = ref.read(localizationProvider);
+
     switch (option) {
       case DiarySortOption.dateDesc:
-        return '최신순';
+        return l10n.get('sort_date_desc');
       case DiarySortOption.dateAsc:
-        return '오래된순';
+        return l10n.get('sort_date_asc');
       case DiarySortOption.titleAsc:
-        return '제목순 (A-Z)';
+        return l10n.get('sort_title_asc');
       case DiarySortOption.titleDesc:
-        return '제목순 (Z-A)';
+        return l10n.get('sort_title_desc');
       case DiarySortOption.mood:
-        return '기분순';
+        return l10n.get('sort_mood');
       case DiarySortOption.weather:
-        return '날씨순';
+        return l10n.get('sort_weather');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '내 일기',
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-          tooltip: '뒤로가기',
-        ),
+    final l10n = ref.watch(localizationProvider);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          context.go('/');
+        }
+      },
+      child: Scaffold(
+        appBar: CustomAppBar(
+          title: l10n.get('my_diary'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/'),
+            tooltip: l10n.get('back_tooltip'),
+          ),
         actions: [
           // 캘린더 버튼
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: () => context.go('/diary/calendar'),
-            tooltip: '캘린더 보기',
+            tooltip: l10n.get('calendar_tooltip'),
           ),
 
           // 필터 버튼
@@ -280,35 +296,36 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
               ],
             ),
             onPressed: _showFilterDialog,
-            tooltip: '필터',
+            tooltip: l10n.get('filter_tooltip'),
           ),
 
           // 정렬 버튼
           IconButton(
             icon: const Icon(Icons.sort),
             onPressed: _showSortOptions,
-            tooltip: '정렬',
+            tooltip: l10n.get('sort_tooltip'),
           ),
         ],
-      ),
-      body: ResponsiveWrapper(
-        child: Column(
-          children: [
-            // 검색바
-            DiarySearchBar(
-              onSearchChanged: _diaryListService.searchDiaries,
-              initialValue: _diaryListService.searchQuery,
-            ),
-
-            // 일기 목록
-            Expanded(child: _buildDiaryList()),
-          ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _createNewDiary,
-        tooltip: '새 일기 작성',
-        child: const Icon(Icons.add),
+        body: ResponsiveWrapper(
+          child: Column(
+            children: [
+              // 검색바
+              DiarySearchBar(
+                onSearchChanged: _diaryListService.searchDiaries,
+                initialValue: _diaryListService.searchQuery,
+              ),
+
+              // 일기 목록
+              Expanded(child: _buildDiaryList()),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _createNewDiary,
+          tooltip: l10n.get('new_diary_fab'),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -430,6 +447,8 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
   /// 에러 위젯
   Widget _buildErrorWidget() {
+    final l10n = ref.read(localizationProvider);
+
     return Center(
       child: ScrollAnimations.scrollScaleFade(
         child: Column(
@@ -446,14 +465,14 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
             const SizedBox(height: 16),
             ScrollAnimations.scrollFadeIn(
               child: Text(
-                '일기를 불러올 수 없습니다',
+                l10n.get('error_load_diaries'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const SizedBox(height: 8),
             ScrollAnimations.scrollFadeIn(
               child: Text(
-                _diaryListService.error ?? '알 수 없는 오류가 발생했습니다',
+                _diaryListService.error ?? l10n.get('error_unknown'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
@@ -469,7 +488,7 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
                 onTap: _diaryListService.refresh,
                 child: ElevatedButton(
                   onPressed: _diaryListService.refresh,
-                  child: const Text('다시 시도'),
+                  child: Text(l10n.get('retry')),
                 ),
               ),
             ),
@@ -481,6 +500,8 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
   /// 빈 상태 위젯
   Widget _buildEmptyWidget() {
+    final l10n = ref.read(localizationProvider);
+
     return Center(
       child: ScrollAnimations.scrollScaleFade(
         child: Column(
@@ -497,14 +518,14 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
             const SizedBox(height: 16),
             ScrollAnimations.scrollFadeIn(
               child: Text(
-                '아직 작성한 일기가 없습니다',
+                l10n.get('empty_diaries_title'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
             const SizedBox(height: 8),
             ScrollAnimations.scrollFadeIn(
               child: Text(
-                '첫 번째 일기를 작성해보세요',
+                l10n.get('empty_diaries_subtitle'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
@@ -520,7 +541,7 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
                 child: ElevatedButton.icon(
                   onPressed: _createNewDiary,
                   icon: const Icon(Icons.add),
-                  label: const Text('일기 작성하기'),
+                  label: Text(l10n.get('empty_diaries_action')),
                 ),
               ),
             ),

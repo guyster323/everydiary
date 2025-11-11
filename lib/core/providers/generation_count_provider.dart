@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,9 +55,9 @@ class GenerationCountNotifier extends StateNotifier<GenerationCountState> {
 
   /// 외부에서 호출 가능한 횟수 새로고침 (UI 갱신용)
   Future<void> reload() async {
-    print('🔵 [GenerationCount] reload 호출됨');
+    debugPrint('🔵 [GenerationCount] reload 호출됨');
     await _loadCount();
-    print('✅ [GenerationCount] reload 완료: count=${state.remainingCount}');
+    debugPrint('✅ [GenerationCount] reload 완료: count=${state.remainingCount}');
   }
 
   /// 횟수 저장
@@ -73,24 +74,24 @@ class GenerationCountNotifier extends StateNotifier<GenerationCountState> {
   Future<void> addGenerations(int amount) async {
     if (amount <= 0) return;
 
-    print('🔵 [GenerationCount] addGenerations 호출: amount=$amount, current=${state.remainingCount}');
+    debugPrint('🔵 [GenerationCount] addGenerations 호출: amount=$amount, current=${state.remainingCount}');
     state = state.copyWith(isLoading: true);
     try {
       final newCount = state.remainingCount + amount;
       await _saveCount(newCount);
       state = state.copyWith(remainingCount: newCount, isLoading: false, error: null);
-      print('✅ [GenerationCount] addGenerations 완료: new count=$newCount');
+      debugPrint('✅ [GenerationCount] addGenerations 완료: new count=$newCount');
     } catch (e) {
-      print('❌ [GenerationCount] addGenerations 실패: $e');
+      debugPrint('❌ [GenerationCount] addGenerations 실패: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   /// 생성 횟수 소비
   Future<bool> consumeGeneration() async {
-    print('🔵 [GenerationCount] consumeGeneration 호출: current=${state.remainingCount}');
+    debugPrint('🔵 [GenerationCount] consumeGeneration 호출: current=${state.remainingCount}');
     if (state.remainingCount <= 0) {
-      print('❌ [GenerationCount] consumeGeneration 실패: 남은 횟수 없음');
+      debugPrint('❌ [GenerationCount] consumeGeneration 실패: 남은 횟수 없음');
       return false;
     }
 
@@ -99,10 +100,10 @@ class GenerationCountNotifier extends StateNotifier<GenerationCountState> {
       final newCount = state.remainingCount - 1;
       await _saveCount(newCount);
       state = state.copyWith(remainingCount: newCount, isLoading: false, error: null);
-      print('✅ [GenerationCount] consumeGeneration 완료: new count=$newCount');
+      debugPrint('✅ [GenerationCount] consumeGeneration 완료: new count=$newCount');
       return true;
     } catch (e) {
-      print('❌ [GenerationCount] consumeGeneration 실패: $e');
+      debugPrint('❌ [GenerationCount] consumeGeneration 실패: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }

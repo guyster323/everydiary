@@ -7,17 +7,30 @@ class SubscriptionConstants {
   static const String yearlySubscriptionId = 'subscription_yearly';
   static const String lifetimePurchaseId = 'lifetime_access';
 
+  // 추가 생성 횟수 상품 ID들
+  static const String imageGen10Id = 'image_generation_10';
+  static const String imageGen30Id = 'image_generation_30';
+  static const String imageGen100Id = 'image_generation_100';
+
   // 제품 ID 리스트
   static const Set<String> productIds = {
     monthlySubscriptionId,
     yearlySubscriptionId,
     lifetimePurchaseId,
+    imageGen10Id,
+    imageGen30Id,
+    imageGen100Id,
   };
 
   // 가격 정보 (한국 원화)
   static const int monthlyPrice = 4900; // ₩4,900
   static const int yearlyPrice = 49000; // ₩49,000
   static const int lifetimePrice = 99000; // ₩99,000
+
+  // 추가 생성 횟수 가격 (USD)
+  static const int imageGen10Price = 1;  // $1.00 (10회)
+  static const int imageGen30Price = 2;  // $2.00 (30회)
+  static const int imageGen100Price = 6; // $6.00 (100회)
 
   // 구독 기간 (일 단위)
   static const int monthlyPeriodDays = 30;
@@ -70,9 +83,36 @@ class SubscriptionConstants {
         return yearlyPrice;
       case lifetimePurchaseId:
         return lifetimePrice;
+      case imageGen10Id:
+        return imageGen10Price;
+      case imageGen30Id:
+        return imageGen30Price;
+      case imageGen100Id:
+        return imageGen100Price;
       default:
         return null;
     }
+  }
+
+  /// 제품 ID로 생성 횟수 가져오기
+  static int? getImageGenerationCount(String productId) {
+    switch (productId) {
+      case imageGen10Id:
+        return 10;
+      case imageGen30Id:
+        return 30;
+      case imageGen100Id:
+        return 100;
+      default:
+        return null;
+    }
+  }
+
+  /// 생성 횟수 상품인지 확인
+  static bool isImageGenerationProduct(String productId) {
+    return productId == imageGen10Id ||
+        productId == imageGen30Id ||
+        productId == imageGen100Id;
   }
 
   /// 제품 ID로 기간 가져오기 (일 단위)
@@ -105,6 +145,11 @@ class SubscriptionConstants {
 
   /// 가격을 포맷된 문자열로 변환
   static String formatPrice(int price) {
+    // USD 가격 (image generation products)
+    if (price < 100) {
+      return '\$$price.00';
+    }
+    // KRW 가격 (subscription products)
     return '₩${price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}';
   }
 

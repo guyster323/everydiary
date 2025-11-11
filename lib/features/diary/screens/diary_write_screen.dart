@@ -7,6 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/providers/user_customization_provider.dart';
+import '../../../core/providers/localization_provider.dart';
+import '../../../core/providers/app_state_provider.dart';
+import '../../settings/models/settings_enums.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_input_field.dart';
 import '../../../shared/models/diary_entry.dart';
@@ -698,12 +701,21 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
 
   /// 감정 키워드 표시용 텍스트 생성
   String _getEmotionDisplayText() {
-    if (_currentDualEmotion == null) return '감정을 분석 중...';
+    final l10n = ref.read(localizationProvider);
+
+    if (_currentDualEmotion == null) {
+      return l10n.get('emotion_analyzing');
+    }
 
     final dualEmotion = _currentDualEmotion!;
+    final arrow = l10n.get('emotion_arrow');
+
+    // 감정 이름 번역
+    final firstEmotion = _localizeEmotion(dualEmotion.firstHalf.primaryEmotion);
+    final secondEmotion = _localizeEmotion(dualEmotion.secondHalf.primaryEmotion);
 
     if (_detectedKeywords.isEmpty) {
-      return '${dualEmotion.firstHalf.primaryEmotion} → ${dualEmotion.secondHalf.primaryEmotion}';
+      return '$firstEmotion $arrow $secondEmotion';
     }
 
     final contextParts = <String>[];
@@ -714,7 +726,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       contextParts.addAll(_detectedKeywords);
     }
 
-    return '${dualEmotion.firstHalf.primaryEmotion} → ${dualEmotion.secondHalf.primaryEmotion} (${contextParts.join(', ')})';
+    return '$firstEmotion $arrow $secondEmotion (${contextParts.join(', ')})';
   }
 
   /// OCR 기능 열기 - 수정된 버전
@@ -890,8 +902,67 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     }
   }
 
+  /// 언어에 따른 날짜 형식 반환
+  String _formatDateByLanguage(DateTime date, Language language) {
+    switch (language) {
+      case Language.korean:
+        return DateFormat('yyyy년 MM월 dd일').format(date);
+      case Language.english:
+        return DateFormat('MMM dd, yyyy').format(date);
+      case Language.japanese:
+        return DateFormat('yyyy年MM月dd日').format(date);
+      case Language.chineseSimplified:
+      case Language.chineseTraditional:
+        return DateFormat('yyyy年MM月dd日').format(date);
+    }
+  }
+
+  /// 감정 이름을 현재 언어로 번역
+  String _localizeEmotion(String koreanEmotion) {
+    final l10n = ref.read(localizationProvider);
+
+    // 한글 감정 이름을 번역 키로 매핑
+    final emotionKeyMap = {
+      '기쁨': 'emotion_joy',
+      '슬픔': 'emotion_sadness',
+      '화남': 'emotion_anger',
+      '두려움': 'emotion_fear',
+      '놀람': 'emotion_surprise',
+      '혐오': 'emotion_disgust',
+      '기대': 'emotion_anticipation',
+      '신뢰': 'emotion_trust',
+      '기본': 'emotion_default',
+    };
+
+    final key = emotionKeyMap[koreanEmotion];
+    return key != null ? l10n.get(key) : koreanEmotion;
+  }
+
+  /// 날씨 이름을 현재 언어로 번역
+  String _localizeWeather(String koreanWeather) {
+    final l10n = ref.read(localizationProvider);
+
+    // 한글 날씨를 번역 키로 매핑
+    final weatherKeyMap = {
+      '맑음': 'weather_sunny',
+      '흐림': 'weather_cloudy',
+      '비': 'weather_rainy',
+      '눈': 'weather_snowy',
+      '바람': 'weather_windy',
+      '안개': 'weather_foggy',
+      '폭염': 'weather_hot',
+      '한파': 'weather_cold',
+      '기타': 'weather_other',
+    };
+
+    final key = weatherKeyMap[koreanWeather];
+    return key != null ? l10n.get(key) : koreanWeather;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -909,12 +980,12 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
               child: Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: CustomAppBar(
-                  title: '일기 작성',
+                  title: l10n.get('diary_write_title'),
                   backgroundColor: Colors.transparent,
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.style_outlined),
-                      tooltip: '썸네일 스타일 설정',
+                      tooltip: l10n.get('thumbnail_style_tooltip'),
                       onPressed: _openThumbnailStyleDialog,
                     ),
                     IconButton(
@@ -931,7 +1002,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                             )
                           : const Icon(Icons.save),
                       onPressed: _isLoading ? null : _saveDiary,
-                      tooltip: '저장',
+                      tooltip: l10n.get('save_tooltip'),
                     ),
                   ],
                 ),
@@ -941,11 +1012,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
           : Scaffold(
               backgroundColor: const Color(0xFFF8F9FA),
               appBar: CustomAppBar(
-                title: '일기 작성',
+                title: l10n.get('diary_write_title'),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.style_outlined),
-                    tooltip: '썸네일 스타일 설정',
+                    tooltip: l10n.get('thumbnail_style_tooltip'),
                     onPressed: _openThumbnailStyleDialog,
                   ),
                   IconButton(
@@ -956,7 +1027,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.style_outlined),
-                    tooltip: '썸네일 스타일 설정',
+                    tooltip: l10n.get('thumbnail_style_tooltip'),
                     onPressed: _isThumbnailRegenerating
                         ? null
                         : _openThumbnailStyleDialog,
@@ -975,7 +1046,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                           )
                         : const Icon(Icons.save),
                     onPressed: _isLoading ? null : _saveDiary,
-                    tooltip: '저장',
+                    tooltip: l10n.get('save_tooltip'),
                   ),
                 ],
               ),
@@ -985,6 +1056,9 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
   }
 
   Widget _buildBody() {
+    final l10n = ref.watch(localizationProvider);
+    final currentLanguage = ref.watch(appLanguageProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Form(
@@ -1007,11 +1081,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
               ),
               child: CustomInputField(
                 controller: _titleController,
-                labelText: '제목',
-                hintText: '오늘의 일기 제목을 입력하세요',
+                labelText: l10n.get('title_label'),
+                hintText: l10n.get('title_hint'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return '제목을 입력해주세요';
+                    return l10n.get('title_required');
                   }
                   return null;
                 },
@@ -1037,8 +1111,10 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                       ],
                     ),
                     child: CustomInputField(
-                      controller: _dateController,
-                      labelText: '날짜',
+                      controller: TextEditingController(
+                        text: _formatDateByLanguage(_selectedDate, currentLanguage),
+                      ),
+                      labelText: l10n.get('date_label'),
                       readOnly: true,
                       onTap: _selectDate,
                       suffixIcon: Icons.calendar_today,
@@ -1066,12 +1142,12 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '감정 분석',
-                            style: TextStyle(
+                          Text(
+                            l10n.get('emotion_analysis_label'),
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black87, // 감정 분석 라벨을 검정색으로 변경
+                              color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1079,7 +1155,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                             _getEmotionDisplayText(),
                             style: const TextStyle(
                               fontSize: 13,
-                              color: Colors.black, // 감정 분석 텍스트를 검정색으로 변경
+                              color: Colors.black,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1106,12 +1182,12 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                 ],
               ),
               child: DropdownButtonFormField<String>(
-                initialValue: _selectedWeather,
+                value: _selectedWeather,
                 items: _weatherOptions.map((weather) {
                   return DropdownMenuItem(
                     value: weather,
                     child: Text(
-                      weather,
+                      _localizeWeather(weather),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
@@ -1127,8 +1203,8 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                   });
                 },
                 decoration: InputDecoration(
-                  labelText: '날씨',
-                  hintText: '날씨를 선택하세요',
+                  labelText: l10n.get('weather_label'),
+                  hintText: l10n.get('weather_hint'),
                   labelStyle: TextStyle(
                     color: Colors.grey[700],
                     fontWeight: FontWeight.w500,
@@ -1154,7 +1230,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _openOCR,
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('OCR'),
+                    label: Text(l10n.get('ocr_button')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue.shade600,
                       foregroundColor: Colors.white,
@@ -1176,7 +1252,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _startVoiceRecording,
                     icon: const Icon(Icons.mic),
-                    label: const Text('음성녹음'),
+                    label: Text(l10n.get('voice_recording_button')),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
                       foregroundColor: Colors.white,
@@ -1248,7 +1324,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                         valueColor: AlwaysStoppedAnimation(Colors.white),
                       ),
                     )
-                  : const Text('일기 저장'),
+                  : Text(l10n.get('save_button')),
             ),
             const SizedBox(height: 16),
           ],

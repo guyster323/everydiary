@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/providers/app_intro_provider.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/services/app_intro_service.dart';
 
 class AppIntroSection extends ConsumerStatefulWidget {
@@ -20,8 +21,6 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
   List<AppIntroSlide> _slides = const [];
   ProviderSubscription<AsyncValue<List<AppIntroSlide>>>? _slidesSubscription;
   late final PageController _pageController;
-  ProviderSubscription<AsyncValue<int>>? _progressSubscription;
-  int _completedSegments = 0;
 
   @override
   void initState() {
@@ -36,22 +35,12 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
         next.whenData(_setSlides);
       },
     );
-
-    final initialProgress = ref.read(appIntroProgressProvider);
-    initialProgress.whenData(_updateProgress);
-    _progressSubscription = ref.listenManual<AsyncValue<int>>(
-      appIntroProgressProvider,
-      (previous, next) {
-        next.whenData(_updateProgress);
-      },
-    );
   }
 
   @override
   void dispose() {
     _autoSlideTimer?.cancel();
     _slidesSubscription?.close();
-    _progressSubscription?.close();
     _pageController.dispose();
     super.dispose();
   }
@@ -59,28 +48,13 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
     final slidesAsync = ref.watch(appIntroSlidesProvider);
-    final isLoading = slidesAsync.isLoading;
-    final totalSteps = AppIntroService.instance.totalSteps;
-    final showProgress = isLoading || _completedSegments < totalSteps;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text('앱 소개', style: theme.textTheme.titleMedium),
-            const Spacer(),
-            if (showProgress) ...[
-              Text('앱 소개 이미지를 생성하는 중', style: theme.textTheme.bodySmall),
-              const SizedBox(width: 12),
-              _SegmentedProgressBar(
-                totalSegments: totalSteps,
-                completedSegments: _completedSegments,
-              ),
-            ],
-          ],
-        ),
+        Text(l10n.get('app_intro_title'), style: theme.textTheme.titleMedium),
         const SizedBox(height: 12),
         Card(
           elevation: 0,
@@ -89,9 +63,9 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
             child: SizedBox(
               height: 220,
               child: slidesAsync.when(
-                data: (_) => _buildCarousel(context),
+                data: (_) => _buildCarousel(context, l10n),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _buildFallback(context),
+                error: (_, __) => _buildFallback(context, l10n),
               ),
             ),
           ),
@@ -100,9 +74,9 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
     );
   }
 
-  Widget _buildCarousel(BuildContext context) {
+  Widget _buildCarousel(BuildContext context, AppLocalizations l10n) {
     if (_slides.isEmpty) {
-      return _buildFallback(context);
+      return _buildFallback(context, l10n);
     }
 
     return Column(
@@ -121,7 +95,7 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
               },
               itemBuilder: (context, index) {
                 final slide = _slides[index % _slides.length];
-                return _IntroSlideView(slide: slide);
+                return _IntroSlideView(slide: slide, l10n: l10n);
               },
             ),
           ),
@@ -135,7 +109,7 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
     );
   }
 
-  Widget _buildFallback(BuildContext context) {
+  Widget _buildFallback(BuildContext context, AppLocalizations l10n) {
     final theme = Theme.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -154,14 +128,14 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'EveryDiary 주요 기능',
+              l10n.get('fallback_features_title'),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'OCR · 음성 녹음 · 감정 분석 · AI 이미지 · 백업 관리 · PIN 보안 · 화면 숨김',
+              l10n.get('fallback_features_list'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer.withValues(
                   alpha: 0.8,
@@ -201,18 +175,13 @@ class _AppIntroSectionState extends ConsumerState<AppIntroSection> {
     }
   }
 
-  void _updateProgress(int value) {
-    final total = AppIntroService.instance.totalSteps;
-    setState(() {
-      _completedSegments = value.clamp(0, total);
-    });
-  }
 }
 
 class _IntroSlideView extends StatelessWidget {
-  const _IntroSlideView({super.key, required this.slide});
+  const _IntroSlideView({required this.slide, required this.l10n});
 
   final AppIntroSlide slide;
+  final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
@@ -221,8 +190,8 @@ class _IntroSlideView extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (slide.imagePath != null)
-          Image.file(
-            File(slide.imagePath!),
+          Image.asset(
+            slide.imagePath!,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => _fallbackBackground(theme),
           )
@@ -249,7 +218,7 @@ class _IntroSlideView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  slide.title,
+                  slide.getTitle(l10n),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -257,7 +226,7 @@ class _IntroSlideView extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  slide.description,
+                  slide.getDescription(l10n),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.9),
                   ),
@@ -319,54 +288,3 @@ class _IntroIndicator extends StatelessWidget {
   }
 }
 
-class _SegmentedProgressBar extends StatelessWidget {
-  const _SegmentedProgressBar({
-    required this.totalSegments,
-    required this.completedSegments,
-  });
-
-  final int totalSegments;
-  final int completedSegments;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 140,
-      height: 8,
-      child: Row(
-        children: List.generate(totalSegments, (index) {
-          final isFilled = index < completedSegments;
-          return Expanded(
-            child: TweenAnimationBuilder<double>(
-              key: ValueKey<int>(index * 10 + (isFilled ? 1 : 0)),
-              tween: Tween<double>(begin: 0, end: isFilled ? 1 : 0),
-              duration: const Duration(milliseconds: 450),
-              curve: isFilled ? Curves.elasticOut : Curves.easeInOut,
-              builder: (context, value, child) {
-                final translateY = -10 * value;
-                final scale = 0.9 + (0.15 * value);
-                return Transform.translate(
-                  offset: Offset(0, translateY),
-                  child: Transform.scale(
-                    scale: scale,
-                    child: Container(
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: isFilled
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.primary.withValues(alpha: 0.25),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        }),
-      ),
-    );
-  }
-}

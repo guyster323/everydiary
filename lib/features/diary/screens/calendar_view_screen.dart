@@ -9,6 +9,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/services/image_generation_service.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
@@ -179,6 +180,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -188,12 +190,12 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
       },
       child: Scaffold(
         appBar: CustomAppBar(
-          title: '캘린더',
+          title: l10n.get('calendar'),
           automaticallyImplyLeading: false,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/'),
-            tooltip: '뒤로가기',
+            tooltip: l10n.get('back'),
           ),
           actions: [
             // 통계 버튼
@@ -202,7 +204,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
               onPressed: () {
                 context.push('/diary/statistics');
               },
-              tooltip: '일기 통계',
+              tooltip: l10n.get('diary_statistics'),
             ),
 
             // 뷰 전환 버튼
@@ -220,8 +222,8 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 });
               },
               tooltip: _calendarFormat == CalendarFormat.month
-                  ? '주간 보기'
-                  : '월간 보기',
+                  ? l10n.get('weekly_view')
+                  : l10n.get('monthly_view'),
             ),
 
             // 오늘로 이동 버튼
@@ -234,7 +236,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 });
                 _calendarService.loadDiariesForDate(DateTime.now());
               },
-              tooltip: '오늘',
+              tooltip: l10n.get('today'),
             ),
           ],
         ),
@@ -255,7 +257,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _createNewDiary,
-          tooltip: '새 일기 작성',
+          tooltip: l10n.get('write_new_diary'),
           child: const Icon(Icons.add),
         ),
       ),
@@ -371,6 +373,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
 
   Widget _buildCalendarLegend(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
     return Padding(
       padding: const EdgeInsets.only(left: 24, right: 24, bottom: 12),
       child: Row(
@@ -385,7 +388,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              '주황색 점은 2개 이상의 일기가 있습니다.',
+              l10n.get('calendar_legend_multiple_entries'),
               style: theme.textTheme.labelMedium,
             ),
           ),
@@ -511,8 +514,9 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
 
   /// 선택된 날짜의 일기 목록 빌드
   Widget _buildSelectedDayDiaries() {
+    final l10n = ref.watch(localizationProvider);
     if (_selectedDay == null) {
-      return const Center(child: Text('날짜를 선택해주세요'));
+      return Center(child: Text(l10n.get('please_select_date')));
     }
 
     return ListenableBuilder(
@@ -556,7 +560,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             Text(
-                              '${selectedDayDiaries.length}개의 일기',
+                              l10n.get('diary_count').replaceAll('{count}', selectedDayDiaries.length.toString()),
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: Theme.of(
@@ -604,6 +608,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
 
   /// 빈 날짜 위젯
   Widget _buildEmptyDayWidget() {
+    final l10n = ref.watch(localizationProvider);
     return Center(
       child: ScrollAnimations.scrollScaleFade(
         child: Column(
@@ -622,7 +627,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
             const SizedBox(height: 16),
             ScrollAnimations.scrollFadeIn(
               child: Text(
-                '이 날에는 일기가 없습니다',
+                l10n.get('no_diary_on_this_day'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -645,7 +650,7 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
                 child: ElevatedButton.icon(
                   onPressed: _createDiaryForDate,
                   icon: const Icon(Icons.add),
-                  label: const Text('일기 작성하기'),
+                  label: Text(l10n.get('write_diary')),
                 ),
               ),
             ),
@@ -657,18 +662,28 @@ class _CalendarViewScreenState extends ConsumerState<CalendarViewScreen>
 
   /// 선택된 날짜 포맷팅
   String _formatSelectedDate(DateTime date) {
+    final l10n = ref.watch(localizationProvider);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final selected = DateTime(date.year, date.month, date.day);
 
     if (selected == today) {
-      return '오늘 (${date.month}월 ${date.day}일)';
+      return l10n.get('today_with_date')
+          .replaceAll('{month}', date.month.toString())
+          .replaceAll('{day}', date.day.toString());
     } else if (selected == today.subtract(const Duration(days: 1))) {
-      return '어제 (${date.month}월 ${date.day}일)';
+      return l10n.get('yesterday_with_date')
+          .replaceAll('{month}', date.month.toString())
+          .replaceAll('{day}', date.day.toString());
     } else if (selected == today.add(const Duration(days: 1))) {
-      return '내일 (${date.month}월 ${date.day}일)';
+      return l10n.get('tomorrow_with_date')
+          .replaceAll('{month}', date.month.toString())
+          .replaceAll('{day}', date.day.toString());
     } else {
-      return '${date.year}년 ${date.month}월 ${date.day}일';
+      return l10n.get('full_date')
+          .replaceAll('{year}', date.year.toString())
+          .replaceAll('{month}', date.month.toString())
+          .replaceAll('{day}', date.day.toString());
     }
   }
 }

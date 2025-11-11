@@ -8,9 +8,4 @@ enum Language {
   japanese,
   chineseSimplified,
   chineseTraditional,
-  spanish,
-  french,
-  german,
-  russian,
-  arabic,
 }

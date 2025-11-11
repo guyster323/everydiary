@@ -1,0 +1,50 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze:*)",
+      "Bash(del \"lib\\features\\recommendations\\services\\memory_service_old.dart\")",
+      "Bash(rm:*)",
+      "Bash(chmod:*)",
+      "Bash(flutter devices:*)",
+      "Bash(if [ -f \".env.flutter.local\" ])",
+      "Bash(then echo \"✅ API 키 파일 존재\")",
+      "Bash(cat:*)",
+      "Bash(else echo \"❌ API 키 파일이 없습니다. .env.flutter.example을 복사하여 .env.flutter.local을 만들어주세요.\")",
+      "Bash(fi)",
+      "Bash(flutter run:*)",
+      "Bash(flutter pub get:*)",
+      "Bash(flutter clean:*)",
+      "Bash(adb uninstall:*)",
+      "Bash(tee:*)",
+      "Bash(flutter attach:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(timeout 10 nc:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: implement AI image generation count system with ad rewards\n\nMajor Features:\n- AI image generation count tracking system\n- Ad reward integration (3 generations per ad)\n- PIN recovery warning with flashing emergency light animation\n- Automatic UI synchronization on screen navigation\n\nGeneration Count System:\n- Created GenerationCountProvider with reload mechanism\n- Integrated count consumption in ImageGenerationService\n- Added rollback logic on generation failures\n- SharedPreferences as single source of truth\n- Real-time UI updates via lifecycle management\n\nAd Integration:\n- Fixed ad reward callback from async to sync pattern\n- Added comprehensive error handling with user feedback\n- Integrated with generation count system\n- AdService with rewarded ad support\n\nPIN Security Enhancements:\n- Added flashing warning animation (800ms cycle) on unlock screen\n- Shows when recovery question not set\n- AnimationController with FadeTransition\n- Material Design 3 error theming\n- Enhanced recovery flow with proper mounted checks\n\nUI/UX Improvements:\n- GenerationCountWidget as ConsumerStatefulWidget\n- AutomaticKeepAliveClientMixin for state preservation\n- didChangeDependencies lifecycle for auto-reload\n- Comprehensive logging for debugging\n\nFiles Modified:\n- lib/core/services/image_generation_service.dart\n- lib/features/security/screens/pin_unlock_screen.dart\n- lib/core/providers/image_generation_provider.dart\n- lib/features/diary/screens/diary_write_screen.dart\n\nFiles Added:\n- lib/core/providers/generation_count_provider.dart\n- lib/features/home/widgets/generation_count_widget.dart\n- lib/features/diary/widgets/image_generation_purchase_dialog.dart\n- lib/shared/services/ad_service.dart\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(if [ -f \"assets/config/secrets.json\" ])",
+      "Bash(then echo \"✅ secrets.json 파일 존재\")",
+      "Bash(else echo \"❌ secrets.json 파일 없음\")",
+      "Bash(\"lib\\core\\providers\\localization_provider.dart\" 2)",
+      "Bash(\"lib\\core\\providers\\localization_provider.dart\")",
+      "Bash(findstr:*)",
+      "Bash(timeout 5 nc:*)",
+      "Bash(flutter pub run build_runner build:*)",
+      "Bash(dart analyze:*)",
+      "Bash(flutter logs:*)",
+      "Bash(nc:*)",
+      "Bash(git checkout:*)",
+      "Bash(timeout:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: major UI/UX improvements and localization refactoring\n\nMajor Changes:\n- Refactored localization system with new l10n directory structure\n- Improved settings screen UI and removed thumbnail monitoring\n- Enhanced app intro section with better organization\n- Updated diary screens with improved search and calendar views\n- Refined payment service with subscription constants\n- Added comprehensive documentation (API keys, AdMob setup, Quick start guides)\n\nLocalization:\n- Restructured localization provider with cleaner implementation\n- Removed 234 lines of redundant code from localization_provider.dart\n- Added new l10n directory for better language file organization\n\nUI Improvements:\n- Simplified app intro section (118 lines removed)\n- Reorganized settings screen layout\n- Enhanced diary card, search bar, and statistics widgets\n- Improved image generation purchase dialog with better UX\n\nCode Quality:\n- Removed thumbnail monitoring screen (395 lines)\n- Cleaned up routing with better organization\n- Enhanced backup/restore widget functionality\n- Improved language and thumbnail style selectors\n\nDocumentation:\n- Added API_KEYS_SETUP.md\n- Added ADMOB_SETUP_GUIDE.md\n- Added QUICK_START.md\n- Added POWERSHELL_CLAUDE_CODE_GUIDE.md\n- Added build scripts (build.ps1, build.sh)\n\nFiles Changed: 39 files\nLines Added: 1,341 insertions\nLines Removed: 1,575 deletions\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(del nul 2)",
+      "Bash(git rm:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "task-master-ai",
+    "github"
+  ]
+}

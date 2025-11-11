@@ -352,7 +352,7 @@ class ImageGenerationService {
     final prefs = await SharedPreferences.getInstance();
     final remainingCount = prefs.getInt(_generationCountKey) ?? 3;
 
-    print('🔵 [ImageGenService] generateImageFromText 호출: remainingCount=$remainingCount');
+    debugPrint('🔵 [ImageGenService] generateImageFromText 호출: remainingCount=$remainingCount');
 
     if (remainingCount <= 0) {
       debugPrint('❌ 이미지 생성 횟수가 부족합니다.');
@@ -362,7 +362,7 @@ class ImageGenerationService {
     // Consume generation count
     final newCount = remainingCount - 1;
     await prefs.setInt(_generationCountKey, newCount);
-    print('🔵 [ImageGenService] 횟수 차감: $remainingCount → $newCount');
+    debugPrint('🔵 [ImageGenService] 횟수 차감: $remainingCount → $newCount');
 
     if (!await _canGenerateToday()) {
       debugPrint(
@@ -370,7 +370,7 @@ class ImageGenerationService {
       );
       // Rollback count on daily limit error
       await prefs.setInt(_generationCountKey, remainingCount);
-      print('🔵 [ImageGenService] 일일 제한으로 횟수 복구: $newCount → $remainingCount');
+      debugPrint('🔵 [ImageGenService] 일일 제한으로 횟수 복구: $newCount → $remainingCount');
       return null;
     }
 
@@ -417,7 +417,7 @@ class ImageGenerationService {
         debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
         // Rollback count on generation failure
         await prefs.setInt(_generationCountKey, remainingCount);
-        print('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $remainingCount');
+        debugPrint('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $remainingCount');
         return null;
       }
 
@@ -429,7 +429,7 @@ class ImageGenerationService {
         debugPrint('❌ 이미지 생성 결과에 Base64 데이터가 없습니다.');
         // Rollback count on missing base64 data
         await prefs.setInt(_generationCountKey, remainingCount);
-        print('🔵 [ImageGenService] Base64 데이터 없어서 횟수 복구: $newCount → $remainingCount');
+        debugPrint('🔵 [ImageGenService] Base64 데이터 없어서 횟수 복구: $newCount → $remainingCount');
         return null;
       }
 

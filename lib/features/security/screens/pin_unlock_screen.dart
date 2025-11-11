@@ -393,7 +393,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
       answerController.dispose();
       newPinController.dispose();
       confirmPinController.dispose();
-      print('❌ [PinRecovery] 다이얼로그 취소됨');
+      debugPrint('❌ [PinRecovery] 다이얼로그 취소됨');
       return;
     }
 
@@ -406,7 +406,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
 
     setState(() => _isSubmitting = true);
 
-    print('🔵 [PinRecovery] PIN 복구 시작');
+    debugPrint('🔵 [PinRecovery] PIN 복구 시작');
     try {
       await ref
           .read(pinLockProvider.notifier)
@@ -415,7 +415,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
             newPin: newPinController.text.trim(),
           );
 
-      print('✅ [PinRecovery] PIN 복구 성공');
+      debugPrint('✅ [PinRecovery] PIN 복구 성공');
 
       if (!mounted) {
         answerController.dispose();
@@ -440,7 +440,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
       );
 
       // 약간의 지연 후 화면 이동
-      await Future.delayed(const Duration(milliseconds: 300));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
       if (!context.mounted) {
         answerController.dispose();
@@ -453,11 +453,11 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
           ? widget.redirectPath!
           : AppConstants.homeRoute;
 
-      print('🔵 [PinRecovery] 화면 이동: $redirectPath');
+      debugPrint('🔵 [PinRecovery] 화면 이동: $redirectPath');
       context.go(redirectPath);
     } catch (error, stackTrace) {
-      print('❌ [PinRecovery] PIN 복구 실패: $error');
-      print('❌ [PinRecovery] StackTrace: $stackTrace');
+      debugPrint('❌ [PinRecovery] PIN 복구 실패: $error');
+      debugPrint('❌ [PinRecovery] StackTrace: $stackTrace');
 
       if (!mounted) {
         answerController.dispose();

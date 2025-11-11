@@ -203,6 +203,14 @@ class PaymentService {
     ReceiptVerificationResult verificationResult,
   ) async {
     try {
+      // 이미지 생성 횟수 상품인지 확인
+      if (SubscriptionConstants.isImageGenerationProduct(
+        purchaseDetails.productID,
+      )) {
+        await _processImageGenerationPurchase(purchaseDetails);
+        return;
+      }
+
       final subscription = SubscriptionModel(
         id: purchaseDetails.purchaseID ?? '',
         productId: purchaseDetails.productID,
@@ -240,6 +248,53 @@ class PaymentService {
       debugPrint('Verified purchase saved: ${purchaseDetails.productID}');
     } catch (e) {
       debugPrint('Error saving verified purchase: $e');
+    }
+  }
+
+  /// 이미지 생성 횟수 구매 처리
+  Future<void> _processImageGenerationPurchase(
+    PurchaseDetails purchaseDetails,
+  ) async {
+    try {
+      final count = SubscriptionConstants.getImageGenerationCount(
+        purchaseDetails.productID,
+      );
+
+      if (count == null) {
+        debugPrint(
+          'Unknown image generation product: ${purchaseDetails.productID}',
+        );
+        return;
+      }
+
+      // SharedPreferences에 생성 횟수 추가
+      final prefs = await SharedPreferences.getInstance();
+      final currentCount = prefs.getInt('remaining_generations') ?? 0;
+      final newCount = currentCount + count;
+      await prefs.setInt('remaining_generations', newCount);
+
+      debugPrint(
+        '✅ [Purchase] 이미지 생성 횟수 추가: +$count회 (현재: $newCount회)',
+      );
+
+      // 구매 기록 저장
+      final purchaseRecord = PurchaseRecord(
+        id: purchaseDetails.purchaseID ?? '',
+        productId: purchaseDetails.productID,
+        transactionId: purchaseDetails.purchaseID ?? '',
+        purchaseTime: DateTime.now(),
+        price:
+            SubscriptionConstants.getPrice(
+              purchaseDetails.productID,
+            )?.toDouble() ??
+            0.0,
+        currency: 'USD',
+        status: 'completed',
+      );
+
+      await _storageService.addPurchaseRecord(purchaseRecord);
+    } catch (e) {
+      debugPrint('❌ [Purchase] 이미지 생성 횟수 구매 처리 실패: $e');
     }
   }
 

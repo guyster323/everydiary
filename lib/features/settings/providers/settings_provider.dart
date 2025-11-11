@@ -184,16 +184,6 @@ Locale getLocaleFromLanguage(Language language) {
       return const Locale('zh', 'CN');
     case Language.chineseTraditional:
       return const Locale('zh', 'TW');
-    case Language.spanish:
-      return const Locale('es', 'ES');
-    case Language.french:
-      return const Locale('fr', 'FR');
-    case Language.german:
-      return const Locale('de', 'DE');
-    case Language.russian:
-      return const Locale('ru', 'RU');
-    case Language.arabic:
-      return const Locale('ar', 'SA');
   }
 }
 
@@ -210,15 +200,5 @@ String getLanguageDisplayName(Language language) {
       return '简体中文';
     case Language.chineseTraditional:
       return '繁體中文';
-    case Language.spanish:
-      return 'Español';
-    case Language.french:
-      return 'Français';
-    case Language.german:
-      return 'Deutsch';
-    case Language.russian:
-      return 'Русский';
-    case Language.arabic:
-      return 'العربية';
   }
 }

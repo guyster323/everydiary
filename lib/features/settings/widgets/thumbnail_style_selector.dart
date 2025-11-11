@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/l10n/app_localizations.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/user_customization_provider.dart';
 import '../../../core/services/user_customization_service.dart';
 
@@ -12,6 +14,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = ref.watch(localizationProvider);
     final settings = ref.watch(userCustomizationSettingsNotifierProvider);
     final notifier = ref.watch(
       userCustomizationSettingsNotifierProvider.notifier,
@@ -19,7 +22,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
 
     return settings.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('설정을 불러오지 못했습니다: $error')),
+      error: (error, _) => Center(child: Text('${l10n.get('settings_load_error')}: $error')),
       data: (data) => Dialog(
         insetPadding: const EdgeInsets.all(16),
         child: LayoutBuilder(
@@ -38,13 +41,13 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '썸네일 스타일 커스터마이징',
+                            l10n.get('thumbnail_dialog_title'),
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'AI 썸네일 스타일과 보정 값을 조정해 사용자 취향을 반영하세요.',
+                            l10n.get('thumbnail_dialog_subtitle'),
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: Theme.of(context).colorScheme.onSurface
@@ -64,6 +67,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
                                   Expanded(
                                     flex: 2,
                                     child: _StyleRadioList(
+                                      l10n: l10n,
                                       selected: data.preferredStyle,
                                       onChanged: notifier.updateStyle,
                                     ),
@@ -72,6 +76,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
                                   Expanded(
                                     flex: 3,
                                     child: _AdjustmentControls(
+                                      l10n: l10n,
                                       settings: data,
                                       notifier: notifier,
                                     ),
@@ -81,11 +86,13 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
                             : ListView(
                                 children: [
                                   _StyleRadioList(
+                                    l10n: l10n,
                                     selected: data.preferredStyle,
                                     onChanged: notifier.updateStyle,
                                   ),
                                   const SizedBox(height: 16),
                                   _AdjustmentControls(
+                                    l10n: l10n,
                                     settings: data,
                                     notifier: notifier,
                                   ),
@@ -100,7 +107,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
                         children: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('닫기'),
+                            child: Text(l10n.get('close')),
                           ),
                         ],
                       ),
@@ -117,8 +124,13 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
 }
 
 class _StyleRadioList extends StatelessWidget {
-  const _StyleRadioList({required this.selected, required this.onChanged});
+  const _StyleRadioList({
+    required this.l10n,
+    required this.selected,
+    required this.onChanged,
+  });
 
+  final AppLocalizations l10n;
   final ImageStyle selected;
   final ValueChanged<ImageStyle> onChanged;
 
@@ -132,7 +144,7 @@ class _StyleRadioList extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '스타일 선택',
+              l10n.get('style_select_title'),
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -140,6 +152,7 @@ class _StyleRadioList extends StatelessWidget {
             const SizedBox(height: 12),
             ...ImageStyle.values.map(
               (style) => _StyleOptionTile(
+                l10n: l10n,
                 style: style,
                 selected: style == selected,
                 onTap: () {
@@ -158,11 +171,13 @@ class _StyleRadioList extends StatelessWidget {
 
 class _StyleOptionTile extends StatelessWidget {
   const _StyleOptionTile({
+    required this.l10n,
     required this.style,
     required this.selected,
     required this.onTap,
   });
 
+  final AppLocalizations l10n;
   final ImageStyle style;
   final bool selected;
   final VoidCallback onTap;
@@ -205,7 +220,7 @@ class _StyleOptionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      style.displayName,
+                      l10n.get(style.localizationKey),
                       style: theme.textTheme.bodyLarge?.copyWith(
                         fontWeight: selected
                             ? FontWeight.bold
@@ -231,8 +246,13 @@ class _StyleOptionTile extends StatelessWidget {
 }
 
 class _AdjustmentControls extends StatelessWidget {
-  const _AdjustmentControls({required this.settings, required this.notifier});
+  const _AdjustmentControls({
+    required this.l10n,
+    required this.settings,
+    required this.notifier,
+  });
 
+  final AppLocalizations l10n;
   final UserCustomizationSettings settings;
   final UserCustomizationSettingsNotifier notifier;
 
@@ -246,42 +266,42 @@ class _AdjustmentControls extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '상세 조정',
+              l10n.get('detail_adjust_title'),
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             _LabeledSlider(
-              label: '밝기',
+              label: l10n.get('brightness_label'),
               value: settings.brightness,
               min: -0.5,
               max: 0.5,
               onChanged: notifier.updateBrightness,
             ),
             _LabeledSlider(
-              label: '대비',
+              label: l10n.get('contrast_label'),
               value: settings.contrast,
               min: 0.5,
               max: 1.5,
               onChanged: notifier.updateContrast,
             ),
             _LabeledSlider(
-              label: '포화도',
+              label: l10n.get('saturation_label'),
               value: settings.saturation,
               min: 0.5,
               max: 1.5,
               onChanged: notifier.updateSaturation,
             ),
             _LabeledSlider(
-              label: '블러 반경',
+              label: l10n.get('blur_radius_label'),
               value: settings.blurRadius,
               min: 0,
               max: 30,
               onChanged: notifier.updateBlurRadius,
             ),
             const SizedBox(height: 12),
-            Text('오버레이 색상', style: Theme.of(context).textTheme.bodyMedium),
+            Text(l10n.get('overlay_color_label'), style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
@@ -310,7 +330,7 @@ class _AdjustmentControls extends StatelessWidget {
                   .toList(),
             ),
             _LabeledSlider(
-              label: '오버레이 투명도',
+              label: l10n.get('overlay_opacity_label'),
               value: settings.overlayOpacity,
               min: 0,
               max: 0.8,
@@ -319,12 +339,12 @@ class _AdjustmentControls extends StatelessWidget {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               value: settings.enableAutoOptimization,
-              title: const Text('자동 최적화'),
-              subtitle: const Text('분석 결과 기반으로 프롬프트를 자동 보정합니다'),
+              title: Text(l10n.get('auto_optimization_title')),
+              subtitle: Text(l10n.get('auto_optimization_subtitle')),
               onChanged: (_) => notifier.toggleAutoOptimization(),
             ),
             const SizedBox(height: 16),
-            _ManualKeywordEditor(settings: settings, notifier: notifier),
+            _ManualKeywordEditor(l10n: l10n, settings: settings, notifier: notifier),
           ],
         ),
       ),
@@ -375,8 +395,13 @@ const _overlayColors = <Color>[
 ];
 
 class _ManualKeywordEditor extends HookWidget {
-  const _ManualKeywordEditor({required this.settings, required this.notifier});
+  const _ManualKeywordEditor({
+    required this.l10n,
+    required this.settings,
+    required this.notifier,
+  });
 
+  final AppLocalizations l10n;
   final UserCustomizationSettings settings;
   final UserCustomizationSettingsNotifier notifier;
 
@@ -393,22 +418,22 @@ class _ManualKeywordEditor extends HookWidget {
       final normalized = rawValue.replaceAll(RegExp(r'\s+'), ' ');
 
       if (normalized.isEmpty) {
-        keywordError.value = '키워드를 입력해 주세요.';
+        keywordError.value = l10n.get('keyword_required');
         return;
       }
 
       if (normalized.length > 24) {
-        keywordError.value = '키워드는 24자 이내로 입력해 주세요.';
+        keywordError.value = l10n.get('keyword_max_length');
         return;
       }
 
       if (settings.manualKeywords.contains(normalized)) {
-        keywordError.value = '이미 추가된 키워드입니다.';
+        keywordError.value = l10n.get('keyword_duplicate');
         return;
       }
 
       if (settings.manualKeywords.length >= 5) {
-        keywordError.value = '키워드는 최대 5개까지 등록할 수 있습니다.';
+        keywordError.value = l10n.get('keyword_max_count');
         return;
       }
 
@@ -423,11 +448,11 @@ class _ManualKeywordEditor extends HookWidget {
         keywordController.clear();
       } on StateError catch (_) {
         if (context.mounted) {
-          keywordError.value = '키워드는 최대 5개까지 등록할 수 있습니다.';
+          keywordError.value = l10n.get('keyword_max_count');
         }
       } catch (_) {
         if (context.mounted) {
-          keywordError.value = '키워드를 저장하지 못했습니다. 다시 시도해 주세요.';
+          keywordError.value = l10n.get('keyword_save_failed');
         }
       } finally {
         if (context.mounted) {
@@ -440,14 +465,14 @@ class _ManualKeywordEditor extends HookWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '사용자 지정 키워드',
+          l10n.get('manual_keyword_title'),
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'AI 프롬프트에 항상 포함될 키워드를 최대 5개까지 추가할 수 있습니다.',
+          l10n.get('manual_keyword_subtitle'),
           style: theme.textTheme.bodySmall?.copyWith(
             color: colorScheme.onSurface.withValues(alpha: 0.7),
           ),
@@ -459,9 +484,9 @@ class _ManualKeywordEditor extends HookWidget {
               child: TextField(
                 controller: keywordController,
                 enabled: !isSubmitting.value,
-                decoration: const InputDecoration(
-                  labelText: '수동 키워드',
-                  hintText: '예: 파스텔 톤, 야경',
+                decoration: InputDecoration(
+                  labelText: l10n.get('keyword_label'),
+                  hintText: l10n.get('keyword_hint'),
                   counterText: '',
                 ),
                 maxLength: 24,
@@ -473,7 +498,7 @@ class _ManualKeywordEditor extends HookWidget {
             FilledButton.icon(
               onPressed: isSubmitting.value ? null : addKeyword,
               icon: const Icon(Icons.add),
-              label: const Text('추가'),
+              label: Text(l10n.get('keyword_add_button')),
             ),
           ],
         ),
@@ -491,7 +516,7 @@ class _ManualKeywordEditor extends HookWidget {
         const SizedBox(height: 12),
         if (settings.manualKeywords.isEmpty)
           Text(
-            '등록된 키워드가 없습니다.',
+            l10n.get('keyword_empty_list'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.5),
             ),
@@ -518,7 +543,7 @@ class _ManualKeywordEditor extends HookWidget {
               child: TextButton.icon(
                 onPressed: () => unawaited(notifier.clearManualKeywords()),
                 icon: const Icon(Icons.clear_all),
-                label: const Text('모두 삭제'),
+                label: Text(l10n.get('keyword_clear_all')),
               ),
             ),
           ),

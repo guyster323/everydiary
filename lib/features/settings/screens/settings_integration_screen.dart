@@ -245,16 +245,6 @@ class SettingsIntegrationScreen extends ConsumerWidget {
         return '简体中文';
       case Language.chineseTraditional:
         return '繁體中文';
-      case Language.spanish:
-        return 'Español';
-      case Language.french:
-        return 'Français';
-      case Language.german:
-        return 'Deutsch';
-      case Language.russian:
-        return 'Русский';
-      case Language.arabic:
-        return 'العربية';
     }
   }
 

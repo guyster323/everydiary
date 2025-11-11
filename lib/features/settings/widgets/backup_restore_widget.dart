@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/services/backup_service.dart';
 import '../../../core/services/local_storage_service.dart';
 import '../../profile/services/profile_service.dart';
@@ -47,7 +48,8 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         _autoBackupSettings = settings;
       });
     } catch (e) {
-      _showErrorSnackBar('데이터 로드 중 오류가 발생했습니다: $e');
+      final l10n = ref.read(localizationProvider);
+      _showErrorSnackBar(l10n.get('load_error_backup').replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -55,10 +57,12 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('백업 및 복원'),
+        _buildSectionHeader(l10n.get('backup_section_title')),
         const SizedBox(height: 16),
         _buildBackupActions(),
         const SizedBox(height: 24),
@@ -79,13 +83,15 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildBackupActions() {
+    final l10n = ref.watch(localizationProvider);
+
     return Row(
       children: [
         Expanded(
           child: ElevatedButton.icon(
             onPressed: _isLoading ? null : _createBackup,
             icon: const Icon(Icons.backup),
-            label: const Text('백업 생성'),
+            label: Text(l10n.get('create_backup_button')),
           ),
         ),
         const SizedBox(width: 12),
@@ -93,7 +99,7 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
           child: OutlinedButton.icon(
             onPressed: _isLoading ? null : _restoreFromFile,
             icon: const Icon(Icons.restore),
-            label: const Text('파일에서 복원'),
+            label: Text(l10n.get('restore_from_file_button')),
           ),
         ),
       ],
@@ -101,6 +107,8 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildAutoBackupSettings() {
+    final l10n = ref.watch(localizationProvider);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -111,7 +119,7 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
               children: [
                 Expanded(
                   child: Text(
-                    '자동 백업',
+                    l10n.get('auto_backup_title'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
@@ -134,17 +142,19 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildAutoBackupInterval() {
+    final l10n = ref.watch(localizationProvider);
+
     return Row(
       children: [
-        const Text('백업 주기: '),
+        Text(l10n.get('backup_interval_label')),
         DropdownButton<int>(
           value: _autoBackupSettings.intervalDays,
-          items: const [
-            DropdownMenuItem(value: 1, child: Text('매일')),
-            DropdownMenuItem(value: 3, child: Text('3일마다')),
-            DropdownMenuItem(value: 7, child: Text('주간')),
-            DropdownMenuItem(value: 14, child: Text('2주마다')),
-            DropdownMenuItem(value: 30, child: Text('월간')),
+          items: [
+            DropdownMenuItem(value: 1, child: Text(l10n.get('interval_daily'))),
+            DropdownMenuItem(value: 3, child: Text(l10n.get('interval_3days'))),
+            DropdownMenuItem(value: 7, child: Text(l10n.get('interval_weekly'))),
+            DropdownMenuItem(value: 14, child: Text(l10n.get('interval_biweekly'))),
+            DropdownMenuItem(value: 30, child: Text(l10n.get('interval_monthly'))),
           ],
           onChanged: _updateBackupInterval,
         ),
@@ -153,16 +163,18 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildMaxBackups() {
+    final l10n = ref.watch(localizationProvider);
+
     return Row(
       children: [
-        const Text('최대 백업 수: '),
+        Text(l10n.get('max_backups_label')),
         DropdownButton<int>(
           value: _autoBackupSettings.maxBackups,
-          items: const [
-            DropdownMenuItem(value: 3, child: Text('3개')),
-            DropdownMenuItem(value: 5, child: Text('5개')),
-            DropdownMenuItem(value: 10, child: Text('10개')),
-            DropdownMenuItem(value: 20, child: Text('20개')),
+          items: [
+            DropdownMenuItem(value: 3, child: Text(l10n.get('max_3'))),
+            DropdownMenuItem(value: 5, child: Text(l10n.get('max_5'))),
+            DropdownMenuItem(value: 10, child: Text(l10n.get('max_10'))),
+            DropdownMenuItem(value: 20, child: Text(l10n.get('max_20'))),
           ],
           onChanged: _updateMaxBackups,
         ),
@@ -171,6 +183,8 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildBackupList() {
+    final l10n = ref.watch(localizationProvider);
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -187,10 +201,10 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(height: 16),
-              Text('백업이 없습니다', style: Theme.of(context).textTheme.titleMedium),
+              Text(l10n.get('no_backups_title'), style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Text(
-                '첫 번째 백업을 생성해보세요',
+                l10n.get('no_backups_subtitle'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
@@ -205,7 +219,7 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '사용 가능한 백업 (${_availableBackups.length}개)',
+          l10n.get('available_backups_title').replaceAll('{count}', _availableBackups.length.toString()),
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
@@ -215,6 +229,8 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildBackupItem(BackupInfo backup) {
+    final l10n = ref.watch(localizationProvider);
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -223,27 +239,27 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('생성일: ${backup.formattedDate}'),
-            Text('크기: ${backup.formattedSize}'),
+            Text(l10n.get('created_date_label').replaceAll('{date}', backup.formattedDate)),
+            Text(l10n.get('size_label').replaceAll('{size}', backup.formattedSize)),
             _buildBackupIncludes(backup.includes),
           ],
         ),
         trailing: PopupMenuButton<String>(
           onSelected: (value) => _handleBackupAction(value, backup),
           itemBuilder: (context) => [
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'restore',
               child: ListTile(
-                leading: Icon(Icons.restore),
-                title: Text('복원'),
+                leading: const Icon(Icons.restore),
+                title: Text(l10n.get('restore_action')),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'delete',
               child: ListTile(
-                leading: Icon(Icons.delete, color: Colors.red),
-                title: Text('삭제', style: TextStyle(color: Colors.red)),
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: Text(l10n.get('delete_action'), style: const TextStyle(color: Colors.red)),
                 contentPadding: EdgeInsets.zero,
               ),
             ),
@@ -254,13 +270,14 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Widget _buildBackupIncludes(Map<String, dynamic> includes) {
+    final l10n = ref.watch(localizationProvider);
     final includedItems = <String>[];
-    if (includes['settings'] == true) includedItems.add('설정');
-    if (includes['profile'] == true) includedItems.add('프로필');
-    if (includes['diaryData'] == true) includedItems.add('일기');
+    if (includes['settings'] == true) includedItems.add(l10n.get('includes_settings'));
+    if (includes['profile'] == true) includedItems.add(l10n.get('includes_profile'));
+    if (includes['diaryData'] == true) includedItems.add(l10n.get('includes_diary'));
 
     return Text(
-      '포함: ${includedItems.join(', ')}',
+      l10n.get('includes_label').replaceAll('{items}', includedItems.join(', ')),
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
@@ -268,23 +285,25 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Future<void> _createBackup() async {
+    final l10n = ref.read(localizationProvider);
     setState(() => _isLoading = true);
     try {
       final result = await _backupService.createBackup();
       if (result.isSuccess) {
-        _showSuccessSnackBar('백업이 성공적으로 생성되었습니다.');
+        _showSuccessSnackBar(l10n.get('backup_success'));
         await _loadData();
       } else {
-        _showErrorSnackBar(result.errorMessage ?? '백업 생성에 실패했습니다.');
+        _showErrorSnackBar(result.errorMessage ?? l10n.get('backup_failed'));
       }
     } catch (e) {
-      _showErrorSnackBar('백업 생성 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('backup_error').replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _restoreFromFile() async {
+    final l10n = ref.read(localizationProvider);
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -296,7 +315,7 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         await _restoreFromBackup(filePath);
       }
     } catch (e) {
-      _showErrorSnackBar('파일 선택 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('file_picker_error').replaceAll('{error}', e.toString()));
     }
   }
 
@@ -304,17 +323,18 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
     final confirmed = await _showRestoreConfirmationDialog();
     if (!confirmed) return;
 
+    final l10n = ref.read(localizationProvider);
     setState(() => _isLoading = true);
     try {
       final result = await _backupService.restoreFromBackup(filePath);
       if (result.isSuccess) {
-        _showSuccessSnackBar('복원이 성공적으로 완료되었습니다.');
+        _showSuccessSnackBar(l10n.get('restore_success'));
         await _loadData();
       } else {
-        _showErrorSnackBar(result.errorMessage ?? '복원에 실패했습니다.');
+        _showErrorSnackBar(result.errorMessage ?? l10n.get('restore_failed'));
       }
     } catch (e) {
-      _showErrorSnackBar('복원 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('restore_error').replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
@@ -335,23 +355,25 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
     final confirmed = await _showDeleteConfirmationDialog(backup.name);
     if (!confirmed) return;
 
+    final l10n = ref.read(localizationProvider);
     setState(() => _isLoading = true);
     try {
       final success = await _backupService.deleteBackup(backup.filePath);
       if (success) {
-        _showSuccessSnackBar('백업이 삭제되었습니다.');
+        _showSuccessSnackBar(l10n.get('delete_success'));
         await _loadData();
       } else {
-        _showErrorSnackBar('백업 삭제에 실패했습니다.');
+        _showErrorSnackBar(l10n.get('delete_failed'));
       }
     } catch (e) {
-      _showErrorSnackBar('백업 삭제 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('delete_error').replaceAll('{error}', e.toString()));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
   Future<void> _updateAutoBackupEnabled(bool enabled) async {
+    final l10n = ref.read(localizationProvider);
     try {
       await _backupService.setAutoBackup(
         enabled: enabled,
@@ -366,13 +388,14 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         );
       });
     } catch (e) {
-      _showErrorSnackBar('자동 백업 설정 업데이트 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('auto_backup_update_error').replaceAll('{error}', e.toString()));
     }
   }
 
   Future<void> _updateBackupInterval(int? intervalDays) async {
     if (intervalDays == null) return;
 
+    final l10n = ref.read(localizationProvider);
     try {
       await _backupService.setAutoBackup(
         enabled: _autoBackupSettings.enabled,
@@ -387,13 +410,14 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         );
       });
     } catch (e) {
-      _showErrorSnackBar('백업 주기 설정 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('interval_update_error').replaceAll('{error}', e.toString()));
     }
   }
 
   Future<void> _updateMaxBackups(int? maxBackups) async {
     if (maxBackups == null) return;
 
+    final l10n = ref.read(localizationProvider);
     try {
       await _backupService.setAutoBackup(
         enabled: _autoBackupSettings.enabled,
@@ -408,28 +432,25 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
         );
       });
     } catch (e) {
-      _showErrorSnackBar('최대 백업 수 설정 중 오류가 발생했습니다: $e');
+      _showErrorSnackBar(l10n.get('max_backups_update_error').replaceAll('{error}', e.toString()));
     }
   }
 
   Future<bool> _showRestoreConfirmationDialog() async {
+    final l10n = ref.read(localizationProvider);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('데이터 복원'),
-            content: const Text(
-              '현재 데이터가 백업 데이터로 덮어씌워집니다.\n'
-              '이 작업은 되돌릴 수 없습니다.\n\n'
-              '계속하시겠습니까?',
-            ),
+            title: Text(l10n.get('restore_confirm_title')),
+            content: Text(l10n.get('restore_confirm_message')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('취소'),
+                child: Text(l10n.get('cancel')),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('복원'),
+                child: Text(l10n.get('yes')),
               ),
             ],
           ),
@@ -438,15 +459,16 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
   }
 
   Future<bool> _showDeleteConfirmationDialog(String backupName) async {
+    final l10n = ref.read(localizationProvider);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('백업 삭제'),
-            content: Text('백업 "$backupName"을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
+            title: Text(l10n.get('delete_confirm_title')),
+            content: Text(l10n.get('delete_confirm_message').replaceAll('{name}', backupName)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('취소'),
+                child: Text(l10n.get('cancel')),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(true),
@@ -454,7 +476,7 @@ class _BackupRestoreWidgetState extends ConsumerState<BackupRestoreWidget> {
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('삭제'),
+                child: Text(l10n.get('delete_action')),
               ),
             ],
           ),

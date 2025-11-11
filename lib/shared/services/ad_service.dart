@@ -19,10 +19,10 @@ class AdService {
   /// 리워드 광고 ID 가져오기
   String get _rewardedAdUnitId {
     if (Platform.isAndroid) {
-      // 테스트 광고 ID (실제 배포 시 변경 필요)
-      return 'ca-app-pub-3940256099942544/5224354917';
+      // 실제 보상형 광고 단위 ID
+      return 'ca-app-pub-3638466356421889/9870140835';
     } else if (Platform.isIOS) {
-      // 테스트 광고 ID (실제 배포 시 변경 필요)
+      // iOS는 아직 미설정 (테스트 ID)
       return 'ca-app-pub-3940256099942544/1712485313';
     }
     return '';

@@ -67,9 +67,4 @@ const _$LanguageEnumMap = {
   Language.japanese: 'japanese',
   Language.chineseSimplified: 'chineseSimplified',
   Language.chineseTraditional: 'chineseTraditional',
-  Language.spanish: 'spanish',
-  Language.french: 'french',
-  Language.german: 'german',
-  Language.russian: 'russian',
-  Language.arabic: 'arabic',
 };

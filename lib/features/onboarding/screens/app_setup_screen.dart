@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/app_profile_provider.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/pin_lock_provider.dart';
+import '../../settings/models/settings_enums.dart';
+import '../../settings/providers/settings_provider.dart';
+import '../../settings/widgets/language_selector.dart';
 
 class AppSetupScreen extends ConsumerStatefulWidget {
   const AppSetupScreen({super.key});
@@ -32,6 +36,8 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
+    final settings = ref.watch(settingsProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -46,12 +52,12 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'EveryDiary에 오신 것을 환영해요!',
+                      l10n.get('welcome_title'),
                       style: theme.textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '앱에서 사용할 이름과 잠금 옵션을 먼저 설정해 주세요.',
+                      l10n.get('setup_subtitle'),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.7,
@@ -59,19 +65,37 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    // Language selector at the top
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.language),
+                        title: Text(l10n.get('language')),
+                        subtitle: Text(_getLanguageDisplayName(settings.language)),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: () => _showLanguageSelector(context),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     TextFormField(
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: '이름',
-                        hintText: '예: 홍길동',
+                      decoration: InputDecoration(
+                        labelText: l10n.get('name_label'),
+                        hintText: l10n.get('name_hint'),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return '이름을 입력해 주세요';
+                          return l10n.get('name_required');
                         }
                         if (value.trim().length > 24) {
-                          return '이름은 24자 이하로 입력해 주세요';
+                          return l10n.get('name_max_length');
                         }
                         return null;
                       },
@@ -80,8 +104,8 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                     SwitchListTile.adaptive(
                       contentPadding: EdgeInsets.zero,
                       value: _usePin,
-                      title: const Text('앱 실행 시 PIN 잠금 사용'),
-                      subtitle: const Text('앱을 열 때 4자리 PIN을 입력하도록 설정합니다.'),
+                      title: Text(l10n.get('pin_lock_title')),
+                      subtitle: Text(l10n.get('pin_lock_subtitle')),
                       onChanged: _isSubmitting
                           ? null
                           : (value) {
@@ -94,8 +118,8 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _pinController,
-                        decoration: const InputDecoration(
-                          labelText: 'PIN (4자리 숫자)',
+                        decoration: InputDecoration(
+                          labelText: l10n.get('pin_label'),
                         ),
                         obscureText: true,
                         keyboardType: TextInputType.number,
@@ -109,10 +133,10 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                             return null;
                           }
                           if (value == null || value.length != 4) {
-                            return '4자리 숫자를 입력해 주세요';
+                            return l10n.get('pin_required');
                           }
                           if (!RegExp(r'^\d{4}$').hasMatch(value)) {
-                            return '숫자만 입력할 수 있습니다';
+                            return l10n.get('pin_numbers_only');
                           }
                           return null;
                         },
@@ -120,7 +144,9 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         controller: _pinConfirmController,
-                        decoration: const InputDecoration(labelText: 'PIN 확인'),
+                        decoration: InputDecoration(
+                          labelText: l10n.get('pin_confirm_label'),
+                        ),
                         obscureText: true,
                         keyboardType: TextInputType.number,
                         maxLength: 4,
@@ -133,7 +159,7 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                             return null;
                           }
                           if (value != _pinController.text) {
-                            return 'PIN이 일치하지 않습니다';
+                            return l10n.get('pin_mismatch');
                           }
                           return null;
                         },
@@ -154,7 +180,7 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Text('시작하기'),
+                            : Text(l10n.get('start_button')),
                       ),
                     ),
                   ],
@@ -164,6 +190,28 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  String _getLanguageDisplayName(Language language) {
+    switch (language) {
+      case Language.korean:
+        return '한국어';
+      case Language.english:
+        return 'English';
+      case Language.japanese:
+        return '日本語';
+      case Language.chineseSimplified:
+        return '简体中文';
+      case Language.chineseTraditional:
+        return '繁體中文';
+    }
+  }
+
+  void _showLanguageSelector(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (context) => const LanguageSelector(),
     );
   }
 
@@ -203,7 +251,10 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('설정 저장에 실패했습니다: $error')));
+      final l10n = ref.read(localizationProvider);
+      messenger.showSnackBar(
+        SnackBar(content: Text('${l10n.get('setup_save_failed')}: $error')),
+      );
     } finally {
       if (mounted) {
         setState(() {

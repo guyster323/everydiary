@@ -2,11 +2,13 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../shared/services/safe_delta_converter.dart';
 
 /// 일기용 리치 텍스트 에디터
-class DiaryRichTextEditor extends StatefulWidget {
+class DiaryRichTextEditor extends ConsumerStatefulWidget {
   final String initialContent;
   final void Function(String) onContentChanged;
   final double height;
@@ -19,10 +21,10 @@ class DiaryRichTextEditor extends StatefulWidget {
   });
 
   @override
-  State<DiaryRichTextEditor> createState() => DiaryRichTextEditorState();
+  ConsumerState<DiaryRichTextEditor> createState() => DiaryRichTextEditorState();
 }
 
-class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
+class DiaryRichTextEditorState extends ConsumerState<DiaryRichTextEditor> {
   late QuillController _controller;
   bool _isInitialized = false;
   final FocusNode _focusNode = FocusNode();
@@ -220,6 +222,8 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     if (!_isInitialized) {
       return Container(
         height: widget.height,
@@ -251,12 +255,12 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
                 // 실행 취소/다시 실행
                 _buildToolbarButton(
                   icon: Icons.undo,
-                  tooltip: '실행 취소',
+                  tooltip: l10n.get('editor_undo_tooltip'),
                   onPressed: () => _controller.undo(),
                 ),
                 _buildToolbarButton(
                   icon: Icons.redo,
-                  tooltip: '다시 실행',
+                  tooltip: l10n.get('editor_redo_tooltip'),
                   onPressed: () => _controller.redo(),
                 ),
                 const SizedBox(width: 8),
@@ -265,18 +269,18 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
                 // 굵게, 기울임, 밑줄
                 _buildToolbarButton(
                   icon: Icons.format_bold,
-                  tooltip: '굵게',
+                  tooltip: l10n.get('editor_bold_tooltip'),
                   onPressed: () => _controller.formatSelection(Attribute.bold),
                 ),
                 _buildToolbarButton(
                   icon: Icons.format_italic,
-                  tooltip: '기울임',
+                  tooltip: l10n.get('editor_italic_tooltip'),
                   onPressed: () =>
                       _controller.formatSelection(Attribute.italic),
                 ),
                 _buildToolbarButton(
                   icon: Icons.format_underlined,
-                  tooltip: '밑줄',
+                  tooltip: l10n.get('editor_underline_tooltip'),
                   onPressed: () =>
                       _controller.formatSelection(Attribute.underline),
                 ),
@@ -286,31 +290,31 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
                 // 목록
                 _buildToolbarButton(
                   icon: Icons.format_list_bulleted,
-                  tooltip: '글머리 기호 목록',
+                  tooltip: l10n.get('editor_bulleted_list_tooltip'),
                   onPressed: () => _controller.formatSelection(Attribute.ul),
                 ),
                 _buildToolbarButton(
                   icon: Icons.format_list_numbered,
-                  tooltip: '번호 목록',
+                  tooltip: l10n.get('editor_numbered_list_tooltip'),
                   onPressed: () => _controller.formatSelection(Attribute.ol),
                 ),
                 const Spacer(),
                 // 정렬
                 _buildToolbarButton(
                   icon: Icons.format_align_left,
-                  tooltip: '왼쪽 정렬',
+                  tooltip: l10n.get('editor_align_left_tooltip'),
                   onPressed: () =>
                       _controller.formatSelection(Attribute.leftAlignment),
                 ),
                 _buildToolbarButton(
                   icon: Icons.format_align_center,
-                  tooltip: '가운데 정렬',
+                  tooltip: l10n.get('editor_align_center_tooltip'),
                   onPressed: () =>
                       _controller.formatSelection(Attribute.centerAlignment),
                 ),
                 _buildToolbarButton(
                   icon: Icons.format_align_right,
-                  tooltip: '오른쪽 정렬',
+                  tooltip: l10n.get('editor_align_right_tooltip'),
                   onPressed: () =>
                       _controller.formatSelection(Attribute.rightAlignment),
                 ),
@@ -339,11 +343,11 @@ class DiaryRichTextEditorState extends State<DiaryRichTextEditor> {
                     controller: _controller,
                     focusNode: _focusNode,
                     scrollController: _scrollController,
-                    config: const QuillEditorConfig(
+                    config: QuillEditorConfig(
                       autoFocus: false,
                       expands: true,
                       padding: EdgeInsets.zero,
-                      placeholder: '오늘의 이야기를 기록해 보세요...',
+                      placeholder: l10n.get('diary_content_placeholder'),
                     ),
                   ),
                 ),
