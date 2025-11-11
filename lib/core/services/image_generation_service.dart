@@ -13,6 +13,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Generation count management constants
+const String _generationCountKey = 'remaining_generations';
+
 const List<String> _baseNegativePromptTokens = <String>[
   'blurry',
   'low quality',
@@ -345,10 +348,29 @@ class ImageGenerationService {
       return null;
     }
 
+    // Check generation count
+    final prefs = await SharedPreferences.getInstance();
+    final remainingCount = prefs.getInt(_generationCountKey) ?? 3;
+
+    print('🔵 [ImageGenService] generateImageFromText 호출: remainingCount=$remainingCount');
+
+    if (remainingCount <= 0) {
+      debugPrint('❌ 이미지 생성 횟수가 부족합니다.');
+      return null;
+    }
+
+    // Consume generation count
+    final newCount = remainingCount - 1;
+    await prefs.setInt(_generationCountKey, newCount);
+    print('🔵 [ImageGenService] 횟수 차감: $remainingCount → $newCount');
+
     if (!await _canGenerateToday()) {
       debugPrint(
         '⚠️ 이미지 생성 일일 제한($_dailyGenerationLimit건)을 초과했습니다. 24시간 후 다시 시도해주세요.',
       );
+      // Rollback count on daily limit error
+      await prefs.setInt(_generationCountKey, remainingCount);
+      print('🔵 [ImageGenService] 일일 제한으로 횟수 복구: $newCount → $remainingCount');
       return null;
     }
 
@@ -393,6 +415,9 @@ class ImageGenerationService {
       final generationResult = await _generateImageWithFallback(promptPayload);
       if (generationResult == null) {
         debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
+        // Rollback count on generation failure
+        await prefs.setInt(_generationCountKey, remainingCount);
+        print('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $remainingCount');
         return null;
       }
 
@@ -402,6 +427,9 @@ class ImageGenerationService {
           : null;
       if (base64Payload == null || base64Payload.isEmpty) {
         debugPrint('❌ 이미지 생성 결과에 Base64 데이터가 없습니다.');
+        // Rollback count on missing base64 data
+        await prefs.setInt(_generationCountKey, remainingCount);
+        print('🔵 [ImageGenService] Base64 데이터 없어서 횟수 복구: $newCount → $remainingCount');
         return null;
       }
 

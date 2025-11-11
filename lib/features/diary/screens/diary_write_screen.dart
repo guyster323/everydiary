@@ -125,11 +125,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     } else {
       // 기본 감정을 기분 좋음으로 설정
       _setDefaultEmotion();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref
-            .read(userCustomizationSettingsNotifierProvider.notifier)
-            .resetToDefaults();
-      });
+      // 사용자 커스터마이징 설정은 리셋하지 않고 저장된 설정 유지
 
       // OCR에서 전달된 내용 처리
       if (widget.initialContent != null && widget.initialContent!.isNotEmpty) {

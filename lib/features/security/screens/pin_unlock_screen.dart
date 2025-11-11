@@ -14,14 +14,32 @@ class PinUnlockScreen extends ConsumerStatefulWidget {
   ConsumerState<PinUnlockScreen> createState() => _PinUnlockScreenState();
 }
 
-class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen> {
+class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
+    with SingleTickerProviderStateMixin {
   final _pinController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorMessage;
+  late AnimationController _flashingController;
+  late Animation<double> _flashingAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // 비상등 깜빡임 애니메이션
+    _flashingController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _flashingAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _flashingController, curve: Curves.easeInOut),
+    );
+  }
 
   @override
   void dispose() {
     _pinController.dispose();
+    _flashingController.dispose();
     super.dispose();
   }
 
@@ -63,6 +81,57 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+
+                  // 비상 복구 질문 경고 (복구 질문이 없을 때만 표시)
+                  if (!canUseRecovery)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: theme.colorScheme.error.withValues(alpha: 0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          // 비상등 아이콘 (깜빡임 애니메이션)
+                          FadeTransition(
+                            opacity: _flashingAnimation,
+                            child: Icon(
+                              Icons.warning_amber_rounded,
+                              color: theme.colorScheme.error,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '⚠️ 비상 복구 질문 미설정',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.error,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'PIN을 잊으면 앱에 접근할 수 없습니다.\n설정에서 비상 복구 질문을 등록하세요.',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onErrorContainer,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   TextField(
                     controller: _pinController,
                     keyboardType: TextInputType.number,
@@ -324,11 +393,20 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen> {
       answerController.dispose();
       newPinController.dispose();
       confirmPinController.dispose();
+      print('❌ [PinRecovery] 다이얼로그 취소됨');
+      return;
+    }
+
+    if (!mounted) {
+      answerController.dispose();
+      newPinController.dispose();
+      confirmPinController.dispose();
       return;
     }
 
     setState(() => _isSubmitting = true);
 
+    print('🔵 [PinRecovery] PIN 복구 시작');
     try {
       await ref
           .read(pinLockProvider.notifier)
@@ -336,21 +414,70 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen> {
             answer: answerController.text.trim(),
             newPin: newPinController.text.trim(),
           );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('새 PIN이 설정되었습니다.')));
+
+      print('✅ [PinRecovery] PIN 복구 성공');
+
+      if (!mounted) {
+        answerController.dispose();
+        newPinController.dispose();
+        confirmPinController.dispose();
+        return;
+      }
+
+      // setState로 _isSubmitting을 false로 설정
+      setState(() => _isSubmitting = false);
+
+      if (!context.mounted) {
+        answerController.dispose();
+        newPinController.dispose();
+        confirmPinController.dispose();
+        return;
+      }
+
+      // SnackBar 표시
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('새 PIN이 설정되었습니다.')),
+      );
+
+      // 약간의 지연 후 화면 이동
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (!context.mounted) {
+        answerController.dispose();
+        newPinController.dispose();
+        confirmPinController.dispose();
+        return;
+      }
 
       final redirectPath = widget.redirectPath?.isNotEmpty == true
           ? widget.redirectPath!
           : AppConstants.homeRoute;
+
+      print('🔵 [PinRecovery] 화면 이동: $redirectPath');
       context.go(redirectPath);
-    } catch (error) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('복구에 실패했습니다: $error')));
+    } catch (error, stackTrace) {
+      print('❌ [PinRecovery] PIN 복구 실패: $error');
+      print('❌ [PinRecovery] StackTrace: $stackTrace');
+
+      if (!mounted) {
+        answerController.dispose();
+        newPinController.dispose();
+        confirmPinController.dispose();
+        return;
+      }
+
       setState(() => _isSubmitting = false);
+
+      if (!context.mounted) {
+        answerController.dispose();
+        newPinController.dispose();
+        confirmPinController.dispose();
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('복구에 실패했습니다: $error')),
+      );
     } finally {
       answerController.dispose();
       newPinController.dispose();
