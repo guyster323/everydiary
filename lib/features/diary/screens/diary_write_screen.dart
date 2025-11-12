@@ -585,10 +585,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
 
       if (mounted) {
         if (result == DiarySaveResult.success) {
+          final l10n = ref.read(localizationProvider);
           // ignore: use_build_context_synchronously
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('일기가 저장되었습니다.')));
+          ).showSnackBar(SnackBar(content: Text(l10n.get('diary_saved'))));
 
           // 일기 목록 새로고침을 위한 이벤트 발생
           try {
@@ -717,15 +718,8 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       return '$firstEmotion $arrow $secondEmotion';
     }
 
-    final contextParts = <String>[];
-    if (_detectedKeywords.length > 3) {
-      contextParts.addAll(_detectedKeywords.take(3));
-      contextParts.add('...');
-    } else {
-      contextParts.addAll(_detectedKeywords);
-    }
-
-    return '$firstEmotion $arrow $secondEmotion (${contextParts.join(', ')})';
+    // Keywords are redundant, so just show emotions without parenthetical text
+    return '$firstEmotion $arrow $secondEmotion';
   }
 
   /// OCR 기능 열기 - 수정된 버전
@@ -1111,6 +1105,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                       ],
                     ),
                     child: CustomInputField(
+                      key: ValueKey(_selectedDate.toIso8601String()),
                       controller: TextEditingController(
                         text: _formatDateByLanguage(_selectedDate, currentLanguage),
                       ),

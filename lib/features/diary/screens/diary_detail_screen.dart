@@ -11,7 +11,9 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/services/image_generation_service.dart';
+import '../../../features/settings/providers/settings_provider.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../../../shared/models/attachment.dart';
@@ -190,19 +192,21 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
         });
         debugPrint('✅ AI 이미지 생성 완료 및 로드');
       } else {
+        final l10n = ref.read(localizationProvider);
         setState(() {
           _generatedImage = null;
           _isGeneratingImage = false;
-          _imageError = '이미지 생성에 실패했습니다';
+          _imageError = l10n.get('image_generation_failed');
         });
         debugPrint('❌ AI 생성 이미지 생성 실패');
       }
     } catch (e) {
+      final l10n = ref.read(localizationProvider);
       debugPrint('❌ AI 생성 이미지 로드 실패: $e');
       setState(() {
         _generatedImage = null;
         _isGeneratingImage = false;
-        _imageError = '이미지를 불러오는 중 오류가 발생했습니다';
+        _imageError = l10n.get('image_load_error');
       });
     }
   }
@@ -281,17 +285,18 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   }
 
   String? _timeOfDayLabel(DateTime dateTime) {
+    final l10n = ref.read(localizationProvider);
     final hour = dateTime.hour;
     if (hour >= 5 && hour < 11) {
-      return '아침';
+      return l10n.get('time_morning');
     }
     if (hour >= 11 && hour < 15) {
-      return '낮';
+      return l10n.get('time_day');
     }
     if (hour >= 15 && hour < 19) {
-      return '저녁';
+      return l10n.get('time_evening');
     }
-    return '밤';
+    return l10n.get('time_night');
   }
 
   /// 단어 수 계산
@@ -340,14 +345,16 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
         // 히스토리 로드
         await _historyService.loadHistory(widget.diaryId);
       } else {
+        final l10n = ref.read(localizationProvider);
         setState(() {
-          _error = '일기를 찾을 수 없습니다';
+          _error = l10n.get('diary_not_found');
           _isLoading = false;
         });
       }
     } catch (e) {
+      final l10n = ref.read(localizationProvider);
       setState(() {
-        _error = '일기를 불러오는 중 오류가 발생했습니다: $e';
+        _error = '${l10n.get('diary_load_error')}: $e';
         _isLoading = false;
       });
     }
@@ -357,34 +364,29 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   Future<void> _saveImageToGallery() async {
     if (_generatedImage == null) return;
 
+    final l10n = ref.read(localizationProvider);
+
     try {
       // 저장 확인 다이얼로그 표시
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('이미지 저장'),
-          content: const Text('이 이미지를 갤러리에 저장하시겠습니까?'),
+          title: Text(l10n.get('image_save_title')),
+          content: Text(l10n.get('image_save_message')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('취소'),
+              child: Text(l10n.get('cancel')),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('저장'),
+              child: Text(l10n.get('save')),
             ),
           ],
         ),
       );
 
       if (confirm != true || !mounted) return;
-
-      // 로딩 표시
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이미지를 저장하는 중...')),
-        );
-      }
 
       String? imagePath;
 
@@ -406,8 +408,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       if (imagePath == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('이미지를 저장할 수 없습니다'),
+            SnackBar(
+              content: Text(l10n.get('image_save_failed')),
               backgroundColor: Colors.red,
             ),
           );
@@ -420,8 +422,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('이미지가 갤러리에 저장되었습니다'),
+          SnackBar(
+            content: Text(l10n.get('image_save_success')),
             backgroundColor: Colors.green,
           ),
         );
@@ -433,7 +435,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('이미지 저장 중 오류가 발생했습니다: $e'),
+            content: Text('${l10n.get('image_save_error')}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -459,22 +461,24 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   void _confirmDeleteDiary() {
     if (_diary == null) return;
 
+    final l10n = ref.read(localizationProvider);
+
     showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('일기 삭제'),
-        content: const Text('이 일기를 삭제하시겠습니까?\n삭제된 일기는 복구할 수 없습니다.'),
+        title: Text(l10n.get('delete_title')),
+        content: Text(l10n.get('delete_message')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
+            child: Text(l10n.get('cancel')),
           ),
           TextButton(
             onPressed: () async {
               Navigator.of(context).pop();
               await _deleteDiary();
             },
-            child: const Text('삭제', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.get('delete_button'), style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -485,20 +489,22 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   Future<void> _deleteDiary() async {
     if (_diary == null) return;
 
+    final l10n = ref.read(localizationProvider);
+
     try {
       final success = await _diaryRepository.deleteDiaryEntry(_diary!.id!);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('일기가 삭제되었습니다'),
+          SnackBar(
+            content: Text(l10n.get('diary_deleted')),
             backgroundColor: Colors.green,
           ),
         );
         context.pop();
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('일기 삭제에 실패했습니다'),
+          SnackBar(
+            content: Text(l10n.get('diary_delete_failed')),
             backgroundColor: Colors.red,
           ),
         );
@@ -507,7 +513,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('일기 삭제 중 오류가 발생했습니다: $e'),
+            content: Text('${l10n.get('diary_delete_error')}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -519,6 +525,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   Future<void> _toggleFavorite() async {
     if (_diary == null) return;
 
+    final l10n = ref.read(localizationProvider);
+
     try {
       // 향후 즐겨찾기 상태 업데이트 로직 구현 예정
       // 현재 DiaryEntry 모델에 isFavorite 필드가 없음
@@ -526,7 +534,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            _diary!.isFavorite ? '즐겨찾기에서 제거되었습니다' : '즐겨찾기에 추가되었습니다',
+            _diary!.isFavorite ? l10n.get('favorite_removed') : l10n.get('favorite_added'),
           ),
           backgroundColor: Colors.blue,
         ),
@@ -535,7 +543,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('즐겨찾기 상태 변경 중 오류가 발생했습니다: $e'),
+            content: Text('${l10n.get('favorite_error')}: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -552,6 +560,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -563,7 +573,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: CustomAppBar(
-          title: '일기 상세',
+          title: l10n.get('diary_detail_title'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.pop(),
@@ -577,28 +587,28 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   color: _diary!.isFavorite ? Colors.red : null,
                 ),
                 onPressed: _toggleFavorite,
-                tooltip: _diary!.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가',
+                tooltip: _diary!.isFavorite ? l10n.get('tooltip_favorite_remove') : l10n.get('tooltip_favorite_add'),
               ),
 
               // 편집 버튼
               IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: _editDiary,
-                tooltip: '편집',
+                tooltip: l10n.get('tooltip_edit'),
               ),
 
               // 공유 버튼
               IconButton(
                 icon: const Icon(Icons.share),
                 onPressed: _shareDiary,
-                tooltip: '공유',
+                tooltip: l10n.get('tooltip_share'),
               ),
 
               // 삭제 버튼
               IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: _confirmDeleteDiary,
-                tooltip: '삭제',
+                tooltip: l10n.get('tooltip_delete'),
               ),
             ],
           ],
@@ -639,6 +649,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// 탭 바
   Widget _buildTabBar() {
+    final l10n = ref.read(localizationProvider);
+
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
@@ -660,9 +672,9 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
             _selectedTabIndex = index;
           });
         },
-        tabs: const [
-          Tab(icon: Icon(Icons.article, size: 20), text: '상세 내용'),
-          Tab(icon: Icon(Icons.history, size: 20), text: '편집 히스토리'),
+        tabs: [
+          Tab(icon: const Icon(Icons.article, size: 20), text: l10n.get('tab_detail')),
+          Tab(icon: const Icon(Icons.history, size: 20), text: l10n.get('tab_history')),
         ],
       ),
     );
@@ -740,25 +752,12 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           children: [
             // 날짜
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _formatDate(_diary!.date),
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                  Text(
-                    _formatTime(_diary!.date),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                  ),
-                ],
+              child: Text(
+                _formatDate(_diary!.date),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
 
@@ -812,6 +811,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   Widget _buildAssociationImage() {
     if (_generatedImage == null) return const SizedBox.shrink();
 
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -830,7 +831,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '일기 연상 이미지',
+                    l10n.get('association_image_title'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -860,7 +861,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
               // 힌트 텍스트
               Text(
-                '이미지를 길게 눌러 갤러리에 저장할 수 있습니다',
+                l10n.get('image_save_hint'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontStyle: FontStyle.italic,
@@ -882,7 +883,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '생성 프롬프트',
+                      l10n.get('generation_prompt'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.primary,
@@ -900,18 +901,18 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        _buildImageInfoChip('감정', _generatedImage!.emotion),
+                        _buildImageInfoChip(l10n.get('emotion_label'), _generatedImage!.emotion),
                         const SizedBox(width: 8),
-                        _buildImageInfoChip('스타일', _generatedImage!.style),
+                        _buildImageInfoChip(l10n.get('style_label'), _generatedImage!.style),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        _buildImageInfoChip('주제', _generatedImage!.topic),
+                        _buildImageInfoChip(l10n.get('topic_label'), _generatedImage!.topic),
                         const Spacer(),
                         Text(
-                          '생성일: ${_formatDateTime(_generatedImage!.generatedAt.toIso8601String())}',
+                          '${l10n.get('generated_date')}: ${_formatDateTime(_generatedImage!.generatedAt.toIso8601String())}',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: Theme.of(
@@ -932,6 +933,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   }
 
   Widget _buildAssociationImageLoading() {
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -949,7 +952,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '일기 연상 이미지 생성 중...',
+                    l10n.get('association_image_generating'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ],
@@ -967,7 +970,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                '일기 내용을 기반으로 AI 이미지를 생성하고 있습니다.',
+                l10n.get('association_image_generating_message'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(
                     context,
@@ -982,6 +985,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   }
 
   Widget _buildAssociationImageError() {
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -999,7 +1004,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '일기 연상 이미지를 표시할 수 없습니다',
+                    l10n.get('association_image_error'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -1008,7 +1013,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                _imageError ?? '알 수 없는 오류가 발생했습니다.',
+                _imageError ?? l10n.get('memory_unknown_error'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Theme.of(
                     context,
@@ -1028,7 +1033,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                       text: 'Gemini 또는 Hugging Face API 키를 설정하거나 ',
                     ),
                     TextSpan(
-                      text: '다시 시도',
+                      text: l10n.get('retry'),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -1069,6 +1074,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// 태그
   Widget _buildTags() {
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -1078,7 +1085,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '태그',
+                l10n.get('tags_title'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -1107,6 +1114,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// 메타 정보
   Widget _buildMetaInfo() {
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 16),
       child: Card(
@@ -1116,19 +1125,19 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '정보',
+                l10n.get('info_title'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               _buildMetaItem(
-                '단어 수',
-                '${_calculateWordCount(_diary!.content)}자',
+                l10n.get('word_count'),
+                '${_calculateWordCount(_diary!.content)}',
               ),
-              _buildMetaItem('작성일', _formatDateTime(_diary!.createdAt)),
+              _buildMetaItem(l10n.get('created_date'), _formatDateTime(_diary!.createdAt)),
               if (_diary!.updatedAt != _diary!.createdAt)
-                _buildMetaItem('수정일', _formatDateTime(_diary!.updatedAt)),
+                _buildMetaItem(l10n.get('modified_date'), _formatDateTime(_diary!.updatedAt)),
             ],
           ),
         ),
@@ -1162,6 +1171,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   /// 기분 칩
   Widget _buildMoodChip(String mood) {
     final moodData = _getMoodData(mood);
+    final localizedMood = _getLocalizedMood(mood);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1183,7 +1193,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           ),
           const SizedBox(width: 6),
           Text(
-            mood,
+            localizedMood,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: moodData['color'] as Color,
               fontWeight: FontWeight.w500,
@@ -1197,6 +1207,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   /// 날씨 칩
   Widget _buildWeatherChip(String weather) {
     final weatherData = _getWeatherData(weather);
+    final localizedWeather = _getLocalizedWeather(weather);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1218,7 +1229,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           ),
           const SizedBox(width: 6),
           Text(
-            weather,
+            localizedWeather,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: weatherData['color'] as Color,
               fontWeight: FontWeight.w500,
@@ -1231,13 +1242,15 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// 에러 위젯
   Widget _buildErrorWidget() {
+    final l10n = ref.read(localizationProvider);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text('일기를 불러올 수 없습니다', style: Theme.of(context).textTheme.titleLarge),
+          Text(l10n.get('load_error'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
             _error!,
@@ -1249,7 +1262,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(onPressed: _loadDiary, child: const Text('다시 시도')),
+          ElevatedButton(onPressed: _loadDiary, child: Text(l10n.get('retry_button'))),
         ],
       ),
     );
@@ -1257,16 +1270,18 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// 찾을 수 없음 위젯
   Widget _buildNotFoundWidget() {
+    final l10n = ref.read(localizationProvider);
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(Icons.book_outlined, size: 64, color: Colors.grey),
           const SizedBox(height: 16),
-          Text('일기를 찾을 수 없습니다', style: Theme.of(context).textTheme.titleLarge),
+          Text(l10n.get('diary_not_found'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Text(
-            '요청하신 일기가 존재하지 않거나 삭제되었습니다',
+            l10n.get('diary_not_found_message'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(
                 context,
@@ -1277,41 +1292,78 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.pop(),
-            child: const Text('목록으로 돌아가기'),
+            child: Text(l10n.get('back_to_list')),
           ),
         ],
       ),
     );
   }
 
-  /// 날짜 포맷팅
+  /// 날짜 포맷팅 (locale-aware)
   String _formatDate(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return DateFormat('yyyy년 M월 d일 (E)', 'ko_KR').format(date);
+      final settings = ref.read(settingsProvider);
+      final locale = getLocaleFromLanguage(settings.language);
+      return DateFormat.yMMMEd(locale.toString()).format(date);
     } catch (e) {
       return dateString;
     }
   }
 
-  /// 시간 포맷팅
-  String _formatTime(String dateString) {
-    try {
-      final date = DateTime.parse(dateString);
-      return DateFormat('HH:mm', 'ko_KR').format(date);
-    } catch (e) {
-      return '';
-    }
-  }
-
-  /// 날짜시간 포맷팅
+  /// 날짜시간 포맷팅 (locale-aware)
   String _formatDateTime(String dateString) {
     try {
       final date = DateTime.parse(dateString);
-      return DateFormat('yyyy년 M월 d일 HH:mm', 'ko_KR').format(date);
+      final settings = ref.read(settingsProvider);
+      final locale = getLocaleFromLanguage(settings.language);
+      return DateFormat.yMMMd(locale.toString()).add_Hm().format(date);
     } catch (e) {
       return dateString;
     }
+  }
+
+  /// 기분 이름 로컬라이즈
+  String _getLocalizedMood(String mood) {
+    final l10n = ref.read(localizationProvider);
+    const moodKeyMap = {
+      '행복': 'mood_happy',
+      '슬픔': 'mood_sad',
+      '화남': 'mood_angry',
+      '평온': 'mood_calm',
+      '설렘': 'mood_excited',
+      '걱정': 'mood_worried',
+      '피곤': 'mood_tired',
+      '만족': 'mood_satisfied',
+      '실망': 'mood_disappointed',
+      '감사': 'mood_grateful',
+      '외로움': 'mood_lonely',
+      '흥분': 'mood_thrilled',
+      '우울': 'mood_depressed',
+      '긴장': 'mood_nervous',
+      '편안': 'mood_comfortable',
+      '기타': 'mood_other',
+    };
+    final key = moodKeyMap[mood];
+    return key != null ? l10n.get(key) : mood;
+  }
+
+  /// 날씨 이름 로컬라이즈
+  String _getLocalizedWeather(String weather) {
+    final l10n = ref.read(localizationProvider);
+    const weatherKeyMap = {
+      '맑음': 'weather_sunny',
+      '흐림': 'weather_cloudy',
+      '비': 'weather_rainy',
+      '눈': 'weather_snowy',
+      '바람': 'weather_windy',
+      '안개': 'weather_foggy',
+      '폭염': 'weather_hot',
+      '한파': 'weather_cold',
+      '기타': 'weather_other',
+    };
+    final key = weatherKeyMap[weather];
+    return key != null ? l10n.get(key) : weather;
   }
 
   /// 기분 데이터
@@ -1367,6 +1419,8 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   }
 
   Widget _buildAssociationImageNetworkFallback() {
+    final l10n = ref.read(localizationProvider);
+
     return Image.network(
       _generatedImage!.imageUrl,
       width: double.infinity,
@@ -1400,7 +1454,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '이미지를 불러올 수 없습니다',
+                  l10n.get('association_image_load_error'),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onErrorContainer,
                   ),
@@ -1414,6 +1468,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
   }
 
   Widget _buildSavedAssociationImages() {
+    final l10n = ref.read(localizationProvider);
     final imageAttachments = _diary!.attachments
         .where((attachment) => attachment.fileType == FileType.image.value)
         .toList();
@@ -1437,7 +1492,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    '일기 연상 이미지',
+                    l10n.get('association_image_title'),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -1460,6 +1515,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
+                        final l10n = ref.read(localizationProvider);
                         return Container(
                           height: 200,
                           decoration: BoxDecoration(
@@ -1480,7 +1536,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                '이미지를 불러올 수 없습니다',
+                                l10n.get('association_image_load_error'),
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(
                                       color: Theme.of(

@@ -45,6 +45,18 @@ class _ScreenSecurityGuardState extends ConsumerState<ScreenSecurityGuard>
     if (kIsWeb || !Platform.isAndroid) {
       return;
     }
+    // Debug 모드에서는 스크린샷 허용 (플레이스토어 홍보 이미지 제작용)
+    if (kDebugMode) {
+      try {
+        await ScreenSecurityService.instance.setSecure(false);
+      } catch (error) {
+        Logger.warning(
+          '스크린 보안 플래그 해제에 실패했습니다: $error',
+          tag: 'ScreenSecurityGuard',
+        );
+      }
+      return;
+    }
     try {
       await ScreenSecurityService.instance.setSecure(state.isPinEnabled);
     } catch (error) {

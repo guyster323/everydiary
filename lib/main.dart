@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
+import 'core/providers/localization_provider.dart';
 import 'core/routing/app_router.dart';
 import 'core/security/screen_security_guard.dart';
 import 'core/services/android_native_service_manager.dart';
@@ -108,6 +109,15 @@ class EveryDiaryApp extends ConsumerWidget {
     // Locale/텍스트 스케일
     final locale = getLocaleFromLanguage(settings.language);
     final textScale = _textScaleFromFontSize(settings.fontSize);
+
+    // 알림 메시지 로컬라이즈 설정 (Android만)
+    if (!kIsWeb) {
+      final l10n = ref.watch(localizationProvider);
+      AndroidNativeServiceManager().setNotificationLocalizedMessages(
+        offlineTitle: l10n.get('network_offline_title'),
+        offlineMessage: l10n.get('network_offline_message'),
+      );
+    }
 
     final container = ProviderScope.containerOf(context);
     final router = AppRouter.buildRouter(container);

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -13,6 +14,27 @@ class MemoryService {
   MemoryService._internal();
 
   final DatabaseService _databaseService = DatabaseService();
+
+  /// Delta JSON을 plain text로 변환
+  String _extractPlainText(String? deltaJson) {
+    if (deltaJson == null || deltaJson.isEmpty) return '';
+
+    try {
+      final decoded = jsonDecode(deltaJson);
+      if (decoded is! List) return deltaJson;
+
+      final buffer = StringBuffer();
+      for (final op in decoded) {
+        if (op is Map && op.containsKey('insert')) {
+          buffer.write(op['insert'].toString());
+        }
+      }
+      return buffer.toString().trim();
+    } catch (e) {
+      debugPrint('Error extracting plain text from delta: $e');
+      return deltaJson;
+    }
+  }
 
   /// 회상 결과를 생성합니다
   Future<MemoryResult> generateMemories({
@@ -152,7 +174,7 @@ class MemoryService {
           id: 'yesterday_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(
@@ -205,7 +227,7 @@ class MemoryService {
           id: 'one_week_ago_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(
@@ -258,7 +280,7 @@ class MemoryService {
           id: 'one_month_ago_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(
@@ -311,7 +333,7 @@ class MemoryService {
           id: 'one_year_ago_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(
@@ -361,7 +383,7 @@ class MemoryService {
           id: 'past_today_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(
@@ -421,7 +443,7 @@ class MemoryService {
               id: 'same_time_${diary['id']}',
               diaryId: diary['id'].toString(),
               title: (diary['title'] as String?) ?? '제목 없음',
-              content: (diary['content'] as String?) ?? '',
+              content: _extractPlainText(diary['content'] as String?),
               createdAt: DateTime.parse(diary['created_at'] as String),
               originalDate: DateTime.parse(diary['date'] as String),
               reason: MemoryReason(
@@ -520,7 +542,7 @@ class MemoryService {
           id: 'seasonal_${diary['id']}',
           diaryId: diary['id'].toString(),
           title: (diary['title'] as String?) ?? '제목 없음',
-          content: (diary['content'] as String?) ?? '',
+          content: _extractPlainText(diary['content'] as String?),
           createdAt: DateTime.parse(diary['created_at'] as String),
           originalDate: DateTime.parse(diary['date'] as String),
           reason: MemoryReason(

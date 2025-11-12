@@ -22,6 +22,10 @@ class AndroidNotificationService {
   bool _isInitialized = false;
   bool _hasPermission = false;
 
+  // 로컬라이즈된 메시지
+  String _offlineTitle = '📴 오프라인 모드';
+  String _offlineMessage = 'AI이미지 생성이 실패할 수 있습니다.';
+
   // 이벤트 스트림
   final StreamController<Map<String, dynamic>> _notificationController =
       StreamController<Map<String, dynamic>>.broadcast();
@@ -93,6 +97,16 @@ class AndroidNotificationService {
       _hasPermission = status.isGranted;
     }
     return _hasPermission;
+  }
+
+  /// 로컬라이즈된 메시지 설정
+  void setLocalizedMessages({
+    required String offlineTitle,
+    required String offlineMessage,
+  }) {
+    _offlineTitle = offlineTitle;
+    _offlineMessage = offlineMessage;
+    debugPrint('✅ 알림 메시지 로컬라이즈 설정됨: $_offlineTitle');
   }
 
   /// 알림 전송
@@ -190,12 +204,18 @@ class AndroidNotificationService {
     }
 
     try {
+      // 온라인 상태일 때는 알림을 표시하지 않고 기존 알림만 취소
+      if (isOnline) {
+        await _notifications.cancel(_networkStatusNotificationId);
+        debugPrint('🗑️ 네트워크 복구: 오프라인 알림 해제');
+        return;
+      }
+
+      // 오프라인 상태일 때만 알림 표시
       final notificationDetails = _getDefaultNotificationDetails();
-      final title = isOnline ? '🌐 네트워크 연결됨' : '📴 오프라인 모드';
-      final body = isOnline
-          ? '인터넷이 복구되었습니다. 데이터가 자동으로 동기화됩니다'
-          : '네트워크 연결이 끊어졌습니다. 연결 시 자동으로 동기화됩니다';
-      final payload = isOnline ? 'network_restored' : 'offline_mode';
+      final title = _offlineTitle;
+      final body = _offlineMessage;
+      const payload = 'offline_mode';
 
       await _notifications.show(
         _networkStatusNotificationId,
@@ -205,20 +225,7 @@ class AndroidNotificationService {
         payload: payload,
       );
 
-      debugPrint('📶 네트워크 상태 알림 전송됨: ${isOnline ? '온라인' : '오프라인'}');
-
-      if (isOnline) {
-        unawaited(
-          Future.delayed(const Duration(seconds: 5), () async {
-            try {
-              await _notifications.cancel(_networkStatusNotificationId);
-              debugPrint('🗑️ 네트워크 복구 알림 자동 해제');
-            } catch (e) {
-              debugPrint('❌ 네트워크 알림 해제 실패: $e');
-            }
-          }),
-        );
-      }
+      debugPrint('📶 네트워크 상태 알림 전송됨: $title');
     } catch (e) {
       debugPrint('❌ 네트워크 상태 알림 처리 실패: $e');
     }

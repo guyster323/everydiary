@@ -96,6 +96,19 @@ class AndroidNativeServiceManager {
     });
   }
 
+  // ========== 로컬라이제이션 메서드들 ==========
+
+  /// 알림 메시지 로컬라이즈 설정
+  void setNotificationLocalizedMessages({
+    required String offlineTitle,
+    required String offlineMessage,
+  }) {
+    _notificationService.setLocalizedMessages(
+      offlineTitle: offlineTitle,
+      offlineMessage: offlineMessage,
+    );
+  }
+
   // ========== 백그라운드 동기화 서비스 메서드들 ==========
 
   /// 오프라인 큐에 작업 추가

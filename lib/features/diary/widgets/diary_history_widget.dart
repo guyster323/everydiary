@@ -1,12 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/localization_provider.dart';
 import '../services/diary_history_service.dart';
 
 /// 일기 편집 히스토리 위젯
-class DiaryHistoryWidget extends StatelessWidget {
+class DiaryHistoryWidget extends ConsumerWidget {
   final DiaryHistoryService historyService;
   final int diaryId;
 
@@ -17,14 +19,14 @@ class DiaryHistoryWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListenableBuilder(
       listenable: historyService,
       builder: (context, child) {
         final history = historyService.getHistoryForDiary(diaryId);
 
         if (history.isEmpty) {
-          return _buildEmptyState(context);
+          return _buildEmptyState(context, ref);
         }
 
         return Column(
@@ -64,7 +66,9 @@ class DiaryHistoryWidget extends StatelessWidget {
   }
 
   /// 빈 상태 위젯
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
+    final l10n = ref.read(localizationProvider);
+
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -78,7 +82,7 @@ class DiaryHistoryWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            '편집 히스토리가 없습니다',
+            l10n.get('edit_history_empty'),
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Theme.of(
                 context,
@@ -87,7 +91,7 @@ class DiaryHistoryWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '일기를 편집하면 히스토리가 기록됩니다',
+            l10n.get('edit_history_empty_message'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(
                 context,
