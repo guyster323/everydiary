@@ -701,88 +701,132 @@ class AppLocalizations {
     'emotion_trust': '신뢰',
 
     // Privacy Policy Content
-    'privacy_policy_content': '''EveryDiary 개인정보 처리방침
+    'privacy_policy_content': '''**Privacy Policy**
 
-1. 개인정보의 처리 목적
-EveryDiary(이하 "앱")는 다음의 목적을 위하여 개인정보를 처리합니다.
+This privacy policy applies to the Everydiary app (hereby referred to as "Application") for mobile devices that was created by Sunnydevstory (hereby referred to as "Service Provider") as a Freemium service. This service is intended for use "AS IS".
 
-- 일기 작성 및 관리 서비스 제공
-- 앱 사용자 설정 및 맞춤 기능 제공
-- 서비스 개선 및 사용자 경험 향상
+**Information Collection and Use**
 
-2. 수집하는 개인정보 항목
-앱은 다음의 개인정보를 수집합니다:
+The Application collects information when you download and use it. This information may include information such as
 
-- 사용자 이름 (선택 사항)
-- PIN 잠금 설정 정보 (선택 사항)
-- 일기 내용 및 관련 데이터 (로컬 저장)
-- 앱 설정 정보
+*   Your device's Internet Protocol address (e.g. IP address)
 
-3. 개인정보의 보유 및 이용 기간
-앱은 사용자가 직접 삭제하거나 앱을 삭제할 때까지 개인정보를 보유합니다.
+*   The pages of the Application that you visit, the time and date of your visit, the time spent on those pages
 
-모든 데이터는 사용자의 기기에 로컬로 저장되며, 외부 서버로 전송되지 않습니다.
+*   The time spent on the Application
 
-4. 개인정보의 제3자 제공
-앱은 사용자의 개인정보를 제3자에게 제공하지 않습니다.
+*   The operating system you use on your mobile device
 
-5. 개인정보의 파기
-사용자가 앱을 삭제하거나 데이터를 삭제하면 모든 개인정보가 즉시 파기됩니다.
+The Application does not gather precise information about the location of your mobile device.
 
-6. 개인정보 자동 수집 장치의 설치·운영 및 거부에 관한 사항
-앱은 쿠키나 유사한 추적 기술을 사용하지 않습니다.
+The Application collects your device's location, which helps the Service Provider determine your approximate geographical location and make use of in below ways:
 
-7. 개인정보 보호책임자
-개인정보 관련 문의사항이 있으시면 아래로 연락해 주시기 바랍니다:
-이메일: support@everydiary.app
+*   Geolocation Services: The Service Provider utilizes location data to provide features such as personalized content, relevant recommendations, and location-based services.
 
-8. 개인정보 처리방침 변경
-본 개인정보 처리방침은 법령 및 정책에 따라 변경될 수 있으며, 변경 시 앱 내에서 공지됩니다.
+*   Analytics and Improvements: Aggregated and anonymized location data helps the Service Provider to analyze user behavior, identify trends, and improve the overall performance and functionality of the Application.
 
-시행일자: 2025년 1월 1일''',
+*   Third-Party Services: Periodically, the Service Provider may transmit anonymized location data to external services. These services assist them in enhancing the Application and optimizing their offerings.
+
+The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.
+
+For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to window98se@gmail.com. The information that the Service Provider request will be retained by them and used as described in this privacy policy.
+
+**Third Party Access**
+
+Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.
+
+Please note that the Application utilizes third-party services that have their own Privacy Policy about handling data. Below are the links to the Privacy Policy of the third-party service providers used by the Application:
+
+*   [Google Play Services](https://www.google.com/policies/privacy/)
+
+*   [AdMob](https://support.google.com/admob/answer/6128543?hl=en)
+
+The Service Provider may disclose User Provided and Automatically Collected Information:
+
+*   as required by law, such as to comply with a subpoena, or similar legal process;
+
+*   when they believe in good faith that disclosure is necessary to protect their rights, protect your safety or the safety of others, investigate fraud, or respond to a government request;
+
+*   with their trusted services providers who work on their behalf, do not have an independent use of the information we disclose to them, and have agreed to adhere to the rules set forth in this privacy statement.
+
+**Opt-Out Rights**
+
+You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.
+
+**Data Retention Policy**
+
+The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at window98se@gmail.com and they will respond in a reasonable time.
+
+**Children**
+
+The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13.
+
+The Application does not address anyone under the age of 13\. The Service Provider does not knowingly collect personally identifiable information from children under 13 years of age. In the case the Service Provider discover that a child under 13 has provided personal information, the Service Provider will immediately delete this from their servers. If you are a parent or guardian and you are aware that your child has provided us with personal information, please contact the Service Provider (window98se@gmail.com) so that they will be able to take the necessary actions.
+
+**Security**
+
+The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.
+
+**Changes**
+
+This Privacy Policy may be updated from time to time for any reason. The Service Provider will notify you of any changes to the Privacy Policy by updating this page with the new Privacy Policy. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.
+
+This privacy policy is effective as of 2025-11-12
+
+**Your Consent**
+
+By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.
+
+**Contact Us**
+
+If you have any questions regarding privacy while using the Application, or have questions about the practices, please contact the Service Provider via email at window98se@gmail.com.
+
+* * *
+
+This privacy policy page was generated by [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)''',
 
     // Terms of Service Content
-    'terms_of_service_content': '''EveryDiary 이용약관
+    'terms_of_service_content': '''**Terms & Conditions**
 
-제1조 (목적)
-본 약관은 EveryDiary(이하 "앱")의 이용과 관련하여 앱 운영자와 사용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+These terms and conditions apply to the Everydiary app (hereby referred to as "Application") for mobile devices that was created by Sunnydevstory (hereby referred to as "Service Provider") as a Freemium service.
 
-제2조 (정의)
-1. "앱"이란 사용자가 일기를 작성하고 관리할 수 있는 모바일 애플리케이션을 의미합니다.
-2. "사용자"란 본 약관에 따라 앱을 사용하는 자를 의미합니다.
-3. "콘텐츠"란 사용자가 앱을 통해 작성하는 일기 및 관련 데이터를 의미합니다.
+Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.
 
-제3조 (약관의 효력 및 변경)
-1. 본 약관은 앱을 다운로드하고 사용하는 모든 사용자에게 적용됩니다.
-2. 본 약관은 필요한 경우 변경될 수 있으며, 변경된 약관은 앱 내에서 공지됩니다.
+Unauthorized copying, modification of the Application, any part of the Application, or our trademarks is strictly prohibited. Any attempts to extract the source code of the Application, translate the Application into other languages, or create derivative versions are not permitted. All trademarks, copyrights, database rights, and other intellectual property rights related to the Application remain the property of the Service Provider.
 
-제4조 (서비스의 제공)
-1. 앱은 사용자에게 일기 작성, 관리, 백업 등의 기능을 제공합니다.
-2. 앱은 무료로 제공되며, 일부 기능은 인앱 구매를 통해 이용할 수 있습니다.
+The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. The Service Provider assures you that any charges for the Application or its services will be clearly communicated to you.
 
-제5조 (사용자의 의무)
-1. 사용자는 본 약관 및 관련 법령을 준수해야 합니다.
-2. 사용자는 앱을 불법적인 목적으로 사용해서는 안 됩니다.
-3. 사용자는 자신의 계정 정보 및 PIN 번호를 안전하게 관리할 책임이 있습니다.
+The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advise against jailbreaking or rooting your phone, which involves removing software restrictions and limitations imposed by the official operating system of your device. Such actions could expose your phone to malware, viruses, malicious programs, compromise your phone's security features, and may result in the Application not functioning correctly or at all.
 
-제6조 (콘텐츠의 관리)
-1. 사용자가 작성한 콘텐츠는 사용자의 기기에 로컬로 저장됩니다.
-2. 사용자는 자신이 작성한 콘텐츠에 대한 모든 권리와 책임을 갖습니다.
-3. 앱 운영자는 사용자의 콘텐츠에 접근하지 않으며, 이를 제3자에게 제공하지 않습니다.
+Please note that the Application utilizes third-party services that have their own Terms and Conditions. Below are the links to the Terms and Conditions of the third-party service providers used by the Application:
 
-제7조 (서비스의 중단)
-앱 운영자는 다음의 경우 서비스 제공을 중단할 수 있습니다:
-1. 시스템 유지보수가 필요한 경우
-2. 불가항력적인 사유가 발생한 경우
+*   [Google Play Services](https://policies.google.com/terms)
 
-제8조 (면책조항)
-1. 앱 운영자는 사용자의 기기 오류, 데이터 손실 등으로 인한 손해에 대해 책임을 지지 않습니다.
-2. 사용자는 정기적으로 백업을 수행하여 데이터 손실을 방지해야 합니다.
+*   [AdMob](https://developers.google.com/admob/terms)
 
-제9조 (분쟁 해결)
-본 약관과 관련된 분쟁은 대한민국 법률에 따라 해결됩니다.
+Please be aware that the Service Provider does not assume responsibility for certain aspects. Some functions of the Application require an active internet connection, which can be Wi-Fi or provided by your mobile network provider. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.
 
-시행일자: 2025년 1월 1일''',
+If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. Consequently, you may incur charges from your mobile provider for data usage during the connection to the application, or other third-party charges. By using the application, you accept responsibility for any such charges, including roaming data charges if you use the application outside of your home territory (i.e., region or country) without disabling data roaming. If you are not the bill payer for the device on which you are using the application, they assume that you have obtained permission from the bill payer.
+
+Similarly, the Service Provider cannot always assume responsibility for your usage of the application. For instance, it is your responsibility to ensure that your device remains charged. If your device runs out of battery and you are unable to access the Service, the Service Provider cannot be held responsible.
+
+In terms of the Service Provider's responsibility for your use of the application, it is important to note that while they strive to ensure that it is updated and accurate at all times, they do rely on third parties to provide information to them so that they can make it available to you. The Service Provider accepts no liability for any loss, direct or indirect, that you experience as a result of relying entirely on this functionality of the application.
+
+The Service Provider may wish to update the application at some point. The application is currently available as per the requirements for the operating system (and for any additional systems they decide to extend the availability of the application to) may change, and you will need to download the updates if you want to continue using the application. The Service Provider does not guarantee that it will always update the application so that it is relevant to you and/or compatible with the particular operating system version installed on your device. However, you agree to always accept updates to the application when offered to you. The Service Provider may also wish to cease providing the application and may terminate its use at any time without providing termination notice to you. Unless they inform you otherwise, upon any termination, (a) the rights and licenses granted to you in these terms will end; (b) you must cease using the application, and (if necessary) delete it from your device.
+
+**Changes to These Terms and Conditions**
+
+The Service Provider may periodically update their Terms and Conditions. Therefore, you are advised to review this page regularly for any changes. The Service Provider will notify you of any changes by posting the new Terms and Conditions on this page.
+
+These terms and conditions are effective as of 2025-11-12
+
+**Contact Us**
+
+If you have any questions or suggestions about the Terms and Conditions, please do not hesitate to contact the Service Provider at window98se@gmail.com.
+
+* * *
+
+This Terms and Conditions page was generated by [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)''',
   };
 
   // ============== 영어 ==============
@@ -1462,88 +1506,132 @@ EveryDiary(이하 "앱")는 다음의 목적을 위하여 개인정보를 처리
     'emotion_trust': 'Trust',
 
     // Privacy Policy Content
-    'privacy_policy_content': '''EveryDiary Privacy Policy
+    'privacy_policy_content': '''**Privacy Policy**
 
-1. Purpose of Processing Personal Information
-EveryDiary (hereinafter referred to as "the App") processes personal information for the following purposes:
+This privacy policy applies to the Everydiary app (hereby referred to as "Application") for mobile devices that was created by Sunnydevstory (hereby referred to as "Service Provider") as a Freemium service. This service is intended for use "AS IS".
 
-- Providing diary writing and management services
-- Providing user settings and customized features
-- Improving services and enhancing user experience
+**Information Collection and Use**
 
-2. Personal Information Items Collected
-The App collects the following personal information:
+The Application collects information when you download and use it. This information may include information such as
 
-- Username (optional)
-- PIN lock settings (optional)
-- Diary content and related data (stored locally)
-- App settings information
+*   Your device's Internet Protocol address (e.g. IP address)
 
-3. Retention and Use Period of Personal Information
-The App retains personal information until the user deletes it directly or uninstalls the app.
+*   The pages of the Application that you visit, the time and date of your visit, the time spent on those pages
 
-All data is stored locally on the user's device and is not transmitted to external servers.
+*   The time spent on the Application
 
-4. Provision of Personal Information to Third Parties
-The App does not provide users' personal information to third parties.
+*   The operating system you use on your mobile device
 
-5. Destruction of Personal Information
-When a user uninstalls the app or deletes data, all personal information is immediately destroyed.
+The Application does not gather precise information about the location of your mobile device.
 
-6. Installation, Operation, and Rejection of Automatic Personal Information Collection Devices
-The App does not use cookies or similar tracking technologies.
+The Application collects your device's location, which helps the Service Provider determine your approximate geographical location and make use of in below ways:
 
-7. Personal Information Protection Officer
-If you have any questions regarding personal information, please contact us at:
-Email: support@everydiary.app
+*   Geolocation Services: The Service Provider utilizes location data to provide features such as personalized content, relevant recommendations, and location-based services.
 
-8. Changes to Privacy Policy
-This Privacy Policy may be changed in accordance with laws and policies, and changes will be announced within the app.
+*   Analytics and Improvements: Aggregated and anonymized location data helps the Service Provider to analyze user behavior, identify trends, and improve the overall performance and functionality of the Application.
 
-Effective Date: January 1, 2025''',
+*   Third-Party Services: Periodically, the Service Provider may transmit anonymized location data to external services. These services assist them in enhancing the Application and optimizing their offerings.
+
+The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.
+
+For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to window98se@gmail.com. The information that the Service Provider request will be retained by them and used as described in this privacy policy.
+
+**Third Party Access**
+
+Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.
+
+Please note that the Application utilizes third-party services that have their own Privacy Policy about handling data. Below are the links to the Privacy Policy of the third-party service providers used by the Application:
+
+*   [Google Play Services](https://www.google.com/policies/privacy/)
+
+*   [AdMob](https://support.google.com/admob/answer/6128543?hl=en)
+
+The Service Provider may disclose User Provided and Automatically Collected Information:
+
+*   as required by law, such as to comply with a subpoena, or similar legal process;
+
+*   when they believe in good faith that disclosure is necessary to protect their rights, protect your safety or the safety of others, investigate fraud, or respond to a government request;
+
+*   with their trusted services providers who work on their behalf, do not have an independent use of the information we disclose to them, and have agreed to adhere to the rules set forth in this privacy statement.
+
+**Opt-Out Rights**
+
+You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.
+
+**Data Retention Policy**
+
+The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at window98se@gmail.com and they will respond in a reasonable time.
+
+**Children**
+
+The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13.
+
+The Application does not address anyone under the age of 13\. The Service Provider does not knowingly collect personally identifiable information from children under 13 years of age. In the case the Service Provider discover that a child under 13 has provided personal information, the Service Provider will immediately delete this from their servers. If you are a parent or guardian and you are aware that your child has provided us with personal information, please contact the Service Provider (window98se@gmail.com) so that they will be able to take the necessary actions.
+
+**Security**
+
+The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.
+
+**Changes**
+
+This Privacy Policy may be updated from time to time for any reason. The Service Provider will notify you of any changes to the Privacy Policy by updating this page with the new Privacy Policy. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.
+
+This privacy policy is effective as of 2025-11-12
+
+**Your Consent**
+
+By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.
+
+**Contact Us**
+
+If you have any questions regarding privacy while using the Application, or have questions about the practices, please contact the Service Provider via email at window98se@gmail.com.
+
+* * *
+
+This privacy policy page was generated by [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)''',
 
     // Terms of Service Content
-    'terms_of_service_content': '''EveryDiary Terms of Service
+    'terms_of_service_content': '''**Terms & Conditions**
 
-Article 1 (Purpose)
-These Terms are intended to stipulate the rights, obligations, and responsibilities of the app operator and users regarding the use of EveryDiary (hereinafter referred to as "the App").
+These terms and conditions apply to the Everydiary app (hereby referred to as "Application") for mobile devices that was created by Sunnydevstory (hereby referred to as "Service Provider") as a Freemium service.
 
-Article 2 (Definitions)
-1. "App" means a mobile application that allows users to write and manage diaries.
-2. "User" means a person who uses the App in accordance with these Terms.
-3. "Content" means diary entries and related data that users create through the App.
+Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.
 
-Article 3 (Effect and Amendment of Terms)
-1. These Terms apply to all users who download and use the App.
-2. These Terms may be amended as necessary, and amended terms will be announced within the App.
+Unauthorized copying, modification of the Application, any part of the Application, or our trademarks is strictly prohibited. Any attempts to extract the source code of the Application, translate the Application into other languages, or create derivative versions are not permitted. All trademarks, copyrights, database rights, and other intellectual property rights related to the Application remain the property of the Service Provider.
 
-Article 4 (Provision of Services)
-1. The App provides users with features such as diary writing, management, and backup.
-2. The App is provided free of charge, and some features may be available through in-app purchases.
+The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. The Service Provider assures you that any charges for the Application or its services will be clearly communicated to you.
 
-Article 5 (User Obligations)
-1. Users must comply with these Terms and relevant laws.
-2. Users must not use the App for illegal purposes.
-3. Users are responsible for safely managing their account information and PIN number.
+The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advise against jailbreaking or rooting your phone, which involves removing software restrictions and limitations imposed by the official operating system of your device. Such actions could expose your phone to malware, viruses, malicious programs, compromise your phone's security features, and may result in the Application not functioning correctly or at all.
 
-Article 6 (Content Management)
-1. Content created by users is stored locally on the user's device.
-2. Users have all rights and responsibilities for the content they create.
-3. The app operator does not access users' content and does not provide it to third parties.
+Please note that the Application utilizes third-party services that have their own Terms and Conditions. Below are the links to the Terms and Conditions of the third-party service providers used by the Application:
 
-Article 7 (Service Interruption)
-The app operator may suspend service provision in the following cases:
-1. When system maintenance is required
-2. In case of force majeure
+*   [Google Play Services](https://policies.google.com/terms)
 
-Article 8 (Disclaimer)
-1. The app operator is not responsible for damages due to device errors, data loss, etc.
-2. Users should perform regular backups to prevent data loss.
+*   [AdMob](https://developers.google.com/admob/terms)
 
-Article 9 (Dispute Resolution)
-Disputes related to these Terms shall be resolved in accordance with the laws of the Republic of Korea.
+Please be aware that the Service Provider does not assume responsibility for certain aspects. Some functions of the Application require an active internet connection, which can be Wi-Fi or provided by your mobile network provider. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.
 
-Effective Date: January 1, 2025''',
+If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. Consequently, you may incur charges from your mobile provider for data usage during the connection to the application, or other third-party charges. By using the application, you accept responsibility for any such charges, including roaming data charges if you use the application outside of your home territory (i.e., region or country) without disabling data roaming. If you are not the bill payer for the device on which you are using the application, they assume that you have obtained permission from the bill payer.
+
+Similarly, the Service Provider cannot always assume responsibility for your usage of the application. For instance, it is your responsibility to ensure that your device remains charged. If your device runs out of battery and you are unable to access the Service, the Service Provider cannot be held responsible.
+
+In terms of the Service Provider's responsibility for your use of the application, it is important to note that while they strive to ensure that it is updated and accurate at all times, they do rely on third parties to provide information to them so that they can make it available to you. The Service Provider accepts no liability for any loss, direct or indirect, that you experience as a result of relying entirely on this functionality of the application.
+
+The Service Provider may wish to update the application at some point. The application is currently available as per the requirements for the operating system (and for any additional systems they decide to extend the availability of the application to) may change, and you will need to download the updates if you want to continue using the application. The Service Provider does not guarantee that it will always update the application so that it is relevant to you and/or compatible with the particular operating system version installed on your device. However, you agree to always accept updates to the application when offered to you. The Service Provider may also wish to cease providing the application and may terminate its use at any time without providing termination notice to you. Unless they inform you otherwise, upon any termination, (a) the rights and licenses granted to you in these terms will end; (b) you must cease using the application, and (if necessary) delete it from your device.
+
+**Changes to These Terms and Conditions**
+
+The Service Provider may periodically update their Terms and Conditions. Therefore, you are advised to review this page regularly for any changes. The Service Provider will notify you of any changes by posting the new Terms and Conditions on this page.
+
+These terms and conditions are effective as of 2025-11-12
+
+**Contact Us**
+
+If you have any questions or suggestions about the Terms and Conditions, please do not hesitate to contact the Service Provider at window98se@gmail.com.
+
+* * *
+
+This Terms and Conditions page was generated by [App Privacy Policy Generator](https://app-privacy-policy-generator.nisrulz.com/)''',
   };
 
   // ============== 일본어 ==============
