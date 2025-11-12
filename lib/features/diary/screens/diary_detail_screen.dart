@@ -5,8 +5,11 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../../core/services/image_generation_service.dart';
 import '../../../core/widgets/custom_app_bar.dart';
@@ -347,6 +350,94 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
         _error = '일기를 불러오는 중 오류가 발생했습니다: $e';
         _isLoading = false;
       });
+    }
+  }
+
+  /// AI 생성 이미지를 갤러리에 저장
+  Future<void> _saveImageToGallery() async {
+    if (_generatedImage == null) return;
+
+    try {
+      // 저장 확인 다이얼로그 표시
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('이미지 저장'),
+          content: const Text('이 이미지를 갤러리에 저장하시겠습니까?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('저장'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true || !mounted) return;
+
+      // 로딩 표시
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('이미지를 저장하는 중...')),
+        );
+      }
+
+      String? imagePath;
+
+      // 로컬 이미지 경로가 있으면 직접 사용
+      if (_generatedImage!.localImagePath != null) {
+        imagePath = _generatedImage!.localImagePath;
+      } else {
+        // 네트워크에서 이미지 다운로드
+        final response = await http.get(Uri.parse(_generatedImage!.imageUrl));
+        if (response.statusCode == 200) {
+          final tempDir = await getTemporaryDirectory();
+          final fileName = 'diary_ai_image_${DateTime.now().millisecondsSinceEpoch}.png';
+          final file = File('${tempDir.path}/$fileName');
+          await file.writeAsBytes(response.bodyBytes);
+          imagePath = file.path;
+        }
+      }
+
+      if (imagePath == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('이미지를 저장할 수 없습니다'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // 갤러리에 저장
+      await Gal.putImage(imagePath);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('이미지가 갤러리에 저장되었습니다'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      debugPrint('✅ AI 생성 이미지가 갤러리에 저장되었습니다: $imagePath');
+    } catch (e) {
+      debugPrint('❌ 이미지 저장 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('이미지 저장 중 오류가 발생했습니다: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -748,19 +839,33 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
               ),
               const SizedBox(height: 12),
 
-              // AI 생성 이미지
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: _generatedImage!.localImagePath != null
-                    ? Image.file(
-                        File(_generatedImage!.localImagePath!),
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildAssociationImageNetworkFallback();
-                        },
-                      )
-                    : _buildAssociationImageNetworkFallback(),
+              // AI 생성 이미지 (long press로 저장)
+              GestureDetector(
+                onLongPress: _saveImageToGallery,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _generatedImage!.localImagePath != null
+                      ? Image.file(
+                          File(_generatedImage!.localImagePath!),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildAssociationImageNetworkFallback();
+                          },
+                        )
+                      : _buildAssociationImageNetworkFallback(),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // 힌트 텍스트
+              Text(
+                '이미지를 길게 눌러 갤러리에 저장할 수 있습니다',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
 

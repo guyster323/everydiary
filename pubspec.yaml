@@ -89,6 +89,7 @@ dependencies:
   camera: ^0.10.5+5
   image: ^4.1.7
   google_mlkit_text_recognition: ^0.15.0
+  gal: ^2.3.0
   # 언어별 확장 플러그인은 Android Gradle에 추가 (japanese/chinese/korean)
 
   # Speech & Text Recognition
