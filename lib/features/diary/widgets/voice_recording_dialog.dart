@@ -1,44 +1,60 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers/localization_provider.dart';
+import '../../../core/providers/speech_recognition_provider.dart';
+import '../../settings/providers/settings_provider.dart';
 import '../services/voice_recording_service.dart';
 
 /// 음성녹음 다이얼로그
-class VoiceRecordingDialog extends StatefulWidget {
+class VoiceRecordingDialog extends ConsumerStatefulWidget {
   const VoiceRecordingDialog({super.key});
 
   @override
-  State<VoiceRecordingDialog> createState() => _VoiceRecordingDialogState();
+  ConsumerState<VoiceRecordingDialog> createState() => _VoiceRecordingDialogState();
 }
 
-class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
+class _VoiceRecordingDialogState extends ConsumerState<VoiceRecordingDialog> {
   final VoiceRecordingService _voiceService = VoiceRecordingService();
   String _recognizedText = '';
   int _recordingDuration = 0;
   bool _isInitialized = false;
   bool _hasRecorded = false; // 녹음한 적이 있는지 확인
+  String _selectedLocale = 'ko_KR'; // 선택된 언어
 
   @override
   void initState() {
     super.initState();
+    _initializeLocale();
     _initializeVoiceService();
+  }
+
+  /// 앱 언어 설정에 따라 음성 인식 언어 초기화
+  void _initializeLocale() {
+    final settings = ref.read(settingsProvider);
+    _selectedLocale = getDefaultSpeechLocaleFromAppLanguage(settings.language);
+    _voiceService.setLocale(_selectedLocale);
   }
 
   /// 음성 서비스 초기화
   Future<void> _initializeVoiceService() async {
     final initialized = await _voiceService.initialize();
-    setState(() {
-      _isInitialized = initialized;
-    });
+    if (mounted) {
+      setState(() {
+        _isInitialized = initialized;
+      });
+    }
   }
 
   /// 음성녹음 시작/재개
   Future<void> _startRecording() async {
     if (!_isInitialized) {
+      final l10n = ref.read(localizationProvider);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('음성인식 서비스를 초기화할 수 없습니다.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.get('voice_recording_init_failed'))));
       return;
     }
 
@@ -57,9 +73,10 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
     );
 
     if (!success && mounted) {
+      final l10n = ref.read(localizationProvider);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('음성녹음을 시작할 수 없습니다.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.get('voice_recording_start_failed'))));
     }
   }
 
@@ -92,6 +109,22 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
     return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
+  /// 언어 라벨 가져오기
+  String _getLocalizedLanguageLabel(String code, dynamic l10n) {
+    switch (code) {
+      case 'ko_KR':
+        return l10n.get('speech_language_korean') as String;
+      case 'en_US':
+        return l10n.get('speech_language_english') as String;
+      case 'ja_JP':
+        return l10n.get('speech_language_japanese') as String;
+      case 'zh_CN':
+        return l10n.get('speech_language_chinese') as String;
+      default:
+        return code;
+    }
+  }
+
   @override
   void dispose() {
     _voiceService.dispose();
@@ -100,6 +133,8 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+    final theme = Theme.of(context);
     return Dialog(
       child: Container(
         width: MediaQuery.of(context).size.width * 0.9,
@@ -109,10 +144,61 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
           children: [
             // 제목
             Text(
-              '음성녹음',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              l10n.get('voice_recording_title'),
+              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // 언어 선택
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.language,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedLocale,
+                        dropdownColor: theme.colorScheme.surfaceBright,
+                        isExpanded: true,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        items: kSpeechLocaleOptions
+                            .map(
+                              (option) => DropdownMenuItem<String>(
+                                value: option.code,
+                                child: Text(_getLocalizedLanguageLabel(option.code, l10n)),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: _voiceService.isListening
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _selectedLocale = value;
+                                  });
+                                  _voiceService.setLocale(value);
+                                }
+                              },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -131,7 +217,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
               ),
               const SizedBox(height: 16),
               Text(
-                '녹음 중...',
+                l10n.get('voice_recording_recording'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.red,
                   fontWeight: FontWeight.bold,
@@ -159,7 +245,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
               ),
               const SizedBox(height: 16),
               Text(
-                '일시정지 중',
+                l10n.get('voice_recording_paused'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: Colors.orange,
                   fontWeight: FontWeight.bold,
@@ -187,7 +273,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
               ),
               const SizedBox(height: 16),
               Text(
-                _hasRecorded ? '녹음을 재개하세요' : '녹음을 시작하세요',
+                _hasRecorded ? l10n.get('voice_recording_resume_prompt') : l10n.get('voice_recording_start_prompt'),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(color: Colors.grey),
@@ -210,7 +296,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '인식된 텍스트:',
+                      l10n.get('voice_recording_recognized_text'),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -244,8 +330,8 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                     ),
                     label: Text(
                       _voiceService.isListening
-                          ? '녹음 중지'
-                          : (_hasRecorded ? '녹음 재개' : '녹음 시작'),
+                          ? l10n.get('voice_recording_stop')
+                          : (_hasRecorded ? l10n.get('voice_recording_resume') : l10n.get('voice_recording_start')),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -272,7 +358,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                           _cancelRecording();
                           Navigator.of(context).pop();
                         },
-                        child: const Text('취소'),
+                        child: Text(l10n.get('voice_recording_cancel')),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -287,7 +373,7 @@ class _VoiceRecordingDialogState extends State<VoiceRecordingDialog> {
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                         ),
-                        child: const Text('확인'),
+                        child: Text(l10n.get('voice_recording_confirm')),
                       ),
                     ),
                   ],

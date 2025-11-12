@@ -2,36 +2,74 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/providers/localization_provider.dart';
+import '../../../features/settings/models/settings_enums.dart';
+import '../../../features/settings/providers/settings_provider.dart';
 import '../../../shared/services/ocr_service.dart' as ocr_service;
 
 const List<ocr_service.OCRLanguageOption> _languageOptions =
     ocr_service.kSupportedOcrLanguages;
 
 /// 간단한 카메라 화면 (안정성 우선)
-class SimpleCameraScreen extends StatefulWidget {
+class SimpleCameraScreen extends ConsumerStatefulWidget {
   const SimpleCameraScreen({super.key});
 
   @override
-  State<SimpleCameraScreen> createState() => _SimpleCameraScreenState();
+  ConsumerState<SimpleCameraScreen> createState() => _SimpleCameraScreenState();
 }
 
-class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
+class _SimpleCameraScreenState extends ConsumerState<SimpleCameraScreen> {
   CameraController? _cameraController;
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
   bool _isLoading = false;
   final ocr_service.OCRService _ocrService = ocr_service.OCRService();
   bool _isProcessingOCR = false;
-  ocr_service.OCRLanguageOption _selectedLanguage = _languageOptions.first;
+  late ocr_service.OCRLanguageOption _selectedLanguage;
   bool _useAutoDetection = false;
 
   @override
   void initState() {
     super.initState();
+    // 앱 설정 언어에 따라 OCR 기본 언어 설정
+    _selectedLanguage = _getDefaultOCRLanguage();
     _initializeCamera();
     _initializeOCR();
+  }
+
+  /// 앱 설정 언어를 기반으로 OCR 기본 언어 가져오기
+  ocr_service.OCRLanguageOption _getDefaultOCRLanguage() {
+    try {
+      final settings = ref.read(settingsProvider);
+      final String ocrCode;
+
+      switch (settings.language) {
+        case Language.korean:
+          ocrCode = 'ko';
+          break;
+        case Language.english:
+          ocrCode = 'en';
+          break;
+        case Language.japanese:
+          ocrCode = 'ja';
+          break;
+        case Language.chineseSimplified:
+        case Language.chineseTraditional:
+          ocrCode = 'zh';
+          break;
+      }
+
+      return _languageOptions.firstWhere(
+        (option) => option.code == ocrCode,
+        orElse: () => _languageOptions.first,
+      );
+    } catch (e) {
+      debugPrint('Failed to get default OCR language: $e');
+      return _languageOptions.first;
+    }
   }
 
   /// OCR 서비스 초기화
@@ -384,12 +422,31 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
     );
   }
 
+  /// 언어 옵션의 로컬라이즈된 레이블 가져오기
+  String _getLocalizedLanguageLabel(ocr_service.OCRLanguageOption option) {
+    final l10n = ref.read(localizationProvider);
+    switch (option.code) {
+      case 'ko':
+        return l10n.get('ocr_language_korean');
+      case 'en':
+        return l10n.get('ocr_language_english');
+      case 'ja':
+        return l10n.get('ocr_language_japanese');
+      case 'zh':
+        return l10n.get('ocr_language_chinese');
+      default:
+        return option.label;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = ref.watch(localizationProvider);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('사진 촬영'),
+        title: Text(l10n.get('ocr_camera_title')),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -465,7 +522,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
                                           (option) => DropdownMenuItem(
                                             value: option,
                                             child: Text(
-                                              option.label,
+                                              _getLocalizedLanguageLabel(option),
                                               style: const TextStyle(
                                                 color: Colors.white,
                                               ),
@@ -505,7 +562,7 @@ class _SimpleCameraScreenState extends State<SimpleCameraScreen> {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      '자동 감지',
+                                      l10n.get('ocr_auto_detect'),
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontWeight: _useAutoDetection

@@ -238,17 +238,16 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
           userName: userName,
           pinEnabled: true,
         );
-        if (!mounted) return;
-        router.go(AppConstants.pinRoute);
       } else {
         await pinNotifier.disablePin();
         await profileNotifier.completeOnboarding(
           userName: userName,
           pinEnabled: false,
         );
-        if (!mounted) return;
-        router.go(AppConstants.homeRoute);
       }
+      if (!mounted) return;
+      // 온보딩 완료 후 권한 요청 화면으로 이동
+      router.go(AppConstants.permissionRoute);
     } catch (error) {
       if (!mounted) return;
       final l10n = ref.read(localizationProvider);

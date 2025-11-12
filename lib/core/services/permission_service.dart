@@ -8,6 +8,28 @@ class PermissionService {
 
   PermissionService._();
 
+  /// 카메라 권한 확인
+  Future<PermissionStatus> checkCameraPermission() async {
+    return await Permission.camera.status;
+  }
+
+  /// 카메라 권한 요청
+  Future<PermissionStatus> requestCameraPermission() async {
+    return await Permission.camera.request();
+  }
+
+  /// 카메라 권한이 허용되었는지 확인
+  Future<bool> isCameraPermissionGranted() async {
+    final status = await checkCameraPermission();
+    return status.isGranted;
+  }
+
+  /// 카메라 권한이 영구적으로 거부되었는지 확인
+  Future<bool> isCameraPermissionPermanentlyDenied() async {
+    final status = await checkCameraPermission();
+    return status.isPermanentlyDenied;
+  }
+
   /// 마이크 권한 확인
   Future<PermissionStatus> checkMicrophonePermission() async {
     return await Permission.microphone.status;

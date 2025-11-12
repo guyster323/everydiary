@@ -2,8 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import '../../features/settings/models/settings_enums.dart';
+import '../../features/settings/providers/settings_provider.dart';
 import '../services/permission_service.dart';
 import '../services/speech_recognition_service.dart';
+import 'localization_provider.dart';
 
 /// 음성 인식에서 사용할 수 있는 로케일 옵션
 class SpeechLocaleOption {
@@ -37,6 +40,21 @@ final speechLocaleOptionsProvider = Provider<List<SpeechLocaleOption>>((ref) {
   return kSpeechLocaleOptions;
 });
 
+/// 앱 설정 언어를 기반으로 음성 인식 Default locale 가져오기
+String getDefaultSpeechLocaleFromAppLanguage(Language language) {
+  switch (language) {
+    case Language.korean:
+      return 'ko-KR';
+    case Language.english:
+      return 'en-US';
+    case Language.japanese:
+      return 'ja-JP';
+    case Language.chineseSimplified:
+    case Language.chineseTraditional:
+      return 'zh-CN';
+  }
+}
+
 /// 음성 인식 상태 프로바이더
 class SpeechRecognitionState {
   final bool isInitialized;
@@ -56,7 +74,7 @@ class SpeechRecognitionState {
     this.finalText = '',
     this.confidence = 0.0,
     this.errorMessage,
-    this.currentLocale = 'ko-KR',
+    required this.currentLocale,
   });
 
   SpeechRecognitionState copyWith({
@@ -86,10 +104,22 @@ class SpeechRecognitionState {
 class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
   final SpeechRecognitionService _speechService;
   final PermissionService _permissionService;
+  final Ref _ref;
 
-  SpeechRecognitionNotifier(this._speechService, this._permissionService)
-    : super(const SpeechRecognitionState()) {
+  SpeechRecognitionNotifier(this._speechService, this._permissionService, this._ref)
+    : super(SpeechRecognitionState(
+        currentLocale: _getInitialLocale(_ref),
+      )) {
     _initialize();
+  }
+
+  static String _getInitialLocale(Ref ref) {
+    try {
+      final settings = ref.read(settingsProvider);
+      return getDefaultSpeechLocaleFromAppLanguage(settings.language);
+    } catch (e) {
+      return 'ko-KR'; // Fallback
+    }
   }
 
   /// 서비스 초기화
@@ -103,15 +133,17 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
           status: SpeechRecognitionStatus.initialized,
         );
       } else {
+        final l10n = _ref.read(localizationProvider);
         state = state.copyWith(
           status: SpeechRecognitionStatus.initializationFailed,
-          errorMessage: '음성 인식 서비스 초기화에 실패했습니다.',
+          errorMessage: l10n.get('speech_init_failed'),
         );
       }
     } catch (e) {
+      final l10n = _ref.read(localizationProvider);
       state = state.copyWith(
         status: SpeechRecognitionStatus.initializationFailed,
-        errorMessage: '초기화 중 오류가 발생했습니다: $e',
+        errorMessage: '${l10n.get('speech_init_error')}: $e',
       );
     }
   }
@@ -134,9 +166,10 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
     final hasPermission = await _permissionService
         .isMicrophonePermissionGranted();
     if (!hasPermission) {
+      final l10n = _ref.read(localizationProvider);
       state = state.copyWith(
         status: SpeechRecognitionStatus.permissionDenied,
-        errorMessage: '마이크 권한이 필요합니다.',
+        errorMessage: l10n.get('speech_permission_required'),
       );
       return false;
     }
@@ -159,16 +192,18 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
         );
         return true;
       } else {
+        final l10n = _ref.read(localizationProvider);
         state = state.copyWith(
           status: SpeechRecognitionStatus.startFailed,
-          errorMessage: '음성 인식 시작에 실패했습니다.',
+          errorMessage: l10n.get('speech_start_failed'),
         );
         return false;
       }
     } catch (e) {
+      final l10n = _ref.read(localizationProvider);
       state = state.copyWith(
         status: SpeechRecognitionStatus.error,
-        errorMessage: '음성 인식 시작 중 오류가 발생했습니다: $e',
+        errorMessage: '${l10n.get('speech_start_error')}: $e',
       );
       return false;
     }
@@ -184,9 +219,10 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
         errorMessage: null,
       );
     } catch (e) {
+      final l10n = _ref.read(localizationProvider);
       state = state.copyWith(
         status: SpeechRecognitionStatus.stopFailed,
-        errorMessage: '음성 인식 중지 중 오류가 발생했습니다: $e',
+        errorMessage: '${l10n.get('speech_stop_error')}: $e',
       );
     }
   }
@@ -202,9 +238,10 @@ class SpeechRecognitionNotifier extends StateNotifier<SpeechRecognitionState> {
         errorMessage: null,
       );
     } catch (e) {
+      final l10n = _ref.read(localizationProvider);
       state = state.copyWith(
         status: SpeechRecognitionStatus.cancelFailed,
-        errorMessage: '음성 인식 취소 중 오류가 발생했습니다: $e',
+        errorMessage: '${l10n.get('speech_cancel_error')}: $e',
       );
     }
   }
@@ -260,7 +297,7 @@ final speechRecognitionProvider =
     ) {
       final speechService = ref.watch(speechRecognitionServiceProvider);
       final permissionService = ref.watch(permissionServiceProvider);
-      return SpeechRecognitionNotifier(speechService, permissionService);
+      return SpeechRecognitionNotifier(speechService, permissionService, ref);
     });
 
 /// 사용 가능한 언어 목록 프로바이더

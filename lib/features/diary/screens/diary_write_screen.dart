@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/providers/user_customization_provider.dart';
 import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/app_state_provider.dart';
 import '../../settings/models/settings_enums.dart';
@@ -769,9 +768,10 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
         } else {
           debugPrint('🔍 OCR 결과가 비어있거나 취소됨');
           if (mounted) {
+            final l10n = ref.read(localizationProvider);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('텍스트 인식이 취소되었습니다'),
+              SnackBar(
+                content: Text(l10n.get('ocr_cancelled')),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -1182,7 +1182,7 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                 ],
               ),
               child: DropdownButtonFormField<String>(
-                value: _selectedWeather,
+                initialValue: _selectedWeather,
                 items: _weatherOptions.map((weather) {
                   return DropdownMenuItem(
                     value: weather,

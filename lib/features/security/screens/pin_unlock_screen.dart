@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/pin_lock_provider.dart';
 
 class PinUnlockScreen extends ConsumerStatefulWidget {
@@ -47,6 +48,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
   Widget build(BuildContext context) {
     final pinState = ref.watch(pinLockProvider);
     final theme = Theme.of(context);
+    final l10n = ref.watch(localizationProvider);
 
     final lockExpiresAt = pinState.lockExpiresAt;
     final remainingAttempts = pinState.remainingAttempts;
@@ -72,10 +74,10 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('잠금 해제', style: theme.textTheme.headlineSmall),
+                  Text(l10n.get('pin_unlock_title'), style: theme.textTheme.headlineSmall),
                   const SizedBox(height: 12),
                   Text(
-                    '앱에 다시 접속하려면 4자리 PIN을 입력해 주세요.',
+                    l10n.get('pin_unlock_subtitle'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
@@ -112,7 +114,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '⚠️ 비상 복구 질문 미설정',
+                                  l10n.get('pin_unlock_recovery_warning_title'),
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     color: theme.colorScheme.error,
                                     fontWeight: FontWeight.bold,
@@ -120,7 +122,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'PIN을 잊으면 앱에 접근할 수 없습니다.\n설정에서 비상 복구 질문을 등록하세요.',
+                                  l10n.get('pin_unlock_recovery_warning_message'),
                                   style: theme.textTheme.bodySmall?.copyWith(
                                     color: theme.colorScheme.onErrorContainer,
                                     height: 1.3,
@@ -175,14 +177,17 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                   const SizedBox(height: 4),
                   if (lockExpiresAt != null)
                     Text(
-                      '잠금됨: ${_formatLockMessage(lockExpiresAt)}까지 시도할 수 없어요.',
+                      l10n.get('pin_unlock_locked_until').replaceAll('{time}', _formatLockMessage(lockExpiresAt)),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                         fontWeight: FontWeight.w600,
                       ),
                     )
                   else
-                    Text('남은 시도 횟수: $remainingAttempts회', style: attemptStyle),
+                    Text(
+                      l10n.get('pin_unlock_remaining_attempts').replaceAll('{count}', remainingAttempts.toString()),
+                      style: attemptStyle,
+                    ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -196,7 +201,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                               width: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('잠금 해제'),
+                          : Text(l10n.get('pin_unlock_button')),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -211,7 +216,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                                   _errorMessage = null;
                                 });
                               },
-                        child: const Text('지우기'),
+                        child: Text(l10n.get('pin_unlock_clear')),
                       ),
                       const Spacer(),
                       TextButton(
@@ -222,7 +227,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                             ? () =>
                                   _showRecoveryDialog(context, recoveryQuestion)
                             : null,
-                        child: const Text('비상 복구'),
+                        child: Text(l10n.get('pin_unlock_recovery')),
                       ),
                     ],
                   ),
@@ -236,9 +241,10 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
   }
 
   Future<void> _verifyPin(BuildContext context) async {
+    final l10n = ref.read(localizationProvider);
     final pin = _pinController.text.trim();
     if (pin.length != 4) {
-      setState(() => _errorMessage = '4자리 PIN을 입력해 주세요');
+      setState(() => _errorMessage = l10n.get('pin_unlock_error_length'));
       return;
     }
 
@@ -263,29 +269,34 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
         _isSubmitting = false;
         final state = ref.read(pinLockProvider);
         if (state.lockExpiresAt != null) {
-          _errorMessage = '너무 많은 시도로 잠금되었습니다.';
+          _errorMessage = l10n.get('pin_unlock_error_locked');
         } else {
-          _errorMessage = 'PIN이 일치하지 않습니다. 다시 시도해 주세요.';
+          _errorMessage = l10n.get('pin_unlock_error_incorrect');
         }
       });
     }
   }
 
   String _formatLockMessage(DateTime lockUntil) {
+    final l10n = ref.read(localizationProvider);
     final remaining = lockUntil.difference(DateTime.now());
-    if (remaining.isNegative) return '잠금 해제됨';
+    if (remaining.isNegative) return l10n.get('pin_unlock_unlocked');
     final minutes = remaining.inMinutes;
     final seconds = remaining.inSeconds % 60;
     if (minutes > 0) {
-      return '$minutes분 ${seconds.toString().padLeft(2, '0')}초';
+      return l10n.get('pin_unlock_time_minutes')
+          .replaceAll('{minutes}', minutes.toString())
+          .replaceAll('{seconds}', seconds.toString().padLeft(2, '0'));
     }
-    return '$seconds초';
+    return l10n.get('pin_unlock_time_seconds')
+        .replaceAll('{seconds}', seconds.toString());
   }
 
   Future<void> _showRecoveryDialog(
     BuildContext context,
     String recoveryQuestion,
   ) async {
+    final l10n = ref.read(localizationProvider);
     final answerController = TextEditingController();
     final newPinController = TextEditingController();
     final confirmPinController = TextEditingController();
@@ -298,14 +309,14 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('비상 복구'),
+              title: Text(l10n.get('pin_recovery_title')),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '보안 질문',
+                      l10n.get('pin_recovery_question_label'),
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
                     const SizedBox(height: 4),
@@ -316,7 +327,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                     const SizedBox(height: 16),
                     TextField(
                       controller: answerController,
-                      decoration: const InputDecoration(labelText: '답변 입력'),
+                      decoration: InputDecoration(labelText: l10n.get('pin_recovery_answer_input')),
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
@@ -329,8 +340,8 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                       autocorrect: false,
                       smartDashesType: SmartDashesType.disabled,
                       smartQuotesType: SmartQuotesType.disabled,
-                      decoration: const InputDecoration(
-                        labelText: '새 PIN (4자리)',
+                      decoration: InputDecoration(
+                        labelText: l10n.get('pin_recovery_new_pin'),
                         counterText: '',
                       ),
                     ),
@@ -345,7 +356,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                       smartDashesType: SmartDashesType.disabled,
                       smartQuotesType: SmartQuotesType.disabled,
                       decoration: InputDecoration(
-                        labelText: '새 PIN 확인',
+                        labelText: l10n.get('pin_recovery_confirm_pin'),
                         counterText: '',
                         errorText: error,
                       ),
@@ -356,7 +367,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('취소'),
+                  child: Text(l10n.get('cancel')),
                 ),
                 ElevatedButton(
                   onPressed: () {
@@ -365,22 +376,22 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
                     final confirmPin = confirmPinController.text.trim();
 
                     if (answer.isEmpty) {
-                      setState(() => error = '보안 질문 답변을 입력해 주세요');
+                      setState(() => error = l10n.get('pin_recovery_error_answer_empty'));
                       return;
                     }
                     if (newPin.length != 4 ||
                         !RegExp(r'^\d{4}$').hasMatch(newPin)) {
-                      setState(() => error = '4자리 숫자 PIN을 입력해 주세요');
+                      setState(() => error = l10n.get('pin_recovery_error_pin_length'));
                       return;
                     }
                     if (newPin != confirmPin) {
-                      setState(() => error = '새 PIN이 일치하지 않습니다');
+                      setState(() => error = l10n.get('pin_recovery_error_pin_mismatch'));
                       return;
                     }
 
                     Navigator.of(context).pop(true);
                   },
-                  child: const Text('확인'),
+                  child: Text(l10n.get('ok')),
                 ),
               ],
             );
@@ -436,7 +447,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
 
       // SnackBar 표시
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('새 PIN이 설정되었습니다.')),
+        SnackBar(content: Text(l10n.get('pin_recovery_success'))),
       );
 
       // 약간의 지연 후 화면 이동
@@ -476,7 +487,7 @@ class _PinUnlockScreenState extends ConsumerState<PinUnlockScreen>
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('복구에 실패했습니다: $error')),
+        SnackBar(content: Text(l10n.get('pin_recovery_failed').replaceAll('{error}', error.toString()))),
       );
     } finally {
       answerController.dispose();

@@ -18,6 +18,7 @@ import '../../features/diary/services/diary_list_service.dart';
 import '../../features/home/widgets/app_intro_section.dart';
 import '../../features/home/widgets/generation_count_widget.dart';
 import '../../features/onboarding/screens/app_setup_screen.dart';
+import '../../features/onboarding/screens/permission_request_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../../features/security/screens/pin_unlock_screen.dart';
@@ -177,6 +178,11 @@ class AppRouter {
       path: AppConstants.introRoute,
       name: 'intro',
       builder: (context, state) => const AppSetupScreen(),
+    ),
+    GoRoute(
+      path: AppConstants.permissionRoute,
+      name: 'permission',
+      builder: (context, state) => const PermissionRequestScreen(),
     ),
     GoRoute(
       path: AppConstants.pinRoute,

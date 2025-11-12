@@ -31,8 +31,6 @@ class DiaryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = ref.watch(localizationProvider);
-
     return CustomCard(
       onTap: onTap,
       child: Padding(

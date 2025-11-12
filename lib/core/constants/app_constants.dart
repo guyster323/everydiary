@@ -5,6 +5,7 @@ class AppConstants {
   static const String diaryRoute = '/diary';
   static const String memoryRoute = '/memory';
   static const String introRoute = '/intro';
+  static const String permissionRoute = '/permission';
   static const String pinRoute = '/pin';
 
   // API 엔드포인트
@@ -24,6 +25,7 @@ class AppConstants {
     diaryRoute,
     memoryRoute,
     introRoute,
+    permissionRoute,
     pinRoute,
   ];
 

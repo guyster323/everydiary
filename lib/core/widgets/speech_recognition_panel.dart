@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/localization_provider.dart';
 import '../providers/speech_recognition_provider.dart';
 import '../services/speech_recognition_service.dart';
 import 'offline_speech_widgets.dart';
@@ -91,36 +92,37 @@ class SpeechRecognitionPanel extends ConsumerWidget {
           // 컴팩트 모드가 아닐 때 추가 정보 표시
           if (!compact) ...[
             const SizedBox(height: 16),
-            _buildInfoText(context, speechState),
+            _buildInfoText(context, speechState, ref),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildInfoText(BuildContext context, SpeechRecognitionState state) {
+  Widget _buildInfoText(BuildContext context, SpeechRecognitionState state, WidgetRef ref) {
+    final l10n = ref.read(localizationProvider);
     String infoText;
     Color infoColor;
 
     switch (state.status) {
       case SpeechRecognitionStatus.uninitialized:
-        infoText = '음성 인식을 초기화하고 있습니다...';
+        infoText = l10n.get('speech_initializing');
         infoColor = Colors.orange;
         break;
       case SpeechRecognitionStatus.initialized:
-        infoText = '마이크 버튼을 눌러 음성 인식을 시작하세요';
+        infoText = l10n.get('speech_ready');
         infoColor = Colors.green;
         break;
       case SpeechRecognitionStatus.listening:
-        infoText = '말씀해 주세요. 완료되면 다시 버튼을 눌러주세요';
+        infoText = l10n.get('speech_listening');
         infoColor = Colors.blue;
         break;
       case SpeechRecognitionStatus.stopped:
-        infoText = '음성을 텍스트로 변환하고 있습니다...';
+        infoText = l10n.get('speech_processing');
         infoColor = Colors.purple;
         break;
       case SpeechRecognitionStatus.completed:
-        infoText = '음성 인식이 완료되었습니다';
+        infoText = l10n.get('speech_completed');
         infoColor = Colors.green;
         break;
       case SpeechRecognitionStatus.error:
@@ -130,11 +132,11 @@ class SpeechRecognitionPanel extends ConsumerWidget {
       case SpeechRecognitionStatus.startFailed:
       case SpeechRecognitionStatus.stopFailed:
       case SpeechRecognitionStatus.cancelFailed:
-        infoText = '음성 인식 중 오류가 발생했습니다. 다시 시도해 주세요';
+        infoText = l10n.get('speech_error');
         infoColor = Colors.red;
         break;
       case SpeechRecognitionStatus.cancelled:
-        infoText = '음성 인식이 취소되었습니다';
+        infoText = l10n.get('speech_cancelled');
         infoColor = Colors.grey;
         break;
     }
@@ -154,6 +156,22 @@ class _SpeechLocaleSelector extends ConsumerWidget {
   const _SpeechLocaleSelector({required this.compact});
 
   final bool compact;
+
+  String _getLocalizedLanguageLabel(SpeechLocaleOption option, WidgetRef ref) {
+    final l10n = ref.read(localizationProvider);
+    switch (option.code) {
+      case 'ko-KR':
+        return l10n.get('speech_language_korean');
+      case 'en-US':
+        return l10n.get('speech_language_english');
+      case 'ja-JP':
+        return l10n.get('speech_language_japanese');
+      case 'zh-CN':
+        return l10n.get('speech_language_chinese');
+      default:
+        return option.label;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -198,7 +216,7 @@ class _SpeechLocaleSelector extends ConsumerWidget {
                     .map(
                       (option) => DropdownMenuItem<String>(
                         value: option.code,
-                        child: Text(option.label),
+                        child: Text(_getLocalizedLanguageLabel(option, ref)),
                       ),
                     )
                     .toList(),
@@ -264,33 +282,39 @@ class SpeechRecognitionErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
-          const SizedBox(width: 8),
-          const Text('음성 인식 오류'),
-        ],
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(error),
-          const SizedBox(height: 16),
-          _buildErrorSuggestions(context),
-        ],
-      ),
-      actions: [
-        if (onCancel != null)
-          TextButton(onPressed: onCancel, child: const Text('취소')),
-        if (onRetry != null)
-          ElevatedButton(onPressed: onRetry, child: const Text('다시 시도')),
-      ],
+    // Consumer를 사용하여 localization 접근
+    return Consumer(
+      builder: (context, ref, child) {
+        final l10n = ref.read(localizationProvider);
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
+              const SizedBox(width: 8),
+              Text(l10n.get('speech_error_title')),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(error),
+              const SizedBox(height: 16),
+              _buildErrorSuggestions(context, l10n),
+            ],
+          ),
+          actions: [
+            if (onCancel != null)
+              TextButton(onPressed: onCancel, child: Text(l10n.get('speech_cancel'))),
+            if (onRetry != null)
+              ElevatedButton(onPressed: onRetry, child: Text(l10n.get('speech_retry'))),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildErrorSuggestions(BuildContext context) {
+  Widget _buildErrorSuggestions(BuildContext context, dynamic l10n) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -303,16 +327,16 @@ class SpeechRecognitionErrorDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '해결 방법:',
+            '${l10n.get('speech_error_solutions')}',
             style: Theme.of(
               context,
             ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text('• 마이크 권한이 허용되었는지 확인하세요'),
-          const Text('• 인터넷 연결을 확인하세요'),
-          const Text('• 조용한 환경에서 다시 시도해 보세요'),
-          const Text('• 마이크가 정상 작동하는지 확인하세요'),
+          Text('${l10n.get('speech_error_check_permission')}'),
+          Text('${l10n.get('speech_error_check_internet')}'),
+          Text('${l10n.get('speech_error_quiet_environment')}'),
+          Text('${l10n.get('speech_error_check_microphone')}'),
         ],
       ),
     );
@@ -332,33 +356,38 @@ class SpeechRecognitionPermissionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(width: 8),
-          const Text('마이크 권한 필요'),
-        ],
-      ),
-      content: const Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('음성 인식 기능을 사용하려면 마이크 권한이 필요합니다.'),
-          SizedBox(height: 16),
-          Text('이 권한은 다음 목적으로만 사용됩니다:'),
-          SizedBox(height: 8),
-          Text('• 음성을 텍스트로 변환'),
-          Text('• 일기 작성 시 음성 입력'),
-          Text('• 음성 인식 정확도 향상'),
-        ],
-      ),
-      actions: [
-        if (onDeny != null)
-          TextButton(onPressed: onDeny, child: const Text('거부')),
-        if (onGrant != null)
-          ElevatedButton(onPressed: onGrant, child: const Text('허용')),
-      ],
+    return Consumer(
+      builder: (context, ref, child) {
+        final l10n = ref.read(localizationProvider);
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.mic, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(l10n.get('speech_permission_title')),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.get('speech_permission_description')),
+              const SizedBox(height: 16),
+              Text(l10n.get('speech_permission_usage')),
+              const SizedBox(height: 8),
+              Text(l10n.get('speech_permission_convert')),
+              Text(l10n.get('speech_permission_diary')),
+              Text(l10n.get('speech_permission_accuracy')),
+            ],
+          ),
+          actions: [
+            if (onDeny != null)
+              TextButton(onPressed: onDeny, child: Text(l10n.get('speech_permission_deny'))),
+            if (onGrant != null)
+              ElevatedButton(onPressed: onGrant, child: Text(l10n.get('speech_permission_allow'))),
+          ],
+        );
+      },
     );
   }
 }

@@ -143,23 +143,23 @@ class _MemoryCardState extends ConsumerState<MemoryCard> with TickerProviderStat
   String _getMemoryReasonText(MemoryType type, dynamic l10n) {
     switch (type) {
       case MemoryType.yesterday:
-        return l10n.get('memory_reason_yesterday');
+        return l10n.get('memory_reason_yesterday') as String;
       case MemoryType.oneWeekAgo:
-        return l10n.get('memory_reason_one_week_ago');
+        return l10n.get('memory_reason_one_week_ago') as String;
       case MemoryType.oneMonthAgo:
-        return l10n.get('memory_reason_one_month_ago');
+        return l10n.get('memory_reason_one_month_ago') as String;
       case MemoryType.oneYearAgo:
-        return l10n.get('memory_reason_one_year_ago');
+        return l10n.get('memory_reason_one_year_ago') as String;
       case MemoryType.pastToday:
-        return l10n.get('memory_reason_past_today');
+        return l10n.get('memory_reason_past_today') as String;
       case MemoryType.sameTimeOfDay:
-        return l10n.get('memory_reason_same_time');
+        return l10n.get('memory_reason_same_time') as String;
       case MemoryType.seasonal:
-        return l10n.get('memory_reason_seasonal');
+        return l10n.get('memory_reason_seasonal') as String;
       case MemoryType.specialDate:
-        return l10n.get('memory_reason_special_date');
+        return l10n.get('memory_reason_special_date') as String;
       case MemoryType.similarTags:
-        return l10n.get('memory_reason_similar_tags');
+        return l10n.get('memory_reason_similar_tags') as String;
     }
   }
 

@@ -21,6 +21,7 @@ class VoiceRecordingService {
   Timer? _restartTimer;
   int _recordingDuration = 0;
   int _sessionCount = 0; // 세션 재시작 횟수 추적
+  String _currentLocale = 'ko_KR'; // 현재 언어 설정
 
   // 콜백 함수들
   void Function(String)? onResult;
@@ -36,6 +37,13 @@ class VoiceRecordingService {
   String get currentPartialText => _currentPartialText;
   int get recordingDuration => _recordingDuration;
   int get sessionCount => _sessionCount;
+  String get currentLocale => _currentLocale;
+
+  /// 언어 설정
+  void setLocale(String locale) {
+    _currentLocale = locale;
+    debugPrint('🎤 음성인식 언어 설정: $locale');
+  }
 
   /// 음성인식 초기화
   Future<bool> initialize() async {
@@ -135,7 +143,7 @@ class VoiceRecordingService {
         onResult: (result) {
           _handleSpeechResult(result);
         },
-        localeId: 'ko_KR',
+        localeId: _currentLocale,
         listenFor: const Duration(minutes: 10), // 매우 긴 시간 설정
         pauseFor: const Duration(seconds: 3), // 짧은 일시정지 허용
       );

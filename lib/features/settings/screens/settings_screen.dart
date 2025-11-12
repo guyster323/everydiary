@@ -51,6 +51,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       child: Scaffold(
         appBar: CustomAppBar(
           title: l10n.get('settings'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/'),
+          ),
           actions: [
             IconButton(
               onPressed: _showResetDialog,
