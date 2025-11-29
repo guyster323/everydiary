@@ -512,7 +512,7 @@ class ImageGenerationService {
 
     try {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent?key=${ApiKeys.geminiApiKey}',
+        'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${ApiKeys.geminiApiKey}',
       );
 
       final response = await http.post(
