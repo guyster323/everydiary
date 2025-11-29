@@ -519,65 +519,29 @@ class ImageGenerationService {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'contents': [
+          'instances': [
             {
-              'parts': [
-                {'text': prompt.geminiPrompt},
-              ],
+              'prompt': prompt.geminiPrompt,
             },
           ],
-          'generationConfig': {
-            'temperature': 0.7,
-            'topK': 40,
-            'topP': 0.95,
-            'maxOutputTokens': 1024,
-            'responseModalities': ['TEXT', 'IMAGE'],
+          'parameters': {
+            'sampleCount': 1,
+            'aspectRatio': '1:1',
+            if (prompt.negativePrompt.isNotEmpty)
+              'negativePrompt': prompt.negativePrompt,
           },
-          'safetySettings': [
-            {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'},
-            {
-              'category': 'HARM_CATEGORY_HATE_SPEECH',
-              'threshold': 'BLOCK_NONE',
-            },
-            {
-              'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-              'threshold': 'BLOCK_NONE',
-            },
-            {
-              'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              'threshold': 'BLOCK_NONE',
-            },
-          ],
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final candidates = data['candidates'] as List<dynamic>?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final firstCandidate = candidates.first as Map<String, dynamic>;
-          final content = firstCandidate['content'] as Map<String, dynamic>?;
-          if (content != null) {
-            final parts = content['parts'] as List<dynamic>?;
-            if (parts != null && parts.isNotEmpty) {
-              for (final part in parts) {
-                final partMap = part as Map<String, dynamic>;
-                final inlineData =
-                    partMap['inlineData'] as Map<String, dynamic>?;
-                if (inlineData != null) {
-                  final data = inlineData['data'] as String?;
-                  if (data != null && data.isNotEmpty) {
-                    debugPrint('✅ Gemini 이미지 생성 성공');
-                    return data;
-                  }
-                }
-
-                final text = partMap['text'] as String?;
-                if (text != null && text.isNotEmpty) {
-                  debugPrint('ℹ️ Gemini가 텍스트 설명만 반환했습니다: $text');
-                }
-              }
-            }
+        final predictions = data['predictions'] as List<dynamic>?;
+        if (predictions != null && predictions.isNotEmpty) {
+          final firstPrediction = predictions.first as Map<String, dynamic>;
+          final imageBase64 = firstPrediction['bytesBase64Encoded'] as String?;
+          if (imageBase64 != null && imageBase64.isNotEmpty) {
+            debugPrint('✅ Gemini Imagen 이미지 생성 성공');
+            return imageBase64;
           }
         }
         debugPrint('❌ Gemini 응답에 이미지 데이터가 없습니다: ${response.body}');
