@@ -1,8 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.everydiary.lite">
-    <!-- Google Play 인앱 결제 권한 -->
-    <uses-permission android:name="com.android.vending.BILLING" />
-
     <!-- 카메라 권한 -->
     <uses-permission android:name="android.permission.CAMERA" />
 
