@@ -512,36 +512,51 @@ class ImageGenerationService {
 
     try {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${ApiKeys.geminiApiKey}',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${ApiKeys.geminiApiKey}',
       );
 
       final response = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'instances': [
+          'contents': [
             {
-              'prompt': prompt.geminiPrompt,
+              'parts': [
+                {'text': 'Generate an image: ${prompt.geminiPrompt}'},
+              ],
             },
           ],
-          'parameters': {
-            'sampleCount': 1,
-            'aspectRatio': '1:1',
-            if (prompt.negativePrompt.isNotEmpty)
-              'negativePrompt': prompt.negativePrompt,
+          'generationConfig': {
+            'temperature': 0.7,
+            'topK': 40,
+            'topP': 0.95,
+            'maxOutputTokens': 2048,
           },
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final predictions = data['predictions'] as List<dynamic>?;
-        if (predictions != null && predictions.isNotEmpty) {
-          final firstPrediction = predictions.first as Map<String, dynamic>;
-          final imageBase64 = firstPrediction['bytesBase64Encoded'] as String?;
-          if (imageBase64 != null && imageBase64.isNotEmpty) {
-            debugPrint('✅ Gemini Imagen 이미지 생성 성공');
-            return imageBase64;
+        final candidates = data['candidates'] as List<dynamic>?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final firstCandidate = candidates.first as Map<String, dynamic>;
+          final content = firstCandidate['content'] as Map<String, dynamic>?;
+          if (content != null) {
+            final parts = content['parts'] as List<dynamic>?;
+            if (parts != null && parts.isNotEmpty) {
+              for (final part in parts) {
+                final partMap = part as Map<String, dynamic>;
+                final inlineData =
+                    partMap['inlineData'] as Map<String, dynamic>?;
+                if (inlineData != null) {
+                  final imageData = inlineData['data'] as String?;
+                  if (imageData != null && imageData.isNotEmpty) {
+                    debugPrint('✅ Gemini 2.0 Flash 이미지 생성 성공');
+                    return imageData;
+                  }
+                }
+              }
+            }
           }
         }
         debugPrint('❌ Gemini 응답에 이미지 데이터가 없습니다: ${response.body}');
