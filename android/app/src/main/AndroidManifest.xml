@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.everydiary.app">
+    package="com.everydiary.lite">
     <!-- Google Play 인앱 결제 권한 -->
     <uses-permission android:name="com.android.vending.BILLING" />
 
@@ -32,7 +32,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
-        android:label="everydiary"
+        android:label="Everydiary Lite"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"

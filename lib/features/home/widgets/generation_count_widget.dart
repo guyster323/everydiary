@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers/generation_count_provider.dart';
 import '../../../core/providers/localization_provider.dart';
-import '../../diary/widgets/image_generation_purchase_dialog.dart';
+import '../../../shared/services/ad_service.dart';
 
 /// 이미지 생성 횟수 표시 위젯
 class GenerationCountWidget extends ConsumerStatefulWidget {
@@ -50,12 +50,23 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                   ? theme.colorScheme.tertiaryContainer.withValues(alpha: 0.3)
                   : theme.colorScheme.primaryContainer.withValues(alpha: 0.2),
           child: InkWell(
-            onTap: () {
-              showDialog<void>(
-                context: context,
-                builder: (context) => const ImageGenerationPurchaseDialog(),
-              );
-            },
+            onTap: isEmpty
+                ? () async {
+                    // 무료 버전: 광고를 보고 횟수 충전
+                    final messenger = ScaffoldMessenger.of(context);
+                    final result = await AdService.instance.showRewardedAd();
+                    if (!mounted) return;
+                    if (result) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.get('ad_reward_success')),
+                          backgroundColor: theme.colorScheme.primary,
+                        ),
+                      );
+                      ref.read(generationCountServiceProvider).reload();
+                    }
+                  }
+                : null,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -191,13 +191,13 @@ flutter:
 version: 1.0.1+3
 
 flutter_launcher_icons:
-  image_path: everydiary_icon.png
+  image_path: assets/images/everydiary_lite_icon.png
   android: true
   ios: true
   remove_alpha_ios: true
   web:
     generate: true
-    image_path: everydiary_icon.png
+    image_path: assets/images/everydiary_lite_icon.png
     favicon: true
   adaptive_icon_background: "#FF6A2E"
-  adaptive_icon_foreground: everydiary_icon.png
+  adaptive_icon_foreground: assets/images/everydiary_lite_icon.png

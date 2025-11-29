@@ -47,7 +47,9 @@
       "Bash(copy:*)",
       "Bash(flutter install:*)",
       "Bash(adb:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:guyster323.github.io)"
     ]
   },
   "enableAllProjectMcpServers": true,

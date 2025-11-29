@@ -20,7 +20,6 @@ class ProfileModel with _$ProfileModel {
     @Default(0) int totalWords,
     @Default(0) int totalCharacters,
     @Default([]) List<String> favoriteTags,
-    @Default(false) bool isPremium,
     @Default('') String timezone,
     @Default('') String language,
   }) = _ProfileModel;

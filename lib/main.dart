@@ -19,7 +19,6 @@ import 'features/settings/models/settings_enums.dart' as settings_enums;
 import 'features/settings/providers/settings_provider.dart';
 import 'firebase_options.dart';
 import 'shared/services/ad_service.dart';
-import 'shared/services/payment_service.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
@@ -61,21 +60,13 @@ void main() async {
     // 테마 매니저 초기화
     await theme_manager.ThemeManager().initialize();
 
-    // 광고 SDK 초기화
+    // 광고 SDK 초기화 (무료 버전)
     try {
       await AdService.instance.initialize();
       await AdService.instance.loadRewardedAd();
-      Logger.info('✅ 광고 서비스 초기화 완료');
+      Logger.info('✅ 광고 서비스 초기화 완료 (Lite 버전)');
     } catch (e) {
       Logger.warning('⚠️ 광고 서비스 초기화 실패: $e');
-    }
-
-    // 인앱 구매 서비스 초기화 (비동기 초기화, 실패해도 앱 실행 계속)
-    try {
-      PaymentService().initialize();
-      Logger.info('✅ 인앱 구매 서비스 초기화 시작');
-    } catch (e) {
-      Logger.warning('⚠️ 인앱 구매 서비스 초기화 실패: $e');
     }
 
     // Android 네이티브 서비스 초기화 (웹 환경에서는 건너뜀)

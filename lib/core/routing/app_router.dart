@@ -23,8 +23,7 @@ import '../../features/recommendations/screens/memory_notification_settings_scre
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../../features/security/screens/pin_unlock_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
-import '../../features/settings/screens/subscription_screen.dart';
-// import 제거: 썸네일 품질 리포트 화면 비활성화
+// import 제거: 구독 화면 및 썸네일 품질 리포트 화면 비활성화
 import '../../shared/models/diary_entry.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/diary_image_helper.dart';
@@ -246,12 +245,7 @@ class AppRouter {
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
       routes: [
-        // 테스트 기능 제거: 썸네일 품질 리포트 라우트 삭제
-        GoRoute(
-          path: 'subscription',
-          name: 'settings-subscription',
-          builder: (context, state) => const SubscriptionScreen(),
-        ),
+        // 무료 버전: 구독 및 테스트 기능 제거
         GoRoute(
           path: 'privacy-policy',
           name: 'settings-privacy-policy',

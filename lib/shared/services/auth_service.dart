@@ -575,8 +575,6 @@ class AuthService {
       updatedAt: getString('updated_at') ?? now,
       lastLoginAt: getString('last_login_at'),
       isDeleted: toBool(data['is_deleted']),
-      isPremium: toBool(data['is_premium']),
-      premiumExpiresAt: getString('premium_expires_at'),
       isEmailVerified: toBool(data['is_email_verified']),
       roles: const [],
       passwordHash: getString('password_hash'),

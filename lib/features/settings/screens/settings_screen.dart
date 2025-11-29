@@ -231,7 +231,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.0',
+                    subtitle: '1.0.1',
                     onTap: () => _showAppInfo(l10n),
                   ),
                   SettingsTile(
@@ -816,7 +816,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showAboutDialog(
       context: context,
       applicationName: 'EveryDiary',
-      applicationVersion: '1.0.0',
+      applicationVersion: '1.0.1',
       applicationIcon: const Icon(Icons.book_outlined, size: 48),
       children: [
         Text(l10n.get('app_description')),

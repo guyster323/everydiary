@@ -23,8 +23,6 @@ class User with _$User {
     required String updatedAt,
     String? lastLoginAt,
     @Default(false) bool isDeleted,
-    @Default(false) bool isPremium,
-    String? premiumExpiresAt,
     // 인증 관련 필드
     @Default(false) bool isEmailVerified,
     @Default([]) List<String> roles,
