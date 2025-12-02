@@ -95,10 +95,7 @@ dependencies:
   # Speech & Text Recognition
   speech_to_text: ^7.3.0
 
-  # In-App Purchase
-  in_app_purchase: ^3.2.3
-
-  # Ads
+  # Ads (Lite Version - Free with Ads)
   google_mobile_ads: ^5.1.0
 
   # Utilities
@@ -188,7 +185,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-version: 1.0.1+3
+version: 1.0.2+5
 
 flutter_launcher_icons:
   image_path: assets/images/everydiary_lite_icon.png

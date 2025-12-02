@@ -102,3 +102,38 @@
 # Keep all classes that might be referenced by reflection
 -keep class * extends java.lang.Exception
 -keep class * implements java.io.Serializable
+
+# ============================================
+# Gson rules (required for flutter_local_notifications)
+# ============================================
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# Gson specific classes
+-dontwarn sun.misc.**
+-keep class com.google.gson.** { *; }
+-keep class * extends com.google.gson.TypeAdapter
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+# Prevent R8 from removing generic type information for TypeToken
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+
+# Keep generic signature of TypeToken and its subclasses
+-keepattributes Signature
+-keep,allowobfuscation,allowshrinking class com.google.gson.reflect.TypeToken
+-keep,allowobfuscation,allowshrinking class * extends com.google.gson.reflect.TypeToken
+
+# ============================================
+# Flutter Local Notifications Plugin
+# ============================================
+-keep class com.dexterous.** { *; }
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
+-dontwarn com.dexterous.flutterlocalnotifications.**
+
+# Keep notification models/classes used by the plugin
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
