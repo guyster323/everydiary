@@ -6,6 +6,7 @@ import 'package:everydiary/core/config/api_keys.dart';
 import 'package:everydiary/core/constants/app_constants.dart';
 import 'package:everydiary/core/services/text_analysis_service.dart';
 import 'package:everydiary/core/services/user_customization_service.dart';
+import 'package:everydiary/shared/services/ad_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -350,27 +351,53 @@ class ImageGenerationService {
 
     // Check generation count
     final prefs = await SharedPreferences.getInstance();
-    final remainingCount = prefs.getInt(_generationCountKey) ?? 3;
+    var remainingCount = prefs.getInt(_generationCountKey) ?? 3;
 
     debugPrint('🔵 [ImageGenService] generateImageFromText 호출: remainingCount=$remainingCount');
 
+    // 횟수가 0이면 광고 재생
     if (remainingCount <= 0) {
-      debugPrint('❌ 이미지 생성 횟수가 부족합니다.');
-      return null;
+      debugPrint('🎬 횟수 부족 - 광고 재생 시도');
+
+      try {
+        // 광고 로드
+        await AdService.instance.loadRewardedAd();
+
+        // 광고 재생
+        final adResult = await AdService.instance.showRewardedAd();
+
+        if (adResult) {
+          // 광고 시청 완료 - 2회 추가
+          debugPrint('✅ 광고 시청 완료 - 2회 추가');
+          await prefs.setInt(_generationCountKey, 2);
+          remainingCount = 2;
+          debugPrint('🔵 [ImageGenService] 광고 보상으로 횟수 추가: 0 → 2');
+        } else {
+          // 광고 시청 실패 또는 취소
+          debugPrint('❌ 광고 시청 실패 또는 취소');
+          return null;
+        }
+      } catch (e) {
+        debugPrint('❌ 광고 재생 중 오류 발생: $e');
+        return null;
+      }
     }
 
+    // 현재 횟수 재확인 (광고로 인해 변경되었을 수 있음)
+    final currentCount = prefs.getInt(_generationCountKey) ?? 3;
+
     // Consume generation count
-    final newCount = remainingCount - 1;
+    final newCount = currentCount - 1;
     await prefs.setInt(_generationCountKey, newCount);
-    debugPrint('🔵 [ImageGenService] 횟수 차감: $remainingCount → $newCount');
+    debugPrint('🔵 [ImageGenService] 횟수 차감: $currentCount → $newCount');
 
     if (!await _canGenerateToday()) {
       debugPrint(
         '⚠️ 이미지 생성 일일 제한($_dailyGenerationLimit건)을 초과했습니다. 24시간 후 다시 시도해주세요.',
       );
       // Rollback count on daily limit error
-      await prefs.setInt(_generationCountKey, remainingCount);
-      debugPrint('🔵 [ImageGenService] 일일 제한으로 횟수 복구: $newCount → $remainingCount');
+      await prefs.setInt(_generationCountKey, currentCount);
+      debugPrint('🔵 [ImageGenService] 일일 제한으로 횟수 복구: $newCount → $currentCount');
       return null;
     }
 
@@ -416,8 +443,8 @@ class ImageGenerationService {
       if (generationResult == null) {
         debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
         // Rollback count on generation failure
-        await prefs.setInt(_generationCountKey, remainingCount);
-        debugPrint('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $remainingCount');
+        await prefs.setInt(_generationCountKey, currentCount);
+        debugPrint('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $currentCount');
         return null;
       }
 
@@ -428,8 +455,8 @@ class ImageGenerationService {
       if (base64Payload == null || base64Payload.isEmpty) {
         debugPrint('❌ 이미지 생성 결과에 Base64 데이터가 없습니다.');
         // Rollback count on missing base64 data
-        await prefs.setInt(_generationCountKey, remainingCount);
-        debugPrint('🔵 [ImageGenService] Base64 데이터 없어서 횟수 복구: $newCount → $remainingCount');
+        await prefs.setInt(_generationCountKey, currentCount);
+        debugPrint('🔵 [ImageGenService] Base64 데이터 없어서 횟수 복구: $newCount → $currentCount');
         return null;
       }
 
@@ -476,16 +503,21 @@ class ImageGenerationService {
   Future<Map<String, String>?> _generateImageWithFallback(
     ImagePromptPayload prompt,
   ) async {
-    final geminiResult = await _generateImageWithGemini(prompt);
-    if (geminiResult != null) {
-      return {
-        'service': 'Gemini',
-        'image_base64': geminiResult,
-        'image_url': 'gemini-inline-data',
-      };
-    }
+    // Gemini 활성화 여부 확인
+    if (AppConstants.enableGemini) {
+      final geminiResult = await _generateImageWithGemini(prompt);
+      if (geminiResult != null) {
+        return {
+          'service': 'Gemini',
+          'image_base64': geminiResult,
+          'image_url': 'gemini-inline-data',
+        };
+      }
 
-    debugPrint('ℹ️ Gemini 이미지 생성에 실패하여 Hugging Face로 폴백합니다.');
+      debugPrint('ℹ️ Gemini 이미지 생성에 실패하여 Hugging Face로 폴백합니다.');
+    } else {
+      debugPrint('ℹ️ Gemini가 비활성화되어 있습니다. Hugging Face만 사용합니다.');
+    }
 
     final huggingFaceResult = await _generateImageWithHuggingFace(prompt);
     if (huggingFaceResult != null) {
@@ -512,7 +544,7 @@ class ImageGenerationService {
 
     try {
       final uri = Uri.parse(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${ApiKeys.geminiApiKey}',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${ApiKeys.geminiApiKey}',
       );
 
       final response = await http.post(
@@ -586,7 +618,7 @@ class ImageGenerationService {
 
     // 엔드포인트 검증
     const endpoint = AppConstants.huggingFaceEndpoint;
-    if (!endpoint.startsWith('https://api-inference.huggingface.co')) {
+    if (!endpoint.contains('huggingface.co')) {
       debugPrint('❌ 잘못된 Hugging Face 엔드포인트: $endpoint');
       return null;
     }
@@ -600,23 +632,23 @@ class ImageGenerationService {
           '${prompt.huggingFacePrompt}',
         );
 
+        // API 키 검증 로그 (보안을 위해 앞뒤 4글자만 표시)
+        final apiKey = ApiKeys.huggingFaceApiKey;
+        final maskedKey = apiKey.length > 8
+            ? '${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}'
+            : '***';
+        debugPrint('🔑 Hugging Face API 키: $maskedKey (길이: ${apiKey.length})');
+
         final uri = Uri.parse(endpoint);
         final response = await http
             .post(
               uri,
               headers: {
-                'Content-Type': 'application/json',
                 'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
-                'x-wait-for-model': 'true',
+                'Content-Type': 'application/json',
               },
               body: jsonEncode({
                 'inputs': prompt.huggingFacePrompt,
-                'parameters': {
-                  'negative_prompt': prompt.negativePrompt,
-                  'num_inference_steps': 25,
-                  'guidance_scale': 7.5,
-                },
-                'options': {'use_cache': true, 'wait_for_model': true},
               }),
             )
             .timeout(const Duration(seconds: 60));
@@ -730,7 +762,7 @@ class ImageGenerationService {
     try {
       final summarySentence = _buildOneSentenceSummary(analysis, originalText);
       final moodDescription = _getMoodDescription(analysis.mood);
-      final topicDescription = _getTopicDescription(analysis.topic);
+      // topicDescription is available for future use if needed
       final keywords = analysis.keywords.take(3).join(', ');
 
       final preferredStyle =
@@ -783,9 +815,10 @@ class ImageGenerationService {
         }
       }
 
-      if (topicDescription.isNotEmpty) {
-        buffer.write(' 장면의 초점은 $topicDescription 입니다.');
-      }
+      // Topic description은 일기 내용과 무관하게 추가되므로 제거
+      // if (topicDescription.isNotEmpty) {
+      //   buffer.write(' 장면의 초점은 $topicDescription 입니다.');
+      // }
 
       if (keywords.isNotEmpty) {
         buffer.write(' 참고 키워드: $keywords.');
@@ -921,23 +954,6 @@ class ImageGenerationService {
       }
     }
     return false;
-  }
-
-  String _getTopicDescription(String topic) {
-    switch (topic) {
-      case '여행':
-        return '여행지 풍경';
-      case '음식':
-        return '맛있는 음식 장면';
-      case '운동':
-        return '활기찬 운동 모습';
-      case '감정':
-        return '감정을 표현한 인물';
-      case '일상':
-        return '아늑한 일상 풍경';
-      default:
-        return '일기 속 장면';
-    }
   }
 
   String _buildOneSentenceSummary(
