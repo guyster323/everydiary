@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:everydiary/core/providers/generation_count_provider.dart';
 import 'package:everydiary/core/services/image_generation_service.dart';
+import 'package:everydiary/shared/services/ad_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -34,7 +35,7 @@ class ImageGenerationNotifier
     try {
       state = const AsyncLoading();
 
-      // 생성 횟수 확인
+      // 생성 횟수 확인 (service에서 실제 소비하므로 여기서는 확인만)
       final countState = ref.read(generationCountProvider);
       if (countState.remainingCount <= 0) {
         state = AsyncError('생성 횟수가 부족합니다.', StackTrace.current);
@@ -42,33 +43,68 @@ class ImageGenerationNotifier
         return;
       }
 
-      // 횟수 소비
-      final consumed = await ref
-          .read(generationCountServiceProvider)
-          .consumeGeneration();
-
-      if (!consumed) {
-        state = AsyncError('생성 횟수 차감에 실패했습니다.', StackTrace.current);
-        debugPrint('❌ 생성 횟수 차감 실패');
-        return;
-      }
-
+      // 횟수 소비는 ImageGenerationService에서 처리 (중복 소비 방지)
       final service = ref.read(imageGenerationServiceProvider);
       final result = await service.generateImageFromText(text);
 
       if (result != null) {
         state = AsyncData(result);
         debugPrint('✅ 이미지 생성 완료');
+        // 횟수 갱신
+        await ref.read(generationCountServiceProvider).reload();
       } else {
-        // 생성 실패 시 횟수 복구
-        await ref.read(generationCountServiceProvider).addGenerations(1);
         state = AsyncError('이미지 생성에 실패했습니다.', StackTrace.current);
       }
     } catch (e, stackTrace) {
-      // 오류 발생 시 횟수 복구
-      try {
-        await ref.read(generationCountServiceProvider).addGenerations(1);
-      } catch (_) {}
+      state = AsyncError(e, stackTrace);
+      debugPrint('❌ 이미지 생성 실패: $e');
+    }
+  }
+
+  /// 광고 지원과 함께 텍스트에서 이미지 생성
+  /// 횟수가 0일 경우 광고를 먼저 재생하고, 성공 시 이미지 생성
+  Future<void> generateImageWithAdSupport(String text) async {
+    try {
+      state = const AsyncLoading();
+
+      // 생성 횟수 확인
+      final countState = ref.read(generationCountProvider);
+
+      // 횟수가 0이면 광고 재생
+      if (countState.remainingCount <= 0) {
+        debugPrint('🎬 횟수 부족 - 광고 재생 시도');
+
+        // 광고 로드
+        await AdService.instance.loadRewardedAd();
+
+        // 광고 재생
+        final adResult = await AdService.instance.showRewardedAd();
+
+        if (adResult) {
+          // 광고 시청 완료 - 2회 추가
+          debugPrint('✅ 광고 시청 완료 - 2회 추가');
+          await ref.read(generationCountServiceProvider).addGenerations(2);
+        } else {
+          // 광고 시청 실패
+          debugPrint('❌ 광고 시청 실패 또는 취소');
+          state = AsyncError('광고 시청이 필요합니다.', StackTrace.current);
+          return;
+        }
+      }
+
+      // 이미지 생성 (횟수 소비는 service에서 처리)
+      final service = ref.read(imageGenerationServiceProvider);
+      final result = await service.generateImageFromText(text);
+
+      if (result != null) {
+        state = AsyncData(result);
+        debugPrint('✅ 이미지 생성 완료');
+        // 횟수 갱신
+        await ref.read(generationCountServiceProvider).reload();
+      } else {
+        state = AsyncError('이미지 생성에 실패했습니다.', StackTrace.current);
+      }
+    } catch (e, stackTrace) {
       state = AsyncError(e, stackTrace);
       debugPrint('❌ 이미지 생성 실패: $e');
     }

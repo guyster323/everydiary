@@ -10,7 +10,7 @@ class ScreenSecurityService {
   static final ScreenSecurityService instance = ScreenSecurityService._();
 
   static const MethodChannel _channel = MethodChannel(
-    'com.everydiary.app/screen_security',
+    'com.everydiary.lite/screen_security',
   );
 
   bool _currentApplied = false;

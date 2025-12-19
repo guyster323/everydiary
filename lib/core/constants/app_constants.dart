@@ -10,14 +10,15 @@ class AppConstants {
 
   // API 엔드포인트
   static const String huggingFaceEndpoint =
-      'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell';
+      'https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0';
   static const String geminiEndpoint =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent';
 
   // 이미지 생성 설정
   static const int maxRetryAttempts = 3;
   static const int defaultImageSize = 1024;
   static const String defaultImageFormat = 'png';
+  static const bool enableGemini = true; // Gemini 활성화 (최신 2.5 Flash Image 모델 사용)
 
   // 보안 설정
   static const List<String> protectedPaths = [

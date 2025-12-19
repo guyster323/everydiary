@@ -14,6 +14,10 @@ enum ImageStyle {
     '귀여운',
     'adorable kawaii illustration, pastel palette, rounded shapes, gentle lighting',
   ),
+  pixelGame(
+    '게임 캐릭터',
+    'retro pixel art style game character, 16-bit aesthetic, blocky voxel design, colorful pixelated world with grid-based environment, nostalgic video game graphics',
+  ),
   realistic('사실적', 'photorealistic lighting and details'),
   cartoon('만화', 'bold cartoon illustration with clean lines'),
   watercolor('수채화', 'watercolor painting with soft edges'),
@@ -34,6 +38,8 @@ enum ImageStyle {
         return 'style_chibi';
       case ImageStyle.cute:
         return 'style_cute';
+      case ImageStyle.pixelGame:
+        return 'style_pixel_game';
       case ImageStyle.realistic:
         return 'style_realistic';
       case ImageStyle.cartoon:

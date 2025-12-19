@@ -12,6 +12,7 @@ import '../../../core/widgets/custom_loading.dart';
 import '../../../shared/models/diary_entry.dart';
 import '../../../shared/services/database_service.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
+import '../../../shared/widgets/native_ad_widget.dart';
 import '../services/diary_list_service.dart';
 import '../widgets/diary_card.dart';
 import '../widgets/diary_filter_dialog.dart';
@@ -330,6 +331,12 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
     );
   }
 
+  /// 아이템 개수 계산 (일기 + 광고 + 로딩 인디케이터)
+  int _calculateItemCount(int diaryCount, bool hasMore) {
+    final adCount = diaryCount ~/ 3; // 3개 당 1개 광고
+    return diaryCount + adCount + (hasMore ? 1 : 0);
+  }
+
   /// 일기 목록 빌드
   Widget _buildDiaryList() {
     return ListenableBuilder(
@@ -353,18 +360,25 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
             mobile: ListView.builder(
               controller: _scrollController,
               padding: const EdgeInsets.all(16),
-              itemCount:
-                  _diaryListService.diaries.length +
-                  (_diaryListService.hasMore ? 1 : 0),
+              itemCount: _calculateItemCount(_diaryListService.diaries.length, _diaryListService.hasMore),
               itemBuilder: (context, index) {
-                if (index >= _diaryListService.diaries.length) {
+                // 로딩 인디케이터 표시 (마지막 아이템)
+                final adCount = (index + 1) ~/ 4;
+                final diaryIndex = index - adCount;
+
+                if (diaryIndex >= _diaryListService.diaries.length) {
                   return const Padding(
                     padding: EdgeInsets.all(16),
                     child: Center(child: CircularProgressIndicator()),
                   );
                 }
 
-                final diary = _diaryListService.diaries[index];
+                // 4번째마다 (일기 3개 후) 네이티브 광고 표시
+                if ((index + 1) % 4 == 0 && diaryIndex < _diaryListService.diaries.length) {
+                  return const NativeAdWidget();
+                }
+
+                final diary = _diaryListService.diaries[diaryIndex];
                 return ScrollAnimations.scrollReveal(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 12),

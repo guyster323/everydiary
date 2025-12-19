@@ -231,8 +231,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.1',
-                    onTap: () => _showAppInfo(l10n),
+                    subtitle: '1.0.3',
+                    onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
                     leading: Icon(
@@ -812,18 +812,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  void _showAppInfo(AppLocalizations l10n) {
-    showAboutDialog(
+  void _showVersionInfo(AppLocalizations l10n) {
+    showDialog<void>(
       context: context,
-      applicationName: 'EveryDiary',
-      applicationVersion: '1.0.1',
-      applicationIcon: const Icon(Icons.book_outlined, size: 48),
-      children: [
-        Text(l10n.get('app_description')),
-        const SizedBox(height: 16),
-        Text(l10n.get('app_developer')),
-        Text(l10n.get('app_contact')),
-      ],
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.book_outlined, size: 32),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('EveryDiary'),
+                  Text(
+                    'v1.0.3',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.get('version_1_0_3_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_3_change_1')),
+              _buildChangelogItem(l10n.get('version_1_0_3_change_2')),
+              _buildChangelogItem(l10n.get('version_1_0_3_change_3')),
+              _buildChangelogItem(l10n.get('version_1_0_3_change_4')),
+              _buildChangelogItem(l10n.get('version_1_0_3_change_5')),
+              const SizedBox(height: 16),
+              Text(l10n.get('app_description')),
+              const SizedBox(height: 8),
+              Text(l10n.get('app_developer')),
+              Text(l10n.get('app_contact')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.get('close')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChangelogItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+          Expanded(child: Text(text)),
+        ],
+      ),
     );
   }
 

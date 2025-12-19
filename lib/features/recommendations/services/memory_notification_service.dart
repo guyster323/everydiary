@@ -176,6 +176,7 @@ class MemoryNotificationService {
           ),
         ),
         payload: 'memory_$userId',
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
@@ -323,6 +324,7 @@ class MemoryNotificationService {
           ),
         ),
         payload: 'special_memory_$userId',
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
@@ -359,9 +361,17 @@ class MemoryNotificationService {
             AndroidFlutterLocalNotificationsPlugin
           >();
 
-      final granted =
+      // 알림 권한 요청
+      final notificationGranted =
           await androidPlugin?.requestNotificationsPermission() ?? false;
-      return granted;
+
+      // 정확한 알람 권한 요청 (Android 12+)
+      final exactAlarmGranted =
+          await androidPlugin?.requestExactAlarmsPermission() ?? false;
+
+      debugPrint('Notification permission: $notificationGranted, Exact alarm permission: $exactAlarmGranted');
+
+      return notificationGranted;
     } else if (Platform.isIOS) {
       final iosPlugin = _notifications
           .resolvePlatformSpecificImplementation<

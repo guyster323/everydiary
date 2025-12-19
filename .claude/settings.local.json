@@ -49,7 +49,17 @@
       "Bash(adb:*)",
       "Bash(python:*)",
       "Bash(dir:*)",
-      "WebFetch(domain:guyster323.github.io)"
+      "WebFetch(domain:guyster323.github.io)",
+      "WebFetch(domain:status.huggingface.co)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(flutter pub run:*)",
+      "Bash(cmd /c copy \"build\\app\\outputs\\bundle\\release\\app-release.aab\" \"EverydiaryLite_v1.0.3.aab\")",
+      "Bash(cmd /c del \"EverydiaryLite.aab\")",
+      "Bash(cmd /c copy \"build\\app\\outputs\\bundle\\release\\app-release.aab\" \"EverydiaryLite.aab\")",
+      "Bash(powershell -Command:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.googleblog.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -21,11 +22,11 @@ class AdService {
     loadInterstitialAd();
   }
 
-  /// 리워드 광고 ID 가져오기
+  /// 리워드 광고 ID 가져오기 (횟수 0일 때 터치하는 광고)
   String get _rewardedAdUnitId {
     if (Platform.isAndroid) {
-      // 실제 보상형 광고 단위 ID
-      return 'ca-app-pub-3638466356421889/9870140835';
+      // Lite 앱 보상형 광고 단위 ID
+      return 'ca-app-pub-3638466356421889/9830495815';
     } else if (Platform.isIOS) {
       // iOS는 아직 미설정 (테스트 ID)
       return 'ca-app-pub-3940256099942544/1712485313';
@@ -53,6 +54,18 @@ class AdService {
     } else if (Platform.isIOS) {
       // iOS 테스트 ID
       return 'ca-app-pub-3940256099942544/2934735716';
+    }
+    return '';
+  }
+
+  /// 네이티브 광고 ID 가져오기 (내 일기 페이지 3개당)
+  String get nativeAdUnitId {
+    if (Platform.isAndroid) {
+      // Lite 앱 네이티브 광고 단위 ID
+      return 'ca-app-pub-3638466356421889/7204332472';
+    } else if (Platform.isIOS) {
+      // iOS는 아직 미설정 (테스트 ID)
+      return 'ca-app-pub-3940256099942544/3986624511';
     }
     return '';
   }
@@ -100,7 +113,39 @@ class AdService {
       return false;
     }
 
+    final completer = Completer<bool>();
     bool rewarded = false;
+
+    // 광고 표시 전에 콜백 설정
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (ad) {
+        // 광고가 화면에 표시됨
+      },
+      onAdDismissedFullScreenContent: (ad) {
+        // 광고가 닫힘 - 결과 반환
+        ad.dispose();
+        _rewardedAd = null;
+        _isRewardedAdReady = false;
+        // 다음 광고 미리 로드
+        loadRewardedAd();
+        // 보상 여부 반환
+        if (!completer.isCompleted) {
+          completer.complete(rewarded);
+        }
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        // 광고 표시 실패
+        ad.dispose();
+        _rewardedAd = null;
+        _isRewardedAdReady = false;
+        // 다음 광고 미리 로드
+        loadRewardedAd();
+        // 실패 반환
+        if (!completer.isCompleted) {
+          completer.complete(false);
+        }
+      },
+    );
 
     await _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
@@ -109,7 +154,7 @@ class AdService {
       },
     );
 
-    return rewarded;
+    return completer.future;
   }
 
   /// 전면 광고 로드

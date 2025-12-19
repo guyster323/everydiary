@@ -57,13 +57,22 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                     final result = await AdService.instance.showRewardedAd();
                     if (!mounted) return;
                     if (result) {
+                      // 광고 시청 완료 - 2회 추가
+                      await ref.read(generationCountServiceProvider).addGenerations(2);
                       messenger.showSnackBar(
                         SnackBar(
                           content: Text(l10n.get('ad_reward_success')),
                           backgroundColor: theme.colorScheme.primary,
                         ),
                       );
-                      ref.read(generationCountServiceProvider).reload();
+                    } else {
+                      // 광고 시청 실패
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.get('ad_reward_failed')),
+                          backgroundColor: theme.colorScheme.error,
+                        ),
+                      );
                     }
                   }
                 : null,
@@ -135,7 +144,7 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
                   if (isEmpty) ...[
                     const SizedBox(width: 8),
                     Icon(
-                      Icons.shopping_cart_outlined,
+                      Icons.ondemand_video,
                       size: 18,
                       color: theme.colorScheme.error,
                     ),

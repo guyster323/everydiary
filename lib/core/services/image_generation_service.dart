@@ -441,7 +441,7 @@ class ImageGenerationService {
 
       final generationResult = await _generateImageWithFallback(promptPayload);
       if (generationResult == null) {
-        debugPrint('❌ 이미지 생성 실패 (Gemini/Hugging Face 둘 다 실패)');
+        debugPrint('❌ 이미지 생성 실패 (Gemini 2.5 Flash Image/Hugging Face 둘 다 실패)');
         // Rollback count on generation failure
         await prefs.setInt(_generationCountKey, currentCount);
         debugPrint('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $currentCount');
@@ -514,7 +514,7 @@ class ImageGenerationService {
         };
       }
 
-      debugPrint('ℹ️ Gemini 이미지 생성에 실패하여 Hugging Face로 폴백합니다.');
+      debugPrint('ℹ️ Gemini 2.5 Flash Image 생성에 실패하여 Hugging Face로 폴백합니다.');
     } else {
       debugPrint('ℹ️ Gemini가 비활성화되어 있습니다. Hugging Face만 사용합니다.');
     }
@@ -534,7 +534,7 @@ class ImageGenerationService {
   Future<String?> _generateImageWithGemini(ImagePromptPayload prompt) async {
     final apiKey = ApiKeys.geminiApiKey;
     debugPrint(
-      '🔑 Gemini API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
+      '🔑 Gemini 2.5 Flash Image API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
     );
 
     if (apiKey.isEmpty || apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
@@ -559,16 +559,15 @@ class ImageGenerationService {
             },
           ],
           'generationConfig': {
-            'temperature': 0.7,
-            'topK': 40,
-            'topP': 0.95,
-            'maxOutputTokens': 2048,
+            'responseModalities': ['IMAGE', 'TEXT'],
           },
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        // Gemini 2.5 Flash Image 응답 형식: candidates 배열
         final candidates = data['candidates'] as List<dynamic>?;
         if (candidates != null && candidates.isNotEmpty) {
           final firstCandidate = candidates.first as Map<String, dynamic>;
@@ -583,7 +582,7 @@ class ImageGenerationService {
                 if (inlineData != null) {
                   final imageData = inlineData['data'] as String?;
                   if (imageData != null && imageData.isNotEmpty) {
-                    debugPrint('✅ Gemini 2.0 Flash 이미지 생성 성공');
+                    debugPrint('✅ Gemini 2.5 Flash Image 이미지 생성 성공');
                     return imageData;
                   }
                 }
@@ -591,14 +590,15 @@ class ImageGenerationService {
             }
           }
         }
-        debugPrint('❌ Gemini 응답에 이미지 데이터가 없습니다: ${response.body}');
+
+        debugPrint('❌ Gemini 2.5 Flash Image 응답에 이미지 데이터가 없습니다: ${response.body}');
         return null;
       }
 
-      debugPrint('❌ Gemini 이미지 생성 실패: ${response.statusCode} ${response.body}');
+      debugPrint('❌ Gemini 2.5 Flash Image 이미지 생성 실패: ${response.statusCode} ${response.body}');
       return null;
     } catch (e, stackTrace) {
-      debugPrint('❌ Gemini 이미지 생성 중 예외 발생: $e\n$stackTrace');
+      debugPrint('❌ Gemini 2.5 Flash Image 이미지 생성 중 예외 발생: $e\n$stackTrace');
       return null;
     }
   }
@@ -910,6 +910,8 @@ class ImageGenerationService {
         return '3등신 만화 캐릭터 일러스트';
       case ImageStyle.cute:
         return '귀엽고 사랑스러운 일러스트';
+      case ImageStyle.pixelGame:
+        return '레트로 픽셀 아트 게임 캐릭터 스타일';
       case ImageStyle.realistic:
         return '사실적 일러스트';
       case ImageStyle.cartoon:
