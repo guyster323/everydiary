@@ -18,7 +18,8 @@ import '../../../shared/services/diary_image_helper.dart';
 import '../../../shared/services/repositories/diary_repository.dart';
 import '../../../shared/services/safe_delta_converter.dart';
 import '../../../shared/services/thumbnail_batch_service.dart';
-import '../../ocr/screens/simple_camera_screen.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../../shared/services/ocr_service.dart' as ocr_service;
 import '../../settings/widgets/thumbnail_style_selector.dart';
 import '../services/diary_list_service.dart';
 import '../services/diary_save_service.dart';
@@ -722,58 +723,112 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     return '$firstEmotion $arrow $secondEmotion';
   }
 
-  /// OCR 기능 열기 - 수정된 버전
+  /// OCR 기능 열기 - 기기 기본 카메라 앱 사용
   Future<void> _openOCR() async {
+    final l10n = ref.read(localizationProvider);
+
     try {
+      // 카메라 또는 갤러리 선택 다이얼로그
+      final source = await showDialog<ImageSource>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.get('ocr_select_source')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: Text(l10n.get('camera')),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: Text(l10n.get('gallery')),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (source == null) {
+        debugPrint('🔍 OCR 소스 선택 취소됨');
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
 
-      debugPrint('🔍 OCR 화면 열기 시작');
+      debugPrint('🔍 기기 기본 카메라/갤러리 앱으로 이미지 선택');
 
-      final result = await Navigator.of(context).push<String>(
-        MaterialPageRoute(builder: (context) => const SimpleCameraScreen()),
+      // 기기 기본 카메라 앱으로 사진 촬영 또는 갤러리에서 선택
+      final imagePicker = ImagePicker();
+      final XFile? image = await imagePicker.pickImage(
+        source: source,
+        imageQuality: 100, // 최대 화질
+        preferredCameraDevice: CameraDevice.rear,
       );
+
+      if (image == null) {
+        debugPrint('🔍 이미지 선택 취소됨');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.get('ocr_cancelled')),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('🔍 이미지 선택 완료, OCR 처리 시작');
+
+      // OCR 처리
+      final ocrService = ocr_service.OCRService();
+      await ocrService.initialize();
+
+      final imageBytes = await image.readAsBytes();
+      final ocrResult = await ocrService.extractTextFromBytes(imageBytes);
+      final resultText = ocrResult.safeText.trim();
+
+      ocrService.dispose();
 
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
 
-        if (result != null && result.isNotEmpty) {
-          debugPrint('🔍 OCR 결과 수신: ${result.length}자');
-          debugPrint(
-            '🔍 OCR 결과 내용: "${result.substring(0, result.length > 50 ? 50 : result.length)}..."',
-          );
+        if (resultText.isNotEmpty) {
+          debugPrint('🔍 OCR 결과 수신: ${resultText.length}자');
 
           // 실제 OCR 결과를 일기 내용에 추가
-          _addOCRTextToContent(result);
+          _addOCRTextToContent(resultText);
 
           // 성공 메시지 표시
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('텍스트 인식 완료: ${result.length}자'),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('텍스트 인식 완료: ${resultText.length}자'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
         } else {
-          debugPrint('🔍 OCR 결과가 비어있거나 취소됨');
-          if (mounted) {
-            final l10n = ref.read(localizationProvider);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.get('ocr_cancelled')),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
+          debugPrint('🔍 OCR 결과가 비어있음');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(l10n.get('ocr_no_text_found')),
+              backgroundColor: Colors.orange,
+            ),
+          );
         }
       }
     } catch (e) {
-      debugPrint('🔍 OCR 화면 오류: $e');
+      debugPrint('🔍 OCR 오류: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

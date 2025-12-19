@@ -441,7 +441,7 @@ class ImageGenerationService {
 
       final generationResult = await _generateImageWithFallback(promptPayload);
       if (generationResult == null) {
-        debugPrint('❌ 이미지 생성 실패 (Gemini 2.5 Flash Image/Hugging Face 둘 다 실패)');
+        debugPrint('❌ 이미지 생성 실패 (Gemini 2.5 Flash Image 실패)');
         // Rollback count on generation failure
         await prefs.setInt(_generationCountKey, currentCount);
         debugPrint('🔵 [ImageGenService] 생성 실패로 횟수 복구: $newCount → $currentCount');
@@ -503,7 +503,7 @@ class ImageGenerationService {
   Future<Map<String, String>?> _generateImageWithFallback(
     ImagePromptPayload prompt,
   ) async {
-    // Gemini 활성화 여부 확인
+    // Gemini 2.5 Flash Image로 이미지 생성
     if (AppConstants.enableGemini) {
       final geminiResult = await _generateImageWithGemini(prompt);
       if (geminiResult != null) {
@@ -514,18 +514,9 @@ class ImageGenerationService {
         };
       }
 
-      debugPrint('ℹ️ Gemini 2.5 Flash Image 생성에 실패하여 Hugging Face로 폴백합니다.');
+      debugPrint('❌ Gemini 2.5 Flash Image 생성에 실패했습니다.');
     } else {
-      debugPrint('ℹ️ Gemini가 비활성화되어 있습니다. Hugging Face만 사용합니다.');
-    }
-
-    final huggingFaceResult = await _generateImageWithHuggingFace(prompt);
-    if (huggingFaceResult != null) {
-      return {
-        'service': 'HuggingFace',
-        'image_base64': huggingFaceResult,
-        'image_url': 'huggingface-generated',
-      };
+      debugPrint('⚠️ Gemini가 비활성화되어 있습니다.');
     }
 
     return null;
@@ -601,131 +592,6 @@ class ImageGenerationService {
       debugPrint('❌ Gemini 2.5 Flash Image 이미지 생성 중 예외 발생: $e\n$stackTrace');
       return null;
     }
-  }
-
-  Future<String?> _generateImageWithHuggingFace(
-    ImagePromptPayload prompt,
-  ) async {
-    final apiKey = ApiKeys.huggingFaceApiKey;
-    debugPrint(
-      '🔑 Hugging Face API 키 상태: ${apiKey.isNotEmpty ? "설정됨 (${apiKey.substring(0, 10)}...)" : "설정되지 않음"}',
-    );
-
-    if (apiKey.isEmpty || apiKey == 'YOUR_HUGGING_FACE_API_KEY_HERE') {
-      debugPrint('⚠️ Hugging Face API 키가 설정되지 않았습니다.');
-      return null;
-    }
-
-    // 엔드포인트 검증
-    const endpoint = AppConstants.huggingFaceEndpoint;
-    if (!endpoint.contains('huggingface.co')) {
-      debugPrint('❌ 잘못된 Hugging Face 엔드포인트: $endpoint');
-      return null;
-    }
-
-    // 재시도 로직 (최대 3회)
-    for (int attempt = 1; attempt <= AppConstants.maxRetryAttempts; attempt++) {
-      try {
-        debugPrint(
-          '🎨 Hugging Face 이미지 생성 시도 '
-          '$attempt/${AppConstants.maxRetryAttempts}: '
-          '${prompt.huggingFacePrompt}',
-        );
-
-        // API 키 검증 로그 (보안을 위해 앞뒤 4글자만 표시)
-        final apiKey = ApiKeys.huggingFaceApiKey;
-        final maskedKey = apiKey.length > 8
-            ? '${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}'
-            : '***';
-        debugPrint('🔑 Hugging Face API 키: $maskedKey (길이: ${apiKey.length})');
-
-        final uri = Uri.parse(endpoint);
-        final response = await http
-            .post(
-              uri,
-              headers: {
-                'Authorization': 'Bearer ${ApiKeys.huggingFaceApiKey}',
-                'Content-Type': 'application/json',
-              },
-              body: jsonEncode({
-                'inputs': prompt.huggingFacePrompt,
-              }),
-            )
-            .timeout(const Duration(seconds: 60));
-
-        if (response.statusCode == 200) {
-          final bytes = response.bodyBytes;
-          if (bytes.isNotEmpty) {
-            debugPrint('✅ Hugging Face 이미지 생성 성공');
-            return base64Encode(bytes);
-          }
-          debugPrint('❌ Hugging Face 응답에 이미지 데이터가 없습니다.');
-          return null;
-        } else if (response.statusCode == 401) {
-          debugPrint('❌ Hugging Face 인증 실패: API 키를 확인해주세요');
-          return null;
-        } else if (response.statusCode == 429) {
-          // Rate limit - 지수 백오프로 재시도
-          final waitTime = Duration(seconds: attempt * 2);
-          debugPrint('⏳ Rate limit 도달, ${waitTime.inSeconds}초 후 재시도...');
-          await Future<void>.delayed(waitTime);
-          continue;
-        } else if (response.statusCode == 500) {
-          // 서버 오류 - 재시도
-          final waitTime = Duration(seconds: attempt);
-          debugPrint('⏳ 서버 오류, ${waitTime.inSeconds}초 후 재시도...');
-          await Future<void>.delayed(waitTime);
-          continue;
-        } else if (response.statusCode == 503) {
-          final errorInfo = _parseHuggingFaceError(response.bodyBytes);
-          final estimated = errorInfo['estimated_time'] as num?;
-          final waitSeconds = estimated != null
-              ? estimated.clamp(2, 30).round()
-              : attempt * 3;
-          debugPrint(
-            '⏳ Hugging Face 모델 로딩 중, $waitSeconds초 후 재시도... '
-            '(${errorInfo['error'] ?? 'loading'})',
-          );
-          await Future<void>.delayed(Duration(seconds: waitSeconds));
-          continue;
-        }
-
-        debugPrint(
-          '❌ Hugging Face 이미지 생성 실패: ${response.statusCode} ${response.body}',
-        );
-        return null;
-      } catch (e) {
-        debugPrint(
-          '❌ Hugging Face 이미지 생성 중 예외 발생 (시도 $attempt/${AppConstants.maxRetryAttempts}): $e',
-        );
-        if (attempt == AppConstants.maxRetryAttempts) {
-          return null;
-        }
-        // 네트워크 오류 시 재시도
-        await Future<void>.delayed(Duration(seconds: attempt));
-      }
-    }
-
-    return null;
-  }
-
-  Map<String, dynamic> _parseHuggingFaceError(List<int> bodyBytes) {
-    try {
-      final decoded = utf8.decode(bodyBytes);
-      if (decoded.isEmpty) {
-        return <String, dynamic>{};
-      }
-      final dynamic data = jsonDecode(decoded);
-      if (data is Map<String, dynamic>) {
-        return data;
-      }
-      if (data is Map) {
-        return data.map((key, value) => MapEntry('$key', value));
-      }
-    } catch (_) {
-      // 파싱 실패는 무시하고 빈 맵 반환
-    }
-    return <String, dynamic>{};
   }
 
   Future<String?> _saveBase64Image(String base64Data) async {

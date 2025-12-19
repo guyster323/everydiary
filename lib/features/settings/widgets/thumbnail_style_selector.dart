@@ -99,6 +99,7 @@ class _StyleRadioList extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               l10n.get('style_select_title'),
@@ -107,15 +108,22 @@ class _StyleRadioList extends StatelessWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            ...ImageStyle.values.map(
-              (style) => _StyleOptionTile(
-                l10n: l10n,
-                style: style,
-                selected: style == selected,
-                onTap: () {
-                  if (style != selected) {
-                    onChanged(style);
-                  }
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: ImageStyle.values.length,
+                itemBuilder: (context, index) {
+                  final style = ImageStyle.values[index];
+                  return _StyleOptionTile(
+                    l10n: l10n,
+                    style: style,
+                    selected: style == selected,
+                    onTap: () {
+                      if (style != selected) {
+                        onChanged(style);
+                      }
+                    },
+                  );
                 },
               ),
             ),
