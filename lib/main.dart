@@ -26,12 +26,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Android 15 (SDK 35) edge-to-edge 지원: 상태바/네비게이션바 투명 설정
+  // Edge-to-edge 모드를 명시적으로 활성화
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  // 시스템 UI 오버레이 스타일 설정
+  // Android 15+에서는 transparent 색상만 사용하여 경고 방지
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
+      statusBarColor: Colors.transparent, // Edge-to-edge에서는 투명만 사용
+      systemNavigationBarColor: Colors.transparent, // Edge-to-edge에서는 투명만 사용
       systemNavigationBarDividerColor: Colors.transparent,
+      // 시스템 UI 아이콘 밝기 설정 (어두운 배경에는 밝은 아이콘)
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 

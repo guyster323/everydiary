@@ -82,3 +82,5 @@ assets/config/secrets_*.json
 # Task files
 # tasks.json
 # tasks/ 
+.aab
+.apk

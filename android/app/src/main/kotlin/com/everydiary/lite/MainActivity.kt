@@ -3,6 +3,7 @@ package com.everydiary.lite
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -15,6 +16,12 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         // Android 15 (SDK 35) edge-to-edge 지원
+        // enableEdgeToEdge()는 Android 15+에서 권장되는 방식
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            enableEdgeToEdge()
+        }
+
+        // 모든 Android 버전에서 edge-to-edge 지원
         WindowCompat.setDecorFitsSystemWindows(window, false)
     }
 

@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 
 import '../../../core/providers/localization_provider.dart';
 import '../../../core/providers/app_state_provider.dart';
+import '../../../core/providers/user_customization_provider.dart';
+import '../../../core/services/user_customization_service.dart';
 import '../../settings/models/settings_enums.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_input_field.dart';
@@ -1008,6 +1010,99 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
     return key != null ? l10n.get(key) : koreanWeather;
   }
 
+  /// 썸네일 스타일 아이콘 경로 가져오기
+  String _getStyleIconPath(ImageStyle style) {
+    final Map<ImageStyle, String> iconPaths = {
+      ImageStyle.chibi: 'assets/icons/Styles/chibi.png',
+      ImageStyle.cute: 'assets/icons/Styles/cute.png',
+      ImageStyle.pixelGame: 'assets/icons/Styles/pixel_game.png',
+      ImageStyle.realistic: 'assets/icons/Styles/realistic.png',
+      ImageStyle.cartoon: 'assets/icons/Styles/cartoon.png',
+      ImageStyle.watercolor: 'assets/icons/Styles/watercolor.png',
+      ImageStyle.oil: 'assets/icons/Styles/oil.png',
+      ImageStyle.sketch: 'assets/icons/Styles/sketch.png',
+      ImageStyle.digital: 'assets/icons/Styles/digital.png',
+      ImageStyle.vintage: 'assets/icons/Styles/vintage.png',
+      ImageStyle.modern: 'assets/icons/Styles/modern.png',
+      ImageStyle.santaTogether: 'assets/icons/Styles/santa_together.png',
+    };
+    return iconPaths[style] ?? 'assets/icons/Styles/chibi.png';
+  }
+
+  /// 썸네일 스타일 버튼 빌더
+  Widget _buildThumbnailStyleButton() {
+    final settings = ref.watch(userCustomizationSettingsNotifierProvider);
+
+    return settings.when(
+      loading: () => const SizedBox(
+        width: 70,
+        height: 48,
+        child: Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+      error: (_, __) => SizedBox(
+        width: 70,
+        height: 48,
+        child: ElevatedButton(
+          onPressed: _openThumbnailStyleDialog,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade400,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Icon(Icons.style, color: Colors.white),
+        ),
+      ),
+      data: (data) {
+        final currentStyle = data.preferredStyle;
+        final iconPath = _getStyleIconPath(currentStyle);
+
+        return SizedBox(
+          width: 70,
+          height: 48,
+          child: Material(
+            elevation: 4,
+            shadowColor: Colors.purple.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: _openThumbnailStyleDialog,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: AssetImage(iconPath),
+                    fit: BoxFit.cover,
+                    colorFilter: ColorFilter.mode(
+                      Colors.black.withValues(alpha: 0.2),
+                      BlendMode.darken,
+                    ),
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.style,
+                    color: Colors.white,
+                    size: 24,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black,
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = ref.watch(localizationProvider);
@@ -1273,9 +1368,10 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
             ),
             const SizedBox(height: 16),
 
-            // OCR 및 음성녹음 버튼 - 시인성 개선
+            // OCR, 썸네일 스타일, 음성녹음 버튼 - 시인성 개선
             Row(
               children: [
+                // OCR 버튼
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _openOCR,
@@ -1297,7 +1393,11 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
+                // 썸네일 스타일 버튼
+                _buildThumbnailStyleButton(),
+                const SizedBox(width: 12),
+                // 음성녹음 버튼
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: _startVoiceRecording,

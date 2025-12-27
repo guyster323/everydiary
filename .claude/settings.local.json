@@ -59,7 +59,8 @@
       "Bash(powershell -Command:*)",
       "Bash(curl:*)",
       "WebSearch",
-      "WebFetch(domain:developers.googleblog.com)"
+      "WebFetch(domain:developers.googleblog.com)",
+      "Bash(git reset:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -25,7 +25,11 @@ enum ImageStyle {
   sketch('스케치', 'pencil sketch style with fine lines'),
   digital('디지털 아트', 'digital art with smooth gradients'),
   vintage('빈티지', 'vintage style with muted colors'),
-  modern('모던', 'modern minimalist composition');
+  modern('모던', 'modern minimalist composition'),
+  santaTogether(
+    '산타와 함께',
+    'festive Christmas scene with Santa Claus, warm holiday atmosphere, joyful winter wonderland, snow and decorations',
+  );
 
   const ImageStyle(this.displayName, this.promptSuffix);
   final String displayName;
@@ -56,6 +60,8 @@ enum ImageStyle {
         return 'style_vintage';
       case ImageStyle.modern:
         return 'style_modern';
+      case ImageStyle.santaTogether:
+        return 'style_santa_together';
     }
   }
 }
