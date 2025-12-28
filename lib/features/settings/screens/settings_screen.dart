@@ -231,7 +231,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.3',
+                    subtitle: '1.0.5',
                     onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
@@ -820,13 +820,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             const Icon(Icons.book_outlined, size: 32),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   Text('EveryDiary'),
                   Text(
-                    'v1.0.3',
+                    'v1.0.5',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],
@@ -839,6 +839,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                l10n.get('version_1_0_5_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_1')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_2')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_3')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_4')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_5')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_6')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_7')),
+              _buildChangelogItem(l10n.get('version_1_0_5_change_8')),
+              const SizedBox(height: 20),
+              Text(
+                l10n.get('version_1_0_4_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_1')),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_2')),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_3')),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_4')),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_5')),
+              _buildChangelogItem(l10n.get('version_1_0_4_change_6')),
+              const SizedBox(height: 20),
               Text(
                 l10n.get('version_1_0_3_title'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(

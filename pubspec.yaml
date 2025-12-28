@@ -155,6 +155,7 @@ flutter:
     - assets/images/
     - assets/images/app_intro/
     - assets/icons/
+    - assets/icons/Styles/
     - assets/animations/
     - assets/fonts/
     - assets/config/
@@ -185,7 +186,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-version: 1.0.3+6
+version: 1.0.5+8
 
 flutter_launcher_icons:
   image_path: assets/images/everydiary_lite_icon.png

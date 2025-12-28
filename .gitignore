@@ -81,6 +81,10 @@ assets/config/secrets_*.json
 
 # Task files
 # tasks.json
-# tasks/ 
-.aab
-.apk
+# tasks/
+
+# Release files (large binary files)
+*.aab
+*.apk
+EverydiaryLite*.aab
+EverydiaryLite*.apk
