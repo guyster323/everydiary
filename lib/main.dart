@@ -48,7 +48,7 @@ void main() async {
       loadSecretsFromEnvironment: true,
     ),
     theme_manager.ThemeManager().initialize(),
-  ]).catchError((e) {
+  ]).catchError((Object e) {
     Logger.error('필수 초기화 실패: $e');
     return <void>[];
   });

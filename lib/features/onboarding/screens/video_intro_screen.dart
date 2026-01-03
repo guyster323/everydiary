@@ -201,6 +201,8 @@ class _VideoIntroScreenState extends ConsumerState<VideoIntroScreen> {
     final prefs = await SharedPreferences.getInstance();
     final onboardingComplete = prefs.getBool('app_profile.onboarding_complete') ?? false;
 
+    if (!mounted) return;
+
     if (onboardingComplete) {
       context.go(AppConstants.homeRoute);
     } else {

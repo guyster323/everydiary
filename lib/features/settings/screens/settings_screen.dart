@@ -263,7 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.6',
+                    subtitle: '1.0.7',
                     onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
@@ -858,7 +858,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text('EveryDiary'),
                   Text(
-                    'v1.0.6',
+                    'v1.0.7',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],

@@ -481,10 +481,13 @@ class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // 배경 - 단색으로 변경 (이미지 로딩 지연)
+            // 배경 - 단색 (기본)
             Positioned.fill(
               child: Container(color: theme.colorScheme.surface),
             ),
+            // 배경 이미지 지연 로딩 (콘텐츠 아래에 위치)
+            _DelayedBackgroundImage(theme: theme),
+            // 그라디언트 오버레이 (배경 이미지 위, 콘텐츠 아래)
             Positioned.fill(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -493,12 +496,13 @@ class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
                     end: Alignment.bottomCenter,
                     colors: [
                       theme.colorScheme.surface.withValues(alpha: 0.1),
-                      theme.colorScheme.surface.withValues(alpha: 0.4),
+                      theme.colorScheme.surface.withValues(alpha: 0.5),
                     ],
                   ),
                 ),
               ),
             ),
+            // 콘텐츠 (최상단)
             Positioned.fill(
               child: ListView(
                 padding: const EdgeInsets.all(24),
@@ -514,8 +518,6 @@ class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
                 ],
               ),
             ),
-            // 배경 이미지 지연 로딩 (UI가 먼저 표시된 후)
-            _DelayedBackgroundImage(theme: theme),
           ],
         ),
       ),

@@ -190,7 +190,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-version: 1.0.6+9
+version: 1.0.7+10
 
 flutter_launcher_icons:
   image_path: assets/images/everydiary_lite_icon.png
