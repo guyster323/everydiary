@@ -221,22 +221,7 @@ class UserProfileWidget extends ConsumerWidget {
                 ],
               ),
             ),
-            if (user.isPremium)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.amber,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'PREMIUM',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
+            // Lite 버전에서는 Premium 배지 표시 안함
           ],
         ),
       ),

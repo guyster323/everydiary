@@ -21,6 +21,8 @@ import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 import '../widgets/theme_selector.dart';
 import '../widgets/thumbnail_style_selector.dart';
+import '../../../core/routing/app_router.dart';
+import '../../onboarding/screens/video_intro_screen.dart';
 
 /// 설정 화면
 /// 사용자가 앱의 다양한 설정을 관리할 수 있는 화면입니다.
@@ -108,6 +110,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: l10n.get('font_size'),
                     subtitle: _getFontSizeDisplayName(settings.fontSize, l10n),
                     onTap: () => _showFontSizeSelector(),
+                  ),
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.play_circle_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: l10n.get('show_intro_video'),
+                    subtitle: l10n.get('show_intro_video_subtitle'),
+                    trailing: Switch.adaptive(
+                      value: settings.showIntroVideo,
+                      onChanged: (value) async {
+                        ref.read(settingsProvider.notifier).setShowIntroVideo(value);
+                        AppRouter.resetVideoIntroCache(); // 라우터 캐시 리셋
+                        if (value) {
+                          // 켜면 시청 기록 및 세션 플래그 초기화
+                          await VideoIntroScreen.resetWatchedStatus();
+                          EveryDiaryHomePage.resetVideoSessionFlag();
+                        }
+                      },
+                    ),
+                    onTap: () async {
+                      final newValue = !settings.showIntroVideo;
+                      ref.read(settingsProvider.notifier).setShowIntroVideo(newValue);
+                      AppRouter.resetVideoIntroCache(); // 라우터 캐시 리셋
+                      if (newValue) {
+                        // 켜면 시청 기록 및 세션 플래그 초기화
+                        await VideoIntroScreen.resetWatchedStatus();
+                        EveryDiaryHomePage.resetVideoSessionFlag();
+                      }
+                    },
                   ),
                 ],
               ),
@@ -231,7 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.5',
+                    subtitle: '1.0.6',
                     onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
@@ -816,17 +848,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.book_outlined, size: 32),
-            const SizedBox(width: 12),
+            Icon(Icons.book_outlined, size: 32),
+            SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text('EveryDiary'),
                   Text(
-                    'v1.0.5',
+                    'v1.0.6',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],
@@ -840,18 +872,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
+                l10n.get('version_1_0_6_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_6_change_1')),
+              _buildChangelogItem(l10n.get('version_1_0_6_change_2')),
+              _buildChangelogItem(l10n.get('version_1_0_6_change_3')),
+              const SizedBox(height: 20),
+              Text(
                 l10n.get('version_1_0_5_title'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 12),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_1')),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_2')),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_3')),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_4')),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_5')),
-              _buildChangelogItem(l10n.get('version_1_0_5_change_6')),
               _buildChangelogItem(l10n.get('version_1_0_5_change_7')),
               _buildChangelogItem(l10n.get('version_1_0_5_change_8')),
               const SizedBox(height: 20),

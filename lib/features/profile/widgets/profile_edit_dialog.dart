@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../models/profile_model.dart';
 
@@ -128,56 +127,7 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
                 onTap: () => _showLanguagePicker(),
               ),
 
-              const SizedBox(height: 16),
-
-              // 프리미엄 상태
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      widget.profile.isPremium ? Icons.star : Icons.star_border,
-                      color: widget.profile.isPremium
-                          ? Colors.amber
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '프리미엄 상태',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          Text(
-                            widget.profile.isPremium
-                                ? '프리미엄 사용자입니다'
-                                : '일반 사용자입니다',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (!widget.profile.isPremium)
-                      TextButton(
-                        onPressed: () => _showPremiumUpgrade(),
-                        child: const Text('업그레이드'),
-                      ),
-                  ],
-                ),
-              ),
+              // Lite 버전에서는 프리미엄 상태 표시 안함
             ],
           ),
         ),
@@ -279,34 +229,5 @@ class _ProfileEditDialogState extends State<ProfileEditDialog> {
     );
   }
 
-  void _showPremiumUpgrade() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('프리미엄 업그레이드'),
-        content: const Text(
-          '프리미엄 기능을 사용하려면 업그레이드가 필요합니다.\n\n'
-          '프리미엄 기능:\n'
-          '• 무제한 일기 작성\n'
-          '• 고급 통계 분석\n'
-          '• 클라우드 백업\n'
-          '• 광고 제거',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('나중에'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // 프리미엄 업그레이드 로직 - 구독 화면으로 이동
-              context.go('/settings/subscription');
-            },
-            child: const Text('업그레이드'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Lite 버전에서는 프리미엄 업그레이드 기능 없음
 }

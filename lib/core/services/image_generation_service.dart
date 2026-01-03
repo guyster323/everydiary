@@ -794,6 +794,8 @@ class ImageGenerationService {
         return '빈티지 톤 일러스트';
       case ImageStyle.modern:
         return '모던 미니멀리즘 일러스트';
+      case ImageStyle.santaTogether:
+        return '산타클로스와 함께하는 따뜻한 크리스마스 일러스트';
     }
   }
 

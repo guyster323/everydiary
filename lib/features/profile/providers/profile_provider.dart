@@ -125,19 +125,10 @@ class ProfileNotifier extends StateNotifier<ProfileModel> {
     }
   }
 
-  /// 프리미엄 상태 업데이트
+  /// 프리미엄 상태 업데이트 (Lite 버전에서는 사용 안함)
   Future<void> updatePremiumStatus(bool isPremium) async {
-    try {
-      final updatedProfile = state.copyWith(
-        isPremium: isPremium,
-        updatedAt: DateTime.now(),
-      );
-      await _profileService.saveProfile(updatedProfile);
-      state = updatedProfile;
-    } catch (e) {
-      debugPrint('프리미엄 상태 업데이트 실패: $e');
-      rethrow;
-    }
+    // Lite 버전에서는 프리미엄 기능이 없음
+    debugPrint('Lite 버전에서는 프리미엄 상태를 지원하지 않습니다.');
   }
 
   /// 일기 수 증가

@@ -41,6 +41,7 @@ class SettingsModel with _$SettingsModel {
     @Default(true) bool showStatistics,
     @Default(false) bool enableAnalytics,
     @Default(true) bool enableCrashReporting,
+    @Default(true) bool showIntroVideo, // 앱 시작 시 인트로 영상 표시
   }) = _SettingsModel;
 
   factory SettingsModel.fromJson(Map<String, dynamic> json) =>

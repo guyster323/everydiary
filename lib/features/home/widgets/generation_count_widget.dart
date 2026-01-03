@@ -19,16 +19,8 @@ class _GenerationCountWidgetState extends ConsumerState<GenerationCountWidget>
   @override
   bool get wantKeepAlive => true;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 화면이 다시 표시될 때마다 횟수 새로고침
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        ref.read(generationCountServiceProvider).reload();
-      }
-    });
-  }
+  // 참고: 이전에는 didChangeDependencies에서 reload()를 호출했으나,
+  // provider 초기화 시 이미 로드되므로 제거하여 성능 개선
 
   @override
   Widget build(BuildContext context) {

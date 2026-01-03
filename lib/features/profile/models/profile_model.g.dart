@@ -28,7 +28,6 @@ _$ProfileModelImpl _$$ProfileModelImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as String)
               .toList() ??
           const [],
-      isPremium: json['isPremium'] as bool? ?? false,
       timezone: json['timezone'] as String? ?? '',
       language: json['language'] as String? ?? '',
     );
@@ -47,7 +46,6 @@ Map<String, dynamic> _$$ProfileModelImplToJson(_$ProfileModelImpl instance) =>
       'totalWords': instance.totalWords,
       'totalCharacters': instance.totalCharacters,
       'favoriteTags': instance.favoriteTags,
-      'isPremium': instance.isPremium,
       'timezone': instance.timezone,
       'language': instance.language,
     };

@@ -36,10 +36,7 @@ mixin _$User {
   String get createdAt => throw _privateConstructorUsedError;
   String get updatedAt => throw _privateConstructorUsedError;
   String? get lastLoginAt => throw _privateConstructorUsedError;
-  bool get isDeleted => throw _privateConstructorUsedError;
-  bool get isPremium => throw _privateConstructorUsedError;
-  String? get premiumExpiresAt =>
-      throw _privateConstructorUsedError; // 인증 관련 필드
+  bool get isDeleted => throw _privateConstructorUsedError; // 인증 관련 필드
   bool get isEmailVerified => throw _privateConstructorUsedError;
   List<String> get roles => throw _privateConstructorUsedError;
   String? get passwordHash => throw _privateConstructorUsedError;
@@ -75,8 +72,6 @@ abstract class $UserCopyWith<$Res> {
     String updatedAt,
     String? lastLoginAt,
     bool isDeleted,
-    bool isPremium,
-    String? premiumExpiresAt,
     bool isEmailVerified,
     List<String> roles,
     String? passwordHash,
@@ -114,8 +109,6 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? updatedAt = null,
     Object? lastLoginAt = freezed,
     Object? isDeleted = null,
-    Object? isPremium = null,
-    Object? premiumExpiresAt = freezed,
     Object? isEmailVerified = null,
     Object? roles = null,
     Object? passwordHash = freezed,
@@ -186,14 +179,6 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.isDeleted
                 : isDeleted // ignore: cast_nullable_to_non_nullable
                       as bool,
-            isPremium: null == isPremium
-                ? _value.isPremium
-                : isPremium // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            premiumExpiresAt: freezed == premiumExpiresAt
-                ? _value.premiumExpiresAt
-                : premiumExpiresAt // ignore: cast_nullable_to_non_nullable
-                      as String?,
             isEmailVerified: null == isEmailVerified
                 ? _value.isEmailVerified
                 : isEmailVerified // ignore: cast_nullable_to_non_nullable
@@ -237,8 +222,6 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
     String updatedAt,
     String? lastLoginAt,
     bool isDeleted,
-    bool isPremium,
-    String? premiumExpiresAt,
     bool isEmailVerified,
     List<String> roles,
     String? passwordHash,
@@ -273,8 +256,6 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? updatedAt = null,
     Object? lastLoginAt = freezed,
     Object? isDeleted = null,
-    Object? isPremium = null,
-    Object? premiumExpiresAt = freezed,
     Object? isEmailVerified = null,
     Object? roles = null,
     Object? passwordHash = freezed,
@@ -345,14 +326,6 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value.isDeleted
             : isDeleted // ignore: cast_nullable_to_non_nullable
                   as bool,
-        isPremium: null == isPremium
-            ? _value.isPremium
-            : isPremium // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        premiumExpiresAt: freezed == premiumExpiresAt
-            ? _value.premiumExpiresAt
-            : premiumExpiresAt // ignore: cast_nullable_to_non_nullable
-                  as String?,
         isEmailVerified: null == isEmailVerified
             ? _value.isEmailVerified
             : isEmailVerified // ignore: cast_nullable_to_non_nullable
@@ -390,8 +363,6 @@ class _$UserImpl implements _User {
     required this.updatedAt,
     this.lastLoginAt,
     this.isDeleted = false,
-    this.isPremium = false,
-    this.premiumExpiresAt,
     this.isEmailVerified = false,
     final List<String> roles = const [],
     this.passwordHash,
@@ -438,11 +409,6 @@ class _$UserImpl implements _User {
   @override
   @JsonKey()
   final bool isDeleted;
-  @override
-  @JsonKey()
-  final bool isPremium;
-  @override
-  final String? premiumExpiresAt;
   // 인증 관련 필드
   @override
   @JsonKey()
@@ -461,7 +427,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, email: $email, name: $name, avatarUrl: $avatarUrl, bio: $bio, birthDate: $birthDate, gender: $gender, timezone: $timezone, language: $language, theme: $theme, notificationEnabled: $notificationEnabled, notificationTime: $notificationTime, createdAt: $createdAt, updatedAt: $updatedAt, lastLoginAt: $lastLoginAt, isDeleted: $isDeleted, isPremium: $isPremium, premiumExpiresAt: $premiumExpiresAt, isEmailVerified: $isEmailVerified, roles: $roles, passwordHash: $passwordHash)';
+    return 'User(id: $id, email: $email, name: $name, avatarUrl: $avatarUrl, bio: $bio, birthDate: $birthDate, gender: $gender, timezone: $timezone, language: $language, theme: $theme, notificationEnabled: $notificationEnabled, notificationTime: $notificationTime, createdAt: $createdAt, updatedAt: $updatedAt, lastLoginAt: $lastLoginAt, isDeleted: $isDeleted, isEmailVerified: $isEmailVerified, roles: $roles, passwordHash: $passwordHash)';
   }
 
   @override
@@ -495,10 +461,6 @@ class _$UserImpl implements _User {
                 other.lastLoginAt == lastLoginAt) &&
             (identical(other.isDeleted, isDeleted) ||
                 other.isDeleted == isDeleted) &&
-            (identical(other.isPremium, isPremium) ||
-                other.isPremium == isPremium) &&
-            (identical(other.premiumExpiresAt, premiumExpiresAt) ||
-                other.premiumExpiresAt == premiumExpiresAt) &&
             (identical(other.isEmailVerified, isEmailVerified) ||
                 other.isEmailVerified == isEmailVerified) &&
             const DeepCollectionEquality().equals(other._roles, _roles) &&
@@ -526,8 +488,6 @@ class _$UserImpl implements _User {
     updatedAt,
     lastLoginAt,
     isDeleted,
-    isPremium,
-    premiumExpiresAt,
     isEmailVerified,
     const DeepCollectionEquality().hash(_roles),
     passwordHash,
@@ -565,8 +525,6 @@ abstract class _User implements User {
     required final String updatedAt,
     final String? lastLoginAt,
     final bool isDeleted,
-    final bool isPremium,
-    final String? premiumExpiresAt,
     final bool isEmailVerified,
     final List<String> roles,
     final String? passwordHash,
@@ -605,11 +563,7 @@ abstract class _User implements User {
   @override
   String? get lastLoginAt;
   @override
-  bool get isDeleted;
-  @override
-  bool get isPremium;
-  @override
-  String? get premiumExpiresAt; // 인증 관련 필드
+  bool get isDeleted; // 인증 관련 필드
   @override
   bool get isEmailVerified;
   @override

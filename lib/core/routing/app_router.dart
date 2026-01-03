@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../core/providers/app_profile_provider.dart';
 import '../../core/providers/pin_lock_provider.dart';
 import '../../core/services/image_generation_service.dart';
@@ -19,12 +18,14 @@ import '../../features/home/widgets/app_intro_section.dart';
 import '../../features/home/widgets/generation_count_widget.dart';
 import '../../features/onboarding/screens/app_setup_screen.dart';
 import '../../features/onboarding/screens/permission_request_screen.dart';
+import '../../features/onboarding/screens/video_intro_screen.dart';
 import '../../features/recommendations/screens/memory_notification_settings_screen.dart';
 import '../../features/recommendations/screens/memory_screen.dart';
 import '../../features/security/screens/pin_unlock_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 // import 제거: 구독 화면 및 썸네일 품질 리포트 화면 비활성화
 import '../../shared/models/diary_entry.dart';
+import '../../shared/widgets/ad_policy_notice_dialog.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/diary_image_helper.dart';
 import '../../shared/services/repositories/diary_repository.dart';
@@ -122,35 +123,70 @@ class AppRouter {
     return router;
   }
 
+  // 비디오 인트로 표시 여부 캐시 (앱 실행 중 한 번만 확인)
+  static bool? _shouldShowVideoCache;
+  static bool _videoCheckDone = false;
+
+  /// 비디오 인트로 캐시 리셋 (설정 변경 시 호출)
+  static void resetVideoIntroCache() {
+    _shouldShowVideoCache = null;
+    _videoCheckDone = false;
+  }
+
+  /// 비디오 인트로 체크를 백그라운드에서 실행
+  static Future<void> _checkVideoIntroAsync() async {
+    if (_videoCheckDone) return;
+    try {
+      _shouldShowVideoCache = await VideoIntroScreen.shouldShowIntro();
+      _videoCheckDone = true;
+      debugPrint('🎬 [Router] 비디오 인트로 체크 완료: $_shouldShowVideoCache');
+    } catch (e) {
+      debugPrint('🎬 [Router] 비디오 인트로 체크 오류: $e');
+      _videoCheckDone = true;
+      _shouldShowVideoCache = false;
+    }
+  }
+
   static GoRouter buildRouter(ProviderContainer container) {
+    // 비디오 인트로 체크 (라우터 빌드 전에 동기적으로 시작)
+    if (!_videoCheckDone) {
+      _checkVideoIntroAsync();
+    }
+
     final router = GoRouter(
       initialLocation: AppConstants.homeRoute,
       routes: _routes,
-      redirect: (context, state) async {
-        await container.read(appProfileProvider.notifier).initialize();
-        await container.read(pinLockProvider.notifier).initialize();
-
+      redirect: (context, state) {
         final profile = container.read(appProfileProvider);
         final pinState = container.read(pinLockProvider);
         final path = state.uri.path;
 
+        // 초기화 미완료 시 대기
         if (!profile.isInitialized || !pinState.isInitialized) {
           return null;
         }
 
-        if (!profile.onboardingComplete && path != AppConstants.introRoute) {
-          return AppConstants.introRoute;
-        }
-
-        if (profile.onboardingComplete && path == AppConstants.introRoute) {
-          if (pinState.isPinEnabled && !pinState.isUnlocked) {
-            return AppConstants.pinRoute;
+        // 온보딩 완료된 경우: 인트로/비디오 화면에서 홈으로
+        if (profile.onboardingComplete) {
+          if (path == AppConstants.introRoute) {
+            if (pinState.isPinEnabled && !pinState.isUnlocked) {
+              return AppConstants.pinRoute;
+            }
+            return AppConstants.homeRoute;
           }
-          return AppConstants.homeRoute;
+          // 비디오 인트로 화면은 그대로 허용 (홈에서 체크 후 이동)
         }
 
+        // 온보딩 미완료 시
+        if (!profile.onboardingComplete) {
+          if (path != AppConstants.introRoute && path != AppConstants.videoIntroRoute) {
+            return AppConstants.introRoute;
+          }
+        }
+
+        // PIN 잠금 처리
         if (pinState.isPinEnabled && !pinState.isUnlocked) {
-          if (path != AppConstants.pinRoute) {
+          if (path != AppConstants.pinRoute && path != AppConstants.videoIntroRoute) {
             final redirectTarget = state.uri.toString();
             return '${AppConstants.pinRoute}?from=${Uri.encodeComponent(redirectTarget)}';
           }
@@ -172,6 +208,11 @@ class AppRouter {
       path: '/',
       name: 'home',
       builder: (context, state) => const EveryDiaryHomePage(),
+    ),
+    GoRoute(
+      path: AppConstants.videoIntroRoute,
+      name: 'video-intro',
+      builder: (context, state) => const VideoIntroScreen(),
     ),
     GoRoute(
       path: AppConstants.introRoute,
@@ -371,62 +412,78 @@ class AppStateRefreshListenable extends ChangeNotifier {
   }
 }
 
-class EveryDiaryHomePage extends ConsumerWidget {
+class EveryDiaryHomePage extends ConsumerStatefulWidget {
   const EveryDiaryHomePage({super.key});
 
+  // 세션 레벨 플래그 (앱 실행 중 한 번만 비디오 표시)
+  static bool _videoShownThisSession = false;
+
+  /// 세션 플래그 리셋 (설정 변경 시 호출)
+  static void resetVideoSessionFlag() {
+    _videoShownThisSession = false;
+    debugPrint('🎬 [Home] 비디오 세션 플래그 리셋됨');
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EveryDiaryHomePage> createState() => _EveryDiaryHomePageState();
+}
+
+class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
+  bool _dialogChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // 인트로 영상 체크 및 표시
+    _checkAndShowVideoIntro();
+    // 앱 시작 시 AdMob 정책 공지 다이얼로그 표시 (지연)
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _showAdPolicyNoticeIfNeeded();
+    });
+  }
+
+  Future<void> _checkAndShowVideoIntro() async {
+    // 이미 이번 세션에서 비디오를 봤으면 스킵
+    if (EveryDiaryHomePage._videoShownThisSession) return;
+
+    try {
+      final shouldShow = await VideoIntroScreen.shouldShowIntro();
+      debugPrint('🎬 [Home] shouldShowIntro 결과: $shouldShow');
+      if (shouldShow && mounted) {
+        EveryDiaryHomePage._videoShownThisSession = true; // 세션 플래그 설정
+        context.go(AppConstants.videoIntroRoute);
+      }
+    } catch (e) {
+      debugPrint('🎬 [Home] 비디오 인트로 체크 오류: $e');
+    }
+  }
+
+  Future<void> _showAdPolicyNoticeIfNeeded() async {
+    if (_dialogChecked || !mounted) return;
+    _dialogChecked = true;
+    await AdPolicyNoticeDialog.showIfNeeded(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profileState = ref.watch(appProfileProvider);
     final l10n = ref.watch(localizationProvider);
+    final theme = Theme.of(context);
 
-    if (!profileState.isInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
+    // 프로필 로딩 중에도 UI 표시 (기본값 사용)
     final resolvedName = profileState.userName?.trim();
     final greetingName = (resolvedName != null && resolvedName.isNotEmpty)
         ? resolvedName
         : l10n.get('diary_author');
-
-    final theme = Theme.of(context);
-    final latestImageAsync = ref.watch(latestDiaryImageProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(ConfigManager.instance.config.appName)),
       body: SafeArea(
         child: Stack(
           children: [
+            // 배경 - 단색으로 변경 (이미지 로딩 지연)
             Positioned.fill(
-              child: latestImageAsync.when(
-                data: (path) {
-                  if (path == null || path.isEmpty) {
-                    return Container(color: theme.colorScheme.surface);
-                  }
-                  return AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 400),
-                    child: Stack(
-                      key: ValueKey(path),
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(
-                          File(path),
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                          errorBuilder: (context, _, __) =>
-                              Container(color: theme.colorScheme.surface),
-                        ),
-                        Container(
-                          color: theme.colorScheme.surface.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => Container(color: theme.colorScheme.surface),
-                error: (_, __) => Container(color: theme.colorScheme.surface),
-              ),
+              child: Container(color: theme.colorScheme.surface),
             ),
             Positioned.fill(
               child: DecoratedBox(
@@ -457,8 +514,70 @@ class EveryDiaryHomePage extends ConsumerWidget {
                 ],
               ),
             ),
+            // 배경 이미지 지연 로딩 (UI가 먼저 표시된 후)
+            _DelayedBackgroundImage(theme: theme),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 배경 이미지 지연 로딩 위젯
+class _DelayedBackgroundImage extends ConsumerStatefulWidget {
+  final ThemeData theme;
+
+  const _DelayedBackgroundImage({required this.theme});
+
+  @override
+  ConsumerState<_DelayedBackgroundImage> createState() => _DelayedBackgroundImageState();
+}
+
+class _DelayedBackgroundImageState extends ConsumerState<_DelayedBackgroundImage> {
+  bool _shouldLoad = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // UI가 먼저 표시된 후 배경 이미지 로딩
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) setState(() => _shouldLoad = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_shouldLoad) return const SizedBox.shrink();
+
+    final latestImageAsync = ref.watch(latestDiaryImageProvider);
+
+    return Positioned.fill(
+      child: latestImageAsync.when(
+        data: (path) {
+          if (path == null || path.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            child: Stack(
+              key: ValueKey(path),
+              fit: StackFit.expand,
+              children: [
+                Image.file(
+                  File(path),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  errorBuilder: (context, _, __) => const SizedBox.shrink(),
+                ),
+                Container(
+                  color: widget.theme.colorScheme.surface.withValues(alpha: 0.3),
+                ),
+              ],
+            ),
+          );
+        },
+        loading: () => const SizedBox.shrink(),
+        error: (_, __) => const SizedBox.shrink(),
       ),
     );
   }

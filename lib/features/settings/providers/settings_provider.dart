@@ -125,6 +125,12 @@ class SettingsNotifier extends StateNotifier<SettingsModel> {
     _saveSettings();
   }
 
+  /// 인트로 영상 표시 설정
+  void setShowIntroVideo(bool enabled) {
+    state = state.copyWith(showIntroVideo: enabled);
+    _saveSettings();
+  }
+
   /// 설정 초기화
   void resetSettings() {
     state = const SettingsModel();

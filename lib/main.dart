@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/config.dart';
 import 'core/config/config_service.dart';
@@ -26,83 +26,83 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Android 15 (SDK 35) edge-to-edge 지원: 상태바/네비게이션바 투명 설정
-  // Edge-to-edge 모드를 명시적으로 활성화
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-
-  // 시스템 UI 오버레이 스타일 설정
-  // Android 15+에서는 transparent 색상만 사용하여 경고 방지
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent, // Edge-to-edge에서는 투명만 사용
-      systemNavigationBarColor: Colors.transparent, // Edge-to-edge에서는 투명만 사용
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
       systemNavigationBarDividerColor: Colors.transparent,
-      // 시스템 UI 아이콘 밝기 설정 (어두운 배경에는 밝은 아이콘)
       statusBarIconBrightness: Brightness.dark,
       systemNavigationBarIconBrightness: Brightness.dark,
     ),
   );
 
-  try {
-    // Firebase 초기화 - 안전한 에러 처리
-    try {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    } catch (e) {
-      Logger.warning('⚠️ Firebase 초기화 실패, 오프라인 모드로 실행: $e');
-      // Firebase 실패해도 앱 실행 지속
-    }
+  // SharedPreferences 미리 초기화 (가장 먼저 - 다른 서비스들이 사용하므로)
+  await SharedPreferences.getInstance();
 
-    // 구성 시스템 초기화
-    await ConfigService.instance.initialize(
+  // 필수 초기화 병렬 실행 (빠른 시작)
+  await Future.wait([
+    ConfigService.instance.initialize(
       environment: Environment.production,
       loadSecretsFromAssets: true,
       loadSecretsFromEnvironment: true,
+    ),
+    theme_manager.ThemeManager().initialize(),
+  ]).catchError((e) {
+    Logger.error('필수 초기화 실패: $e');
+    return <void>[];
+  });
+
+  // 개발 도구 초기화 (동기)
+  HotReloadHelper.initialize();
+
+  // 앱 먼저 시작 (UI 빠르게 표시)
+  runApp(const ProviderScope(child: EveryDiaryApp()));
+
+  // 나머지 초기화는 백그라운드에서 실행 (비차단)
+  _initializeServicesInBackground();
+}
+
+/// 백그라운드에서 서비스 초기화 (UI 차단 없음)
+Future<void> _initializeServicesInBackground() async {
+  // Firebase 초기화
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
-
-    // Supabase 초기화 - 안전한 에러 처리
-    try {
-      await Supabase.initialize(
-        url: 'https://dummy.supabase.co', // 실제 URL로 교체 필요
-        anonKey: 'dummy-key', // 실제 키로 교체 필요
-        debug: false,
-      );
-    } catch (e) {
-      Logger.warning('⚠️ Supabase 초기화 실패, 오프라인 모드로 실행: $e');
-      // 실패해도 앱 실행 지속
-    }
-
-    // 개발 도구 초기화
-    HotReloadHelper.initialize();
-
-    // 테마 매니저 초기화
-    await theme_manager.ThemeManager().initialize();
-
-    // 광고 SDK 초기화 (무료 버전)
-    try {
-      await AdService.instance.initialize();
-      await AdService.instance.loadRewardedAd();
-      Logger.info('✅ 광고 서비스 초기화 완료 (Lite 버전)');
-    } catch (e) {
-      Logger.warning('⚠️ 광고 서비스 초기화 실패: $e');
-    }
-
-    // Android 네이티브 서비스 초기화 (웹 환경에서는 건너뜀)
-    if (!kIsWeb) {
-      try {
-        await AndroidNativeServiceManager().initialize();
-      } catch (e) {
-        Logger.warning('❌ Android Native Service Manager 초기화 실패: $e');
-      }
-    } else {
-      Logger.debug('🌐 웹 환경에서는 Android Native Service Manager를 건너뜁니다');
-    }
-
-    runApp(const ProviderScope(child: EveryDiaryApp()));
   } catch (e) {
-    Logger.error('Failed to initialize app: $e');
-    // 오류 발생 시에도 앱 실행 (기본 구성으로)
-    runApp(const ProviderScope(child: EveryDiaryApp()));
+    Logger.warning('⚠️ Firebase 초기화 실패, 오프라인 모드로 실행: $e');
+  }
+
+  // Supabase 초기화 (사용하지 않으므로 스킵)
+  // 실제 사용 시 활성화
+  // try {
+  //   await Supabase.initialize(
+  //     url: 'https://your-project.supabase.co',
+  //     anonKey: 'your-anon-key',
+  //     debug: false,
+  //   );
+  // } catch (e) {
+  //   Logger.warning('⚠️ Supabase 초기화 실패: $e');
+  // }
+
+  // 광고 SDK 초기화 (무료 버전)
+  try {
+    await AdService.instance.initialize();
+    // 광고 로딩은 필요할 때 지연 로딩
+    AdService.instance.loadRewardedAd(); // await 제거 - 비동기로 실행
+    Logger.info('✅ 광고 서비스 초기화 완료 (Lite 버전)');
+  } catch (e) {
+    Logger.warning('⚠️ 광고 서비스 초기화 실패: $e');
+  }
+
+  // Android 네이티브 서비스 초기화
+  if (!kIsWeb) {
+    try {
+      await AndroidNativeServiceManager().initialize();
+    } catch (e) {
+      Logger.warning('❌ Android Native Service Manager 초기화 실패: $e');
+    }
   }
 }
 

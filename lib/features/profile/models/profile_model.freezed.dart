@@ -33,7 +33,6 @@ mixin _$ProfileModel {
   int get totalWords => throw _privateConstructorUsedError;
   int get totalCharacters => throw _privateConstructorUsedError;
   List<String> get favoriteTags => throw _privateConstructorUsedError;
-  bool get isPremium => throw _privateConstructorUsedError;
   String get timezone => throw _privateConstructorUsedError;
   String get language => throw _privateConstructorUsedError;
 
@@ -67,7 +66,6 @@ abstract class $ProfileModelCopyWith<$Res> {
     int totalWords,
     int totalCharacters,
     List<String> favoriteTags,
-    bool isPremium,
     String timezone,
     String language,
   });
@@ -100,7 +98,6 @@ class _$ProfileModelCopyWithImpl<$Res, $Val extends ProfileModel>
     Object? totalWords = null,
     Object? totalCharacters = null,
     Object? favoriteTags = null,
-    Object? isPremium = null,
     Object? timezone = null,
     Object? language = null,
   }) {
@@ -154,10 +151,6 @@ class _$ProfileModelCopyWithImpl<$Res, $Val extends ProfileModel>
                 ? _value.favoriteTags
                 : favoriteTags // ignore: cast_nullable_to_non_nullable
                       as List<String>,
-            isPremium: null == isPremium
-                ? _value.isPremium
-                : isPremium // ignore: cast_nullable_to_non_nullable
-                      as bool,
             timezone: null == timezone
                 ? _value.timezone
                 : timezone // ignore: cast_nullable_to_non_nullable
@@ -194,7 +187,6 @@ abstract class _$$ProfileModelImplCopyWith<$Res>
     int totalWords,
     int totalCharacters,
     List<String> favoriteTags,
-    bool isPremium,
     String timezone,
     String language,
   });
@@ -226,7 +218,6 @@ class __$$ProfileModelImplCopyWithImpl<$Res>
     Object? totalWords = null,
     Object? totalCharacters = null,
     Object? favoriteTags = null,
-    Object? isPremium = null,
     Object? timezone = null,
     Object? language = null,
   }) {
@@ -280,10 +271,6 @@ class __$$ProfileModelImplCopyWithImpl<$Res>
             ? _value._favoriteTags
             : favoriteTags // ignore: cast_nullable_to_non_nullable
                   as List<String>,
-        isPremium: null == isPremium
-            ? _value.isPremium
-            : isPremium // ignore: cast_nullable_to_non_nullable
-                  as bool,
         timezone: null == timezone
             ? _value.timezone
             : timezone // ignore: cast_nullable_to_non_nullable
@@ -313,7 +300,6 @@ class _$ProfileModelImpl implements _ProfileModel {
     this.totalWords = 0,
     this.totalCharacters = 0,
     final List<String> favoriteTags = const [],
-    this.isPremium = false,
     this.timezone = '',
     this.language = '',
   }) : _favoriteTags = favoriteTags;
@@ -363,9 +349,6 @@ class _$ProfileModelImpl implements _ProfileModel {
 
   @override
   @JsonKey()
-  final bool isPremium;
-  @override
-  @JsonKey()
   final String timezone;
   @override
   @JsonKey()
@@ -373,7 +356,7 @@ class _$ProfileModelImpl implements _ProfileModel {
 
   @override
   String toString() {
-    return 'ProfileModel(id: $id, username: $username, email: $email, profileImagePath: $profileImagePath, bio: $bio, createdAt: $createdAt, updatedAt: $updatedAt, totalDiaries: $totalDiaries, consecutiveDays: $consecutiveDays, totalWords: $totalWords, totalCharacters: $totalCharacters, favoriteTags: $favoriteTags, isPremium: $isPremium, timezone: $timezone, language: $language)';
+    return 'ProfileModel(id: $id, username: $username, email: $email, profileImagePath: $profileImagePath, bio: $bio, createdAt: $createdAt, updatedAt: $updatedAt, totalDiaries: $totalDiaries, consecutiveDays: $consecutiveDays, totalWords: $totalWords, totalCharacters: $totalCharacters, favoriteTags: $favoriteTags, timezone: $timezone, language: $language)';
   }
 
   @override
@@ -404,8 +387,6 @@ class _$ProfileModelImpl implements _ProfileModel {
               other._favoriteTags,
               _favoriteTags,
             ) &&
-            (identical(other.isPremium, isPremium) ||
-                other.isPremium == isPremium) &&
             (identical(other.timezone, timezone) ||
                 other.timezone == timezone) &&
             (identical(other.language, language) ||
@@ -428,7 +409,6 @@ class _$ProfileModelImpl implements _ProfileModel {
     totalWords,
     totalCharacters,
     const DeepCollectionEquality().hash(_favoriteTags),
-    isPremium,
     timezone,
     language,
   );
@@ -461,7 +441,6 @@ abstract class _ProfileModel implements ProfileModel {
     final int totalWords,
     final int totalCharacters,
     final List<String> favoriteTags,
-    final bool isPremium,
     final String timezone,
     final String language,
   }) = _$ProfileModelImpl;
@@ -493,8 +472,6 @@ abstract class _ProfileModel implements ProfileModel {
   int get totalCharacters;
   @override
   List<String> get favoriteTags;
-  @override
-  bool get isPremium;
   @override
   String get timezone;
   @override

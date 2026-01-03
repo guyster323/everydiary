@@ -4,6 +4,7 @@ class AppConstants {
   static const String homeRoute = '/';
   static const String diaryRoute = '/diary';
   static const String memoryRoute = '/memory';
+  static const String videoIntroRoute = '/video-intro';
   static const String introRoute = '/intro';
   static const String permissionRoute = '/permission';
   static const String pinRoute = '/pin';

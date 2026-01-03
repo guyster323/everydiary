@@ -283,8 +283,7 @@ final isAdminProvider = Provider<bool>((ref) {
   return roles.contains('admin');
 });
 
-/// 프리미엄 사용자 Provider
+/// 프리미엄 사용자 Provider (Lite 버전에서는 항상 false)
 final isPremiumProvider = Provider<bool>((ref) {
-  final user = ref.watch(currentUserProvider);
-  return user?.isPremium ?? false;
+  return false;
 });

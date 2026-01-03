@@ -30,6 +30,7 @@ _$SettingsModelImpl _$$SettingsModelImplFromJson(Map<String, dynamic> json) =>
       showStatistics: json['showStatistics'] as bool? ?? true,
       enableAnalytics: json['enableAnalytics'] as bool? ?? false,
       enableCrashReporting: json['enableCrashReporting'] as bool? ?? true,
+      showIntroVideo: json['showIntroVideo'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$$SettingsModelImplToJson(_$SettingsModelImpl instance) =>
@@ -46,6 +47,7 @@ Map<String, dynamic> _$$SettingsModelImplToJson(_$SettingsModelImpl instance) =>
       'showStatistics': instance.showStatistics,
       'enableAnalytics': instance.enableAnalytics,
       'enableCrashReporting': instance.enableCrashReporting,
+      'showIntroVideo': instance.showIntroVideo,
     };
 
 const _$ThemeModeEnumMap = {

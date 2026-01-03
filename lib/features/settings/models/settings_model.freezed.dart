@@ -34,6 +34,7 @@ mixin _$SettingsModel {
   bool get showStatistics => throw _privateConstructorUsedError;
   bool get enableAnalytics => throw _privateConstructorUsedError;
   bool get enableCrashReporting => throw _privateConstructorUsedError;
+  bool get showIntroVideo => throw _privateConstructorUsedError;
 
   /// Serializes this SettingsModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -65,6 +66,7 @@ abstract class $SettingsModelCopyWith<$Res> {
     bool showStatistics,
     bool enableAnalytics,
     bool enableCrashReporting,
+    bool showIntroVideo,
   });
 }
 
@@ -95,6 +97,7 @@ class _$SettingsModelCopyWithImpl<$Res, $Val extends SettingsModel>
     Object? showStatistics = null,
     Object? enableAnalytics = null,
     Object? enableCrashReporting = null,
+    Object? showIntroVideo = null,
   }) {
     return _then(
       _value.copyWith(
@@ -146,6 +149,10 @@ class _$SettingsModelCopyWithImpl<$Res, $Val extends SettingsModel>
                 ? _value.enableCrashReporting
                 : enableCrashReporting // ignore: cast_nullable_to_non_nullable
                       as bool,
+            showIntroVideo: null == showIntroVideo
+                ? _value.showIntroVideo
+                : showIntroVideo // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -174,6 +181,7 @@ abstract class _$$SettingsModelImplCopyWith<$Res>
     bool showStatistics,
     bool enableAnalytics,
     bool enableCrashReporting,
+    bool showIntroVideo,
   });
 }
 
@@ -203,6 +211,7 @@ class __$$SettingsModelImplCopyWithImpl<$Res>
     Object? showStatistics = null,
     Object? enableAnalytics = null,
     Object? enableCrashReporting = null,
+    Object? showIntroVideo = null,
   }) {
     return _then(
       _$SettingsModelImpl(
@@ -254,6 +263,10 @@ class __$$SettingsModelImplCopyWithImpl<$Res>
             ? _value.enableCrashReporting
             : enableCrashReporting // ignore: cast_nullable_to_non_nullable
                   as bool,
+        showIntroVideo: null == showIntroVideo
+            ? _value.showIntroVideo
+            : showIntroVideo // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -276,6 +289,7 @@ class _$SettingsModelImpl implements _SettingsModel {
     this.showStatistics = true,
     this.enableAnalytics = false,
     this.enableCrashReporting = true,
+    this.showIntroVideo = true,
   });
 
   factory _$SettingsModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -319,10 +333,13 @@ class _$SettingsModelImpl implements _SettingsModel {
   @override
   @JsonKey()
   final bool enableCrashReporting;
+  @override
+  @JsonKey()
+  final bool showIntroVideo;
 
   @override
   String toString() {
-    return 'SettingsModel(themeMode: $themeMode, fontSize: $fontSize, language: $language, dailyReminder: $dailyReminder, reminderTime: $reminderTime, highContrast: $highContrast, textToSpeech: $textToSpeech, autoSave: $autoSave, autoSaveInterval: $autoSaveInterval, showStatistics: $showStatistics, enableAnalytics: $enableAnalytics, enableCrashReporting: $enableCrashReporting)';
+    return 'SettingsModel(themeMode: $themeMode, fontSize: $fontSize, language: $language, dailyReminder: $dailyReminder, reminderTime: $reminderTime, highContrast: $highContrast, textToSpeech: $textToSpeech, autoSave: $autoSave, autoSaveInterval: $autoSaveInterval, showStatistics: $showStatistics, enableAnalytics: $enableAnalytics, enableCrashReporting: $enableCrashReporting, showIntroVideo: $showIntroVideo)';
   }
 
   @override
@@ -353,7 +370,9 @@ class _$SettingsModelImpl implements _SettingsModel {
             (identical(other.enableAnalytics, enableAnalytics) ||
                 other.enableAnalytics == enableAnalytics) &&
             (identical(other.enableCrashReporting, enableCrashReporting) ||
-                other.enableCrashReporting == enableCrashReporting));
+                other.enableCrashReporting == enableCrashReporting) &&
+            (identical(other.showIntroVideo, showIntroVideo) ||
+                other.showIntroVideo == showIntroVideo));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -372,6 +391,7 @@ class _$SettingsModelImpl implements _SettingsModel {
     showStatistics,
     enableAnalytics,
     enableCrashReporting,
+    showIntroVideo,
   );
 
   /// Create a copy of SettingsModel
@@ -402,6 +422,7 @@ abstract class _SettingsModel implements SettingsModel {
     final bool showStatistics,
     final bool enableAnalytics,
     final bool enableCrashReporting,
+    final bool showIntroVideo,
   }) = _$SettingsModelImpl;
 
   factory _SettingsModel.fromJson(Map<String, dynamic> json) =
@@ -432,6 +453,8 @@ abstract class _SettingsModel implements SettingsModel {
   bool get enableAnalytics;
   @override
   bool get enableCrashReporting;
+  @override
+  bool get showIntroVideo;
 
   /// Create a copy of SettingsModel
   /// with the given fields replaced by the non-null parameter values.

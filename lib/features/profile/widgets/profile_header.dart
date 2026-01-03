@@ -150,12 +150,7 @@ class ProfileHeader extends StatelessWidget {
                 height: 40,
                 color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
               ),
-              _buildAccountInfo(
-                context,
-                '프리미엄',
-                profile.isPremium ? '활성' : '비활성',
-                profile.isPremium ? Icons.star : Icons.star_border,
-              ),
+              // Lite 버전에서는 프리미엄 상태 표시 안함
             ],
           ),
         ],

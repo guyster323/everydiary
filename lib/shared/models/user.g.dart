@@ -23,8 +23,6 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
   updatedAt: json['updatedAt'] as String,
   lastLoginAt: json['lastLoginAt'] as String?,
   isDeleted: json['isDeleted'] as bool? ?? false,
-  isPremium: json['isPremium'] as bool? ?? false,
-  premiumExpiresAt: json['premiumExpiresAt'] as String?,
   isEmailVerified: json['isEmailVerified'] as bool? ?? false,
   roles:
       (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -50,8 +48,6 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'updatedAt': instance.updatedAt,
       'lastLoginAt': instance.lastLoginAt,
       'isDeleted': instance.isDeleted,
-      'isPremium': instance.isPremium,
-      'premiumExpiresAt': instance.premiumExpiresAt,
       'isEmailVerified': instance.isEmailVerified,
       'roles': instance.roles,
       'passwordHash': instance.passwordHash,
