@@ -263,7 +263,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.7',
+                    subtitle: '1.0.8',
                     onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
@@ -858,7 +858,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text('EveryDiary'),
                   Text(
-                    'v1.0.7',
+                    'v1.0.8',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],
@@ -871,6 +871,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                l10n.get('version_1_0_8_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_8_change_1')),
+              const SizedBox(height: 20),
+              Text(
+                l10n.get('version_1_0_7_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_7_change_1')),
+              const SizedBox(height: 20),
               Text(
                 l10n.get('version_1_0_6_title'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(

@@ -24,6 +24,7 @@ import '../../../shared/services/repositories/diary_repository.dart';
 import '../services/diary_history_service.dart';
 import '../services/diary_list_service.dart';
 import '../services/emotion_analysis_service.dart';
+import '../widgets/ai_content_report_dialog.dart';
 import '../widgets/diary_history_widget.dart';
 import '../widgets/diary_share_widget.dart';
 
@@ -821,7 +822,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 제목
+              // 제목 및 신고 버튼
               Row(
                 children: [
                   Icon(
@@ -830,11 +831,25 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    l10n.get('association_image_title'),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      l10n.get('association_image_title'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ),
+                  // AI 콘텐츠 신고 버튼
+                  IconButton(
+                    icon: Icon(
+                      Icons.flag_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () => _showReportDialog(),
+                    tooltip: l10n.get('report_ai_content'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -1491,11 +1506,25 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    l10n.get('association_image_title'),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      l10n.get('association_image_title'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                  ),
+                  // AI 콘텐츠 신고 버튼
+                  IconButton(
+                    icon: Icon(
+                      Icons.flag_outlined,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () => _showReportDialogForSavedImage(),
+                    tooltip: l10n.get('report_ai_content'),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                 ],
               ),
@@ -1556,6 +1585,24 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// AI 콘텐츠 신고 다이얼로그 표시
+  void _showReportDialog() {
+    AIContentReportDialog.show(
+      context,
+      imageUrl: _generatedImage?.imageUrl,
+      prompt: _generatedImage?.prompt,
+      diaryId: widget.diaryId.toString(),
+    );
+  }
+
+  /// 저장된 AI 이미지에 대한 신고 다이얼로그 표시
+  void _showReportDialogForSavedImage() {
+    AIContentReportDialog.show(
+      context,
+      diaryId: widget.diaryId.toString(),
     );
   }
 }
