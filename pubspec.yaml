@@ -61,6 +61,7 @@ dependencies:
   # Local Storage
   sqflite: ^2.4.2
   shared_preferences: ^2.3.2
+  share_plus: ^10.1.4
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   collection: ^1.18.0
@@ -190,7 +191,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-version: 1.0.8+11
+version: 1.0.8+12
 
 flutter_launcher_icons:
   image_path: assets/images/everydiary_lite_icon.png
