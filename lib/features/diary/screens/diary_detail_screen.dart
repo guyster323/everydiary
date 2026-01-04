@@ -839,12 +839,12 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                       ),
                     ),
                   ),
-                  // AI 콘텐츠 신고 버튼
+                  // AI 콘텐츠 신고 버튼 (빨간색)
                   IconButton(
                     icon: Icon(
-                      Icons.flag_outlined,
+                      Icons.flag,
                       size: 20,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                     onPressed: () => _showReportDialog(),
                     tooltip: l10n.get('report_ai_content'),
@@ -1514,12 +1514,12 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
                       ),
                     ),
                   ),
-                  // AI 콘텐츠 신고 버튼
+                  // AI 콘텐츠 신고 버튼 (빨간색)
                   IconButton(
                     icon: Icon(
-                      Icons.flag_outlined,
+                      Icons.flag,
                       size: 20,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.error,
                     ),
                     onPressed: () => _showReportDialogForSavedImage(),
                     tooltip: l10n.get('report_ai_content'),
@@ -1590,19 +1590,72 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
 
   /// AI 콘텐츠 신고 다이얼로그 표시
   void _showReportDialog() {
+    debugPrint('🚨 [DiaryDetailScreen] _showReportDialog called');
+    debugPrint('   _generatedImage: ${_generatedImage != null ? "exists" : "null"}');
+    if (_generatedImage != null) {
+      debugPrint('   imageUrl: ${_generatedImage!.imageUrl}');
+      debugPrint('   prompt: ${_generatedImage!.prompt}');
+      debugPrint('   localImagePath: ${_generatedImage!.localImagePath}');
+    }
+
     AIContentReportDialog.show(
       context,
       imageUrl: _generatedImage?.imageUrl,
       prompt: _generatedImage?.prompt,
       diaryId: widget.diaryId.toString(),
+      localImagePath: _generatedImage?.localImagePath,
     );
   }
 
   /// 저장된 AI 이미지에 대한 신고 다이얼로그 표시
   void _showReportDialogForSavedImage() {
+    // 첫 번째 이미지 첨부파일의 경로 가져오기
+    String? imagePath;
+    String? prompt;
+
+    if (_diary != null && _diary!.attachments.isNotEmpty) {
+      final imageAttachment = _diary!.attachments.firstWhere(
+        (a) => a.fileType == FileType.image.value,
+        orElse: () => _diary!.attachments.first,
+      );
+      imagePath = imageAttachment.filePath;
+
+      // 생성 이력에서 프롬프트 찾기
+      if (imagePath != null && imagePath.contains('generated_images')) {
+        final history = _imageGenerationService.getGenerationHistory();
+        for (final entry in history.reversed) {
+          final result = entry['result'] as Map<String, dynamic>?;
+          if (result != null) {
+            final localPath = result['local_image_path'] as String?;
+            if (localPath == imagePath) {
+              prompt = result['prompt'] as String?;
+              debugPrint('🔍 [DiaryDetailScreen] Found prompt from history: $prompt');
+              break;
+            }
+          }
+        }
+
+        // 히스토리에서 못 찾으면 캐시에서 일기 내용 기반으로 검색
+        if (prompt == null) {
+          final diaryText = _extractTextFromDelta(_diary!.content);
+          final cachedResult = _imageGenerationService.getCachedResult(diaryText);
+          if (cachedResult != null) {
+            prompt = cachedResult.prompt;
+            debugPrint('🔍 [DiaryDetailScreen] Found prompt from cache: $prompt');
+          }
+        }
+      }
+    }
+
+    debugPrint('🚨 [DiaryDetailScreen] _showReportDialogForSavedImage called');
+    debugPrint('   imagePath: $imagePath');
+    debugPrint('   prompt: $prompt');
+
     AIContentReportDialog.show(
       context,
       diaryId: widget.diaryId.toString(),
+      localImagePath: imagePath,
+      prompt: prompt,
     );
   }
 }
