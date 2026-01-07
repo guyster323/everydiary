@@ -796,6 +796,10 @@ class ImageGenerationService {
         return '모던 미니멀리즘 일러스트';
       case ImageStyle.santaTogether:
         return '산타클로스와 함께하는 따뜻한 크리스마스 일러스트';
+      case ImageStyle.childDraw:
+        return '어린이가 그린 듯한 크레용 그림';
+      case ImageStyle.figure:
+        return '고품질 애니메 피규어 스타일';
     }
   }
 

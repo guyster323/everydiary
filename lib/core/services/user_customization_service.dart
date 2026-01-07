@@ -29,6 +29,14 @@ enum ImageStyle {
   santaTogether(
     '산타와 함께',
     'festive Christmas scene with Santa Claus, warm holiday atmosphere, joyful winter wonderland, snow and decorations',
+  ),
+  childDraw(
+    '어린이그림',
+    'Draw as if created by a cheerful 6-year-old on white notebook paper. Use chunky wax-crayon strokes, wobbly outlines, and simple flat shapes. Colors should be bright, bold, and slightly outside the lines, with visible pressure marks and small smudges. Perspective is innocent: objects can float, and size is based on importance, not realism. Faces are dots with curved smiles; hands are mitten blobs; animals are round and friendly. Add playful extras like a sun in a corner, puffy clouds, stars, and hearts. Include uneven scribble shading, a few tiny doodles in the margins, and one or two hand-written labels in childlike spelling.',
+  ),
+  figure(
+    '피규어',
+    'A high-quality anime scale figure, soft pink and white colors, natural light, shallow depth of field and blurred backgrounds combine to create a peaceful Japanese atmosphere.',
   );
 
   const ImageStyle(this.displayName, this.promptSuffix);
@@ -62,6 +70,10 @@ enum ImageStyle {
         return 'style_modern';
       case ImageStyle.santaTogether:
         return 'style_santa_together';
+      case ImageStyle.childDraw:
+        return 'style_child_draw';
+      case ImageStyle.figure:
+        return 'style_figure';
     }
   }
 }

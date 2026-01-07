@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/animations/animations.dart';
 import '../../../core/layout/responsive_widgets.dart';
 import '../../../core/providers/localization_provider.dart';
+import '../../home/widgets/new_style_announcement_dialog.dart';
 import '../../../core/widgets/custom_app_bar.dart';
 import '../../../core/widgets/custom_loading.dart';
 import '../../../shared/models/diary_entry.dart';
@@ -80,6 +81,18 @@ class _DiaryListScreenState extends ConsumerState<DiaryListScreen>
 
     // 앱 생명주기 관찰자 등록
     WidgetsBinding.instance.addObserver(this);
+
+    // 새 스타일 안내 팝업 표시
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showNewStyleAnnouncement();
+    });
+  }
+
+  /// 새 스타일 안내 팝업 표시
+  Future<void> _showNewStyleAnnouncement() async {
+    if (!mounted) return;
+    final l10n = ref.read(localizationProvider);
+    await NewStyleAnnouncementDialog.showIfNeeded(context, l10n);
   }
 
   @override
