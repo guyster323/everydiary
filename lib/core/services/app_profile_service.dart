@@ -6,6 +6,7 @@ class AppProfileService {
 
   static const String _onboardingKey = 'app_profile.onboarding_complete';
   static const String _userNameKey = 'app_profile.user_name';
+  static const String _userGenderKey = 'app_profile.user_gender';
   static const String _pinEnabledKey = 'app_profile.pin_enabled';
   static const String _autoLockMinutesKey = 'app_profile.auto_lock_minutes';
 
@@ -19,11 +20,13 @@ class AppProfileService {
   Future<void> completeOnboarding({
     required String userName,
     required bool pinEnabled,
+    String userGender = 'none',
     int autoLockMinutes = 1,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_onboardingKey, true);
     await prefs.setString(_userNameKey, userName.trim());
+    await prefs.setString(_userGenderKey, userGender);
     await prefs.setBool(_pinEnabledKey, pinEnabled);
     await prefs.setInt(_autoLockMinutesKey, autoLockMinutes);
   }
@@ -38,6 +41,18 @@ class AppProfileService {
   Future<void> updateUserName(String userName) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userNameKey, userName.trim());
+  }
+
+  /// 사용자 성별을 반환합니다.
+  Future<String> loadUserGender() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userGenderKey) ?? 'none';
+  }
+
+  /// 사용자 성별을 업데이트합니다.
+  Future<void> updateUserGender(String gender) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userGenderKey, gender);
   }
 
   /// PIN 사용 여부를 반환합니다.
@@ -69,8 +84,8 @@ class AppProfileService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_onboardingKey);
     await prefs.remove(_userNameKey);
+    await prefs.remove(_userGenderKey);
     await prefs.remove(_pinEnabledKey);
     await prefs.remove(_autoLockMinutesKey);
   }
 }
-

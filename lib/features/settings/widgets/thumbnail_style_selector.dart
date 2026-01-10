@@ -80,7 +80,7 @@ class ThumbnailStyleSelector extends HookConsumerWidget {
   }
 }
 
-class _StyleRadioList extends StatelessWidget {
+class _StyleRadioList extends StatefulWidget {
   const _StyleRadioList({
     required this.l10n,
     required this.selected,
@@ -90,6 +90,19 @@ class _StyleRadioList extends StatelessWidget {
   final AppLocalizations l10n;
   final ImageStyle selected;
   final ValueChanged<ImageStyle> onChanged;
+
+  @override
+  State<_StyleRadioList> createState() => _StyleRadioListState();
+}
+
+class _StyleRadioListState extends State<_StyleRadioList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +115,7 @@ class _StyleRadioList extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              l10n.get('style_select_title'),
+              widget.l10n.get('style_select_title'),
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -110,7 +123,8 @@ class _StyleRadioList extends StatelessWidget {
             const SizedBox(height: 12),
             Expanded(
               child: GridView.builder(
-                shrinkWrap: true,
+                controller: _scrollController,
+                key: const PageStorageKey<String>('thumbnail_style_grid'),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
                   crossAxisSpacing: 12,
@@ -121,12 +135,13 @@ class _StyleRadioList extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final style = ImageStyle.values[index];
                   return _StyleOptionGridTile(
-                    l10n: l10n,
+                    key: ValueKey(style),
+                    l10n: widget.l10n,
                     style: style,
-                    selected: style == selected,
+                    selected: style == widget.selected,
                     onTap: () {
-                      if (style != selected) {
-                        onChanged(style);
+                      if (style != widget.selected) {
+                        widget.onChanged(style);
                       }
                     },
                   );
@@ -142,6 +157,7 @@ class _StyleRadioList extends StatelessWidget {
 
 class _StyleOptionGridTile extends StatelessWidget {
   const _StyleOptionGridTile({
+    super.key,
     required this.l10n,
     required this.style,
     required this.selected,
@@ -169,6 +185,7 @@ class _StyleOptionGridTile extends StatelessWidget {
       ImageStyle.santaTogether: 'assets/icons/Styles/santa_together.png',
       ImageStyle.childDraw: 'assets/icons/Styles/Child_draw.png',
       ImageStyle.figure: 'assets/icons/Styles/Figure.png',
+      ImageStyle.colorPencil: 'assets/icons/Styles/color_pencil.png',
     };
     return iconPaths[style] ?? 'assets/icons/Styles/chibi.png';
   }
@@ -198,16 +215,6 @@ class _StyleOptionGridTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 선택 체크 아이콘
-            if (selected)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Icon(
-                  Icons.check_circle,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-              ),
             // 스타일 아이콘 이미지
             Expanded(
               child: Padding(

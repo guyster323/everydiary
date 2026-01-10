@@ -1025,6 +1025,9 @@ class _DiaryWriteScreenState extends ConsumerState<DiaryWriteScreen> {
       ImageStyle.vintage: 'assets/icons/Styles/vintage.png',
       ImageStyle.modern: 'assets/icons/Styles/modern.png',
       ImageStyle.santaTogether: 'assets/icons/Styles/santa_together.png',
+      ImageStyle.childDraw: 'assets/icons/Styles/Child_draw.png',
+      ImageStyle.figure: 'assets/icons/Styles/Figure.png',
+      ImageStyle.colorPencil: 'assets/icons/Styles/color_pencil.png',
     };
     return iconPaths[style] ?? 'assets/icons/Styles/chibi.png';
   }

@@ -12,7 +12,7 @@ class NewStyleAnnouncementDialog extends StatelessWidget {
 
   final AppLocalizations l10n;
 
-  static const String _prefKey = 'new_style_announcement_v1_dismissed';
+  static const String _prefKey = 'new_style_announcement_v2_dismissed';
 
   /// 팝업을 표시해야 하는지 확인
   static Future<bool> shouldShow() async {
@@ -88,25 +88,16 @@ class NewStyleAnnouncementDialog extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // 스타일 카드들
-              Row(
-                children: [
-                  Expanded(
-                    child: _StyleCard(
-                      iconPath: 'assets/icons/Styles/Child_draw.png',
-                      label: l10n.get('style_child_draw'),
-                      theme: theme,
-                    ),
+              // 스타일 카드
+              Center(
+                child: SizedBox(
+                  width: 140,
+                  child: _StyleCard(
+                    iconPath: 'assets/icons/Styles/color_pencil.png',
+                    label: l10n.get('style_color_pencil'),
+                    theme: theme,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _StyleCard(
-                      iconPath: 'assets/icons/Styles/Figure.png',
-                      label: l10n.get('style_figure'),
-                      theme: theme,
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 24),
 

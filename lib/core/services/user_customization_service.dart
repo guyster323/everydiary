@@ -36,7 +36,11 @@ enum ImageStyle {
   ),
   figure(
     '피규어',
-    'A high-quality anime scale figure, soft pink and white colors, natural light, shallow depth of field and blurred backgrounds combine to create a peaceful Japanese atmosphere.',
+    'A high-quality anime scale figure with vibrant and varied colors, natural light, shallow depth of field and blurred backgrounds combine to create a peaceful Japanese atmosphere.',
+  ),
+  colorPencil(
+    '색연필',
+    'Hand-drawn colored pencil illustration with clean line art and slightly rough pencil outlines, combined with soft watercolor wash textures. Bright pastel colors, lighter and more vivid tones with natural saturation. Visible pencil strokes layered with subtle watercolor gradients. Warm and friendly tone, semi-cartoon realistic proportions. Simple facial features with dot eyes and small smiles. Flat yet detailed coloring, minimal shadows, soft highlights. Storybook illustration feel, cozy and cheerful atmosphere, children-book style, high clarity, no realism, no photo texture.',
   );
 
   const ImageStyle(this.displayName, this.promptSuffix);
@@ -74,6 +78,8 @@ enum ImageStyle {
         return 'style_child_draw';
       case ImageStyle.figure:
         return 'style_figure';
+      case ImageStyle.colorPencil:
+        return 'style_color_pencil';
     }
   }
 }

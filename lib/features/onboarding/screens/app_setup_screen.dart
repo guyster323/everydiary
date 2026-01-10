@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,6 +25,7 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
   final _pinConfirmController = TextEditingController();
   bool _usePin = false;
   bool _isSubmitting = false;
+  String _selectedGender = 'none';
 
   @override
   void dispose() {
@@ -99,6 +101,54 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    // 성별 선택
+                    Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            Icon(_getGenderIcon(_selectedGender), color: theme.colorScheme.primary),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(l10n.get('user_gender'), style: theme.textTheme.bodyLarge),
+                                  Text(
+                                    _getGenderDisplayName(_selectedGender, l10n),
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DropdownButton<String>(
+                              value: _selectedGender,
+                              underline: const SizedBox(),
+                              items: [
+                                DropdownMenuItem(value: 'male', child: Text(l10n.get('gender_male'))),
+                                DropdownMenuItem(value: 'female', child: Text(l10n.get('gender_female'))),
+                                DropdownMenuItem(value: 'none', child: Text(l10n.get('gender_none'))),
+                              ],
+                              onChanged: _isSubmitting ? null : (value) {
+                                if (value != null) {
+                                  setState(() => _selectedGender = value);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     SwitchListTile.adaptive(
@@ -215,6 +265,28 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
     );
   }
 
+  IconData _getGenderIcon(String gender) {
+    switch (gender) {
+      case 'male':
+        return Icons.male;
+      case 'female':
+        return Icons.female;
+      default:
+        return Icons.person_outline;
+    }
+  }
+
+  String _getGenderDisplayName(String gender, AppLocalizations l10n) {
+    switch (gender) {
+      case 'male':
+        return l10n.get('gender_male');
+      case 'female':
+        return l10n.get('gender_female');
+      default:
+        return l10n.get('gender_none');
+    }
+  }
+
   Future<void> _submit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -237,12 +309,14 @@ class _AppSetupScreenState extends ConsumerState<AppSetupScreen> {
         await profileNotifier.completeOnboarding(
           userName: userName,
           pinEnabled: true,
+          userGender: _selectedGender,
         );
       } else {
         await pinNotifier.disablePin();
         await profileNotifier.completeOnboarding(
           userName: userName,
           pinEnabled: false,
+          userGender: _selectedGender,
         );
       }
       if (!mounted) return;

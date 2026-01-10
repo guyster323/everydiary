@@ -636,8 +636,19 @@ class ImageGenerationService {
       final styleDescription = _getStyleDescription(preferredStyle);
       final stylePrompt = preferredStyle.promptSuffix;
 
+      // 사용자 성별 정보 가져오기
+      final prefs = await SharedPreferences.getInstance();
+      final userGender = prefs.getString('app_profile.user_gender') ?? 'none';
+      String genderPrompt = '';
+      if (userGender == 'male') {
+        genderPrompt = '주인공은 남성입니다. ';
+      } else if (userGender == 'female') {
+        genderPrompt = '주인공은 여성입니다. ';
+      }
+
       final buffer = StringBuffer()
         ..write('$summarySentence ')
+        ..write(genderPrompt)
         ..write('$moodDescription 분위기의 $styleDescription로 표현해 주세요. ')
         ..write('스타일 가이드: $stylePrompt.');
 
@@ -800,6 +811,8 @@ class ImageGenerationService {
         return '어린이가 그린 듯한 크레용 그림';
       case ImageStyle.figure:
         return '고품질 애니메 피규어 스타일';
+      case ImageStyle.colorPencil:
+        return '색연필로 그린 동화책 느낌의 일러스트';
     }
   }
 

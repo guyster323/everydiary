@@ -70,10 +70,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // 앱 설정 섹션 - 언어를 맨 위로
+              // 앱 설정 섹션 - 사용자 이름을 맨 위로
               SettingsSection(
                 title: l10n.get('app_settings'),
                 children: [
+                  SettingsTile(
+                    leading: Icon(
+                      Icons.person_outline,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: l10n.get('username'),
+                    subtitle: profileState.userName?.isNotEmpty == true
+                        ? profileState.userName
+                        : l10n.get('username_not_set'),
+                    onTap: () => _editUserName(context, profileState, l10n),
+                  ),
+                  SettingsTile(
+                    leading: Icon(
+                      _getGenderIcon(profileState.userGender),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: l10n.get('user_gender'),
+                    subtitle: _getGenderDisplayName(profileState.userGender, l10n),
+                    onTap: () => _showGenderSelector(context, profileState, l10n),
+                  ),
                   SettingsTile(
                     leading: Icon(
                       Icons.language,
@@ -149,17 +169,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               SettingsSection(
                 title: l10n.get('security_management'),
                 children: [
-                  SettingsTile(
-                    leading: Icon(
-                      Icons.person_outline,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: l10n.get('username'),
-                    subtitle: profileState.userName?.isNotEmpty == true
-                        ? profileState.userName
-                        : l10n.get('username_not_set'),
-                    onTap: () => _editUserName(context, profileState, l10n),
-                  ),
                   SettingsTile(
                     leading: Icon(
                       Icons.lock_outline,
@@ -263,7 +272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     title: l10n.get('app_version'),
-                    subtitle: '1.0.8',
+                    subtitle: '1.1.0',
                     onTap: () => _showVersionInfo(l10n),
                   ),
                   SettingsTile(
@@ -858,7 +867,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text('EveryDiary'),
                   Text(
-                    'v1.0.8',
+                    'v1.1.0',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                   ),
                 ],
@@ -871,6 +880,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              Text(
+                l10n.get('version_1_1_0_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_1_0_change_1')),
+              _buildChangelogItem(l10n.get('version_1_1_0_change_2')),
+              _buildChangelogItem(l10n.get('version_1_1_0_change_3')),
+              const SizedBox(height: 20),
+              Text(
+                l10n.get('version_1_0_9_title'),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildChangelogItem(l10n.get('version_1_0_9_change_1')),
+              _buildChangelogItem(l10n.get('version_1_0_9_change_2')),
+              const SizedBox(height: 20),
               Text(
                 l10n.get('version_1_0_8_title'),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1000,6 +1030,69 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Text(l10n.get('reset')),
           ),
         ],
+      ),
+    );
+  }
+
+  IconData _getGenderIcon(String gender) {
+    switch (gender) {
+      case 'male':
+        return Icons.male;
+      case 'female':
+        return Icons.female;
+      default:
+        return Icons.person_outline;
+    }
+  }
+
+  String _getGenderDisplayName(String gender, AppLocalizations l10n) {
+    switch (gender) {
+      case 'male':
+        return l10n.get('gender_male');
+      case 'female':
+        return l10n.get('gender_female');
+      default:
+        return l10n.get('gender_none');
+    }
+  }
+
+  void _showGenderSelector(BuildContext context, AppProfileState profileState, AppLocalizations l10n) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.get('select_gender')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.male),
+              title: Text(l10n.get('gender_male')),
+              selected: profileState.userGender == 'male',
+              onTap: () {
+                ref.read(appProfileProvider.notifier).updateUserGender('male');
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.female),
+              title: Text(l10n.get('gender_female')),
+              selected: profileState.userGender == 'female',
+              onTap: () {
+                ref.read(appProfileProvider.notifier).updateUserGender('female');
+                Navigator.of(context).pop();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: Text(l10n.get('gender_none')),
+              selected: profileState.userGender == 'none',
+              onTap: () {
+                ref.read(appProfileProvider.notifier).updateUserGender('none');
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

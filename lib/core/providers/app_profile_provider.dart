@@ -8,6 +8,7 @@ class AppProfileState {
     this.isInitialized = false,
     this.onboardingComplete = false,
     this.userName,
+    this.userGender = 'none',
     this.pinEnabled = false,
     this.autoLockMinutes = 1,
   });
@@ -15,6 +16,7 @@ class AppProfileState {
   final bool isInitialized;
   final bool onboardingComplete;
   final String? userName;
+  final String userGender;
   final bool pinEnabled;
   final int autoLockMinutes;
 
@@ -22,6 +24,7 @@ class AppProfileState {
     bool? isInitialized,
     bool? onboardingComplete,
     String? userName,
+    String? userGender,
     bool? pinEnabled,
     int? autoLockMinutes,
   }) {
@@ -29,6 +32,7 @@ class AppProfileState {
       isInitialized: isInitialized ?? this.isInitialized,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       userName: userName ?? this.userName,
+      userGender: userGender ?? this.userGender,
       pinEnabled: pinEnabled ?? this.pinEnabled,
       autoLockMinutes: autoLockMinutes ?? this.autoLockMinutes,
     );
@@ -53,6 +57,7 @@ class AppProfileNotifier extends StateNotifier<AppProfileState> {
     _loading = true;
     final onboardingComplete = await _service.isOnboardingComplete();
     final userName = await _service.loadUserName();
+    final userGender = await _service.loadUserGender();
     final pinEnabled = await _service.isPinEnabled();
     final autoLockMinutes = await _service.getAutoLockMinutes();
 
@@ -60,6 +65,7 @@ class AppProfileNotifier extends StateNotifier<AppProfileState> {
       isInitialized: true,
       onboardingComplete: onboardingComplete,
       userName: userName,
+      userGender: userGender,
       pinEnabled: pinEnabled,
       autoLockMinutes: autoLockMinutes,
     );
@@ -74,16 +80,19 @@ class AppProfileNotifier extends StateNotifier<AppProfileState> {
   Future<void> completeOnboarding({
     required String userName,
     required bool pinEnabled,
+    String userGender = 'none',
     int autoLockMinutes = 1,
   }) async {
     await _service.completeOnboarding(
       userName: userName,
       pinEnabled: pinEnabled,
+      userGender: userGender,
       autoLockMinutes: autoLockMinutes,
     );
     state = state.copyWith(
       onboardingComplete: true,
       userName: userName,
+      userGender: userGender,
       pinEnabled: pinEnabled,
       autoLockMinutes: autoLockMinutes,
       isInitialized: true,
@@ -93,6 +102,11 @@ class AppProfileNotifier extends StateNotifier<AppProfileState> {
   Future<void> updateUserName(String userName) async {
     await _service.updateUserName(userName);
     state = state.copyWith(userName: userName);
+  }
+
+  Future<void> updateUserGender(String gender) async {
+    await _service.updateUserGender(gender);
+    state = state.copyWith(userGender: gender);
   }
 
   Future<void> setPinEnabled(bool enabled) async {
@@ -105,4 +119,3 @@ class AppProfileNotifier extends StateNotifier<AppProfileState> {
     state = state.copyWith(autoLockMinutes: minutes);
   }
 }
-
