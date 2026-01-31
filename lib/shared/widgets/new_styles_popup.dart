@@ -21,11 +21,15 @@ class NewStylesPopup {
     await prefs.setBool(_shownKey, true);
   }
 
-  /// 팝업 표시 (필요한 경우)
+  /// 팝업 표시 (필요한 경우, 홈 화면에서만)
   static Future<void> showIfNeeded(BuildContext context, WidgetRef ref) async {
     if (!await shouldShow()) return;
 
     if (!context.mounted) return;
+
+    // 현재 경로가 홈 화면('/')인 경우에만 표시
+    final currentPath = GoRouterState.of(context).uri.path;
+    if (currentPath != '/') return;
 
     final l10n = ref.read(localizationProvider);
 

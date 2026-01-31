@@ -1621,7 +1621,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
       imagePath = imageAttachment.filePath;
 
       // 생성 이력에서 프롬프트 찾기
-      if (imagePath != null && imagePath.contains('generated_images')) {
+      if (imagePath.contains('generated_images')) {
         final history = _imageGenerationService.getGenerationHistory();
         for (final entry in history.reversed) {
           final result = entry['result'] as Map<String, dynamic>?;

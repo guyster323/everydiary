@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -386,41 +385,16 @@ ${l10n.get('report_send_to')}: window98se@gmail.com
   }
 
   Widget _buildReasonOption(String value, String label) {
+    // ignore: deprecated_member_use
     return RadioListTile<String>(
       value: value,
+      // ignore: deprecated_member_use
       groupValue: _selectedReason,
+      // ignore: deprecated_member_use
       onChanged: (v) => setState(() => _selectedReason = v),
       title: Text(label),
       contentPadding: EdgeInsets.zero,
       dense: true,
-    );
-  }
-
-  Widget _buildImageErrorPlaceholder(ThemeData theme) {
-    return Container(
-      height: 120,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported_outlined,
-            size: 32,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Image not available',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -889,6 +889,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               const SizedBox(height: 12),
               _buildChangelogItem(l10n.get('version_1_1_1_change_1')),
               _buildChangelogItem(l10n.get('version_1_1_1_change_2')),
+              _buildChangelogItem(l10n.get('version_1_1_1_change_3')),
               const SizedBox(height: 20),
               Text(
                 l10n.get('version_1_1_0_title'),
