@@ -33,9 +33,9 @@ class GenerationCountNotifier extends StateNotifier<GenerationCountState> {
   static const String _lastResetDateKey = 'generation_last_reset_date';
   static const int _initialCount = 3; // 초기 무료 제공 횟수
 
-  // AdMob 정책 이슈로 인한 임시 제한 (2026-01-03 ~ 2026-01-30)
+  // AdMob 정책 이슈로 인한 임시 제한 (2026-01-03 ~ 2026-02-15)
   static final DateTime _adPolicyLimitStartDate = DateTime(2026, 1, 3);
-  static final DateTime _adPolicyLimitEndDate = DateTime(2026, 1, 30);
+  static final DateTime _adPolicyLimitEndDate = DateTime(2026, 2, 15);
   static const int _adPolicyLimitCount = 2; // 임시 제한 기간 중 초기 무료 횟수
 
   GenerationCountNotifier() : super(const GenerationCountState(remainingCount: 0)) {

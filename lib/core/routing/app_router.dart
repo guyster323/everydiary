@@ -26,6 +26,7 @@ import '../../features/settings/screens/settings_screen.dart';
 // import 제거: 구독 화면 및 썸네일 품질 리포트 화면 비활성화
 import '../../shared/models/diary_entry.dart';
 import '../../shared/widgets/ad_policy_notice_dialog.dart';
+import '../../shared/widgets/new_styles_popup.dart';
 import '../../shared/services/database_service.dart';
 import '../../shared/services/diary_image_helper.dart';
 import '../../shared/services/repositories/diary_repository.dart';
@@ -440,6 +441,10 @@ class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _showAdPolicyNoticeIfNeeded();
     });
+    // 새로운 스타일 알림 팝업 (지연)
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _showNewStylesPopupIfNeeded();
+    });
   }
 
   Future<void> _checkAndShowVideoIntro() async {
@@ -462,6 +467,11 @@ class _EveryDiaryHomePageState extends ConsumerState<EveryDiaryHomePage> {
     if (_dialogChecked || !mounted) return;
     _dialogChecked = true;
     await AdPolicyNoticeDialog.showIfNeeded(context);
+  }
+
+  Future<void> _showNewStylesPopupIfNeeded() async {
+    if (!mounted) return;
+    await NewStylesPopup.showIfNeeded(context, ref);
   }
 
   @override

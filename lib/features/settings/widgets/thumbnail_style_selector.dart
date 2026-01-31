@@ -186,6 +186,8 @@ class _StyleOptionGridTile extends StatelessWidget {
       ImageStyle.childDraw: 'assets/icons/Styles/Child_draw.png',
       ImageStyle.figure: 'assets/icons/Styles/Figure.png',
       ImageStyle.colorPencil: 'assets/icons/Styles/color_pencil.png',
+      ImageStyle.feltedWool: 'assets/icons/Styles/felted_wool.png',
+      ImageStyle.animation3d: 'assets/icons/Styles/3d_animation.png',
     };
     return iconPaths[style] ?? 'assets/icons/Styles/chibi.png';
   }

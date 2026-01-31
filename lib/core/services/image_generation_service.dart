@@ -813,6 +813,10 @@ class ImageGenerationService {
         return '고품질 애니메 피규어 스타일';
       case ImageStyle.colorPencil:
         return '색연필로 그린 동화책 느낌의 일러스트';
+      case ImageStyle.feltedWool:
+        return '털실로 만든 포근한 인형 느낌의 일러스트';
+      case ImageStyle.animation3d:
+        return '픽사/디즈니 스타일의 3D 애니메이션 일러스트';
     }
   }
 

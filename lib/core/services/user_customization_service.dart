@@ -41,6 +41,14 @@ enum ImageStyle {
   colorPencil(
     '색연필',
     'Hand-drawn colored pencil illustration with clean line art and slightly rough pencil outlines, combined with soft watercolor wash textures. Bright pastel colors, lighter and more vivid tones with natural saturation. Visible pencil strokes layered with subtle watercolor gradients. Warm and friendly tone, semi-cartoon realistic proportions. Simple facial features with dot eyes and small smiles. Flat yet detailed coloring, minimal shadows, soft highlights. Storybook illustration feel, cozy and cheerful atmosphere, children-book style, high clarity, no realism, no photo texture.',
+  ),
+  feltedWool(
+    '털실인형',
+    'AI-edited, ultra-clean, soft cinematic depth. Material style: needle-felted wool / soft fiber miniature. Soft diffuse lighting, no harsh shadows. Shallow depth of field with smooth background blur. Pastel, muted, calm tones.',
+  ),
+  animation3d(
+    '3D 애니메이션',
+    'A heartwarming 3D animated illustration in a soft Pixar/Disney-inspired style. Oversized expressive eyes, soft blush cheeks, and delicate facial features. Soft studio lighting, pastel background with warm beige/gray tones, shallow depth of field, ultra-detailed textures (knit fabric, fur strands), smooth cinematic render, wholesome and cozy mood, magical realism, 4K quality, ultra-cute aesthetic, storybook charm. No text on image.',
   );
 
   const ImageStyle(this.displayName, this.promptSuffix);
@@ -80,6 +88,10 @@ enum ImageStyle {
         return 'style_figure';
       case ImageStyle.colorPencil:
         return 'style_color_pencil';
+      case ImageStyle.feltedWool:
+        return 'style_felted_wool';
+      case ImageStyle.animation3d:
+        return 'style_3d_animation';
     }
   }
 }
