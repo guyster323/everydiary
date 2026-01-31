@@ -858,6 +858,7 @@ class _DiaryDetailScreenState extends ConsumerState<DiaryDetailScreen>
               // AI 생성 이미지 (long press로 저장)
               GestureDetector(
                 onLongPress: _saveImageToGallery,
+                behavior: HitTestBehavior.opaque,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: _generatedImage!.localImagePath != null

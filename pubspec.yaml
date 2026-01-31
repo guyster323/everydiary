@@ -80,8 +80,8 @@ dependencies:
 
   # Firebase
   firebase_core: ^2.24.0
-  firebase_auth: ^4.16.0
-  google_sign_in: ^6.2.1
+  # firebase_auth: ^4.16.0  # PIN 기반 인증으로 전환되어 미사용
+  # google_sign_in: ^6.2.1  # PIN 기반 인증으로 전환되어 미사용
 
   # Video Player
   video_player: ^2.9.3
@@ -191,7 +191,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-version: 1.1.1+15
+version: 1.1.2+16
 
 flutter_launcher_icons:
   image_path: assets/images/everydiary_lite_icon.png
